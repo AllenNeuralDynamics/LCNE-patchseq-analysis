@@ -1,14 +1,15 @@
 """Get metadata"""
 
-import os
 import logging
-logger = logging.getLogger(__name__)
+import os
 
 import pandas as pd
 
 from LCNE_patchseq_analysis.data_util.lims import get_lims_LCNE_patchseq
 
-metadata_path = os.path.expanduser("~\Downloads\IVSCC_LC_summary.xlsx")
+metadata_path = os.path.expanduser(R"~\Downloads\IVSCC_LC_summary.xlsx")
+logger = logging.getLogger(__name__)
+
 
 def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
     """Read metadata, cell xyz coordinates, and ephys features from Brian's spreadsheet
@@ -87,12 +88,12 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
 
 def cross_check_metadata(df, source):
     """Cross-check metadata between source and master tables
-    
+
     source in ["tab_xyz", "tab_ephys_fx", "lims]
     """
     source_columns = [col for col in df.columns if source in col]
     master_columns = [col.replace(source, "tab_master") for col in source_columns]
-    
+
     logger.info(f"Cross-checking metadata between {source} and master tables...")
     logger.info(f"Source columns: {source_columns}")
     logger.info(f"Master columns: {master_columns}")
@@ -100,27 +101,29 @@ def cross_check_metadata(df, source):
     # Find out inconsistencies between source and master, if both of them are not null
     df_inconsistencies = df.loc[
         (
-            df[source_columns].notnull() & df[source_columns].notnull() &
-            (df[source_columns].to_numpy() != df[master_columns].to_numpy())
+            df[source_columns].notnull()
+            & df[source_columns].notnull()
+            & (df[source_columns].to_numpy() != df[master_columns].to_numpy())
         ).any(axis=1),
-        ["Date", "jem-id_cell_specimen"] + master_columns + source_columns
+        ["Date", "jem-id_cell_specimen"] + master_columns + source_columns,
     ]
-    
+
     return df_inconsistencies
-    
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    
+
     dfs = read_brian_spreadsheet()
     for source in ["tab_xyz", "tab_ephys_fx", "lims"]:
         df_inconsistencies = cross_check_metadata(dfs["df_all"], source)
-        
+
         if len(df_inconsistencies) == 0:
             print("All good!")
             continue
-        
-        print(f"Found {len(df_inconsistencies)} inconsistencies between {source} and master tables:")
+
+        print(
+            f"Found {len(df_inconsistencies)} inconsistencies between {source} and master tables:"
+        )
         print(df_inconsistencies)
         print("\n")
-    
