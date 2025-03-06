@@ -32,8 +32,8 @@ def read_brian_spreadsheet(file_path=file_path):
     df_ephys_fx = pd.read_excel(file_path, sheet_name=tab_ephys_fx)
 
     # Merge the tables
-    df_all = df_master.merge(df_xyz, on="jem-id_cell_specimen", how="outer").merge(
-        df_ephys_fx, on="cell_specimen_id", how="outer"
+    df_all = df_master.merge(df_xyz, on="jem-id_cell_specimen", how="outer", suffixes=('_master', '_xyz')).merge(
+        df_ephys_fx, on="cell_specimen_id", how="outer", suffixes=('_master', 'ephys_fx')
     )
 
     return df_all, df_master, df_xyz, df_ephys_fx
