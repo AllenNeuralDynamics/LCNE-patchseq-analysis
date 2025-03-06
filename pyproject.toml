@@ -19,7 +19,8 @@ dynamic = ["version"]
 
 dependencies = [
     'numpy',
-    'pandas'
+    'pandas',
+    'openpyxl',
 ]
 
 [project.optional-dependencies]
