@@ -4,10 +4,9 @@ import os
 
 import pandas as pd
 
-file_path = os.path.expanduser("~/capsule/data/IVSCC_LC_summary.xlsx")
+metadata_path = os.path.expanduser("~\Downloads\IVSCC_LC_summary.xlsx")
 
-
-def read_brian_spreadsheet(file_path=file_path):
+def read_brian_spreadsheet(file_path=metadata_path):
     """Read metadata, cell xyz coordinates, and ephys features from Brian's spreadsheet
 
     Assuming IVSCC_LC_summary.xlsx is downloaded at file_path
