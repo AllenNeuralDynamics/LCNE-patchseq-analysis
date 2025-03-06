@@ -47,7 +47,7 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
             ),
             on="jem-id_cell_specimen",
             how="outer",
-            suffixes=("_master", "_xyz"),
+            suffixes=("_tab_master", "_tab_xyz"),
         )
         .merge(
             df_ephys_fx.rename(
@@ -58,7 +58,7 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
             ),
             on="cell_specimen_id",
             how="outer",
-            suffixes=("_master", "_ephys_fx"),
+            suffixes=("_tab_master", "_tab_ephys_fx"),
         )
         .sort_values("Date", ascending=False)
     )
