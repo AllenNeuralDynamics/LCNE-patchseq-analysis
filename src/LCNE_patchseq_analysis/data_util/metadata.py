@@ -1,15 +1,15 @@
-"""Get metadata
-"""
+"""Get metadata"""
+
+import os
 
 import pandas as pd
-import os
 
 file_path = os.path.expanduser("~/capsule/data/IVSCC_LC_summary.xlsx")
 
 
 def read_brian_spreadsheet(file_path=file_path):
-    """ Read metadata, cell xyz coordinates, and ephys features from Brian's spreadsheet
-    
+    """Read metadata, cell xyz coordinates, and ephys features from Brian's spreadsheet
+
     Assuming IVSCC_LC_summary.xlsx is downloaded at file_path
     """
 
@@ -43,16 +43,22 @@ def read_brian_spreadsheet(file_path=file_path):
             how="outer",
             suffixes=("_master", "_xyz"),
         )
-        .merge(df_ephys_fx.rename(
+        .merge(
+            df_ephys_fx.rename(
                 columns={
                     "failed_seal": "failed_no_seal",
                     "failed_input_access_resistance": "failed_bad_rs",
                 }
-            ), on="cell_specimen_id", how="outer", suffixes=("_master", "_ephys_fx"))
+            ),
+            on="cell_specimen_id",
+            how="outer",
+            suffixes=("_master", "_ephys_fx"),
+        )
         .sort_values("Date", ascending=False)
     )
 
     return df_all, df_master, df_xyz, df_ephys_fx
+
 
 if __name__ == "__main__":
     df_all, df_master, df_xyz, df_ephys_fx = read_brian_spreadsheet()
