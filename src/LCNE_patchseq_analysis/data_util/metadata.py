@@ -4,12 +4,19 @@ import os
 
 import pandas as pd
 
+from LCNE_patchseq_analysis.data_util.lims import get_lims_LCNE_patchseq
+
 metadata_path = os.path.expanduser("~\Downloads\IVSCC_LC_summary.xlsx")
 
-def read_brian_spreadsheet(file_path=metadata_path):
+
+def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
     """Read metadata, cell xyz coordinates, and ephys features from Brian's spreadsheet
 
     Assuming IVSCC_LC_summary.xlsx is downloaded at file_path
+
+    Args:
+        file_path (str): Path to the metadata spreadsheet
+        add_lims (bool): Whether to add LIMS data
     """
 
     if not os.path.exists(file_path):
@@ -56,12 +63,25 @@ def read_brian_spreadsheet(file_path=metadata_path):
         .sort_values("Date", ascending=False)
     )
 
-    return df_all, df_master, df_xyz, df_ephys_fx
+    if add_lims:
+        df_lims = get_lims_LCNE_patchseq()
+        df_all = df_all.merge(
+            df_lims,
+            left_on="jem-id_cell_specimen",
+            right_on="specimen_name",
+            how="left",
+            suffixes=("_master", "_lims"),
+        )
+
+    return {
+        "df_all": df_all,
+        "df_master": df_master,
+        "df_xyz": df_xyz,
+        "df_ephys_fx": df_ephys_fx,
+        **({"df_lims": df_lims} if add_lims else {}),
+    }
 
 
 if __name__ == "__main__":
-    df_all, df_master, df_xyz, df_ephys_fx = read_brian_spreadsheet()
-    print(df_all.head())
-    print(df_master.head())
-    print(df_xyz.head())
-    print(df_ephys_fx.head())
+    dfs = read_brian_spreadsheet()
+    print(dfs["df_all"].head())
