@@ -1,2 +1,1 @@
-""" Utils for accessing data
-"""
+"""Utils for accessing data"""
