@@ -3,8 +3,8 @@
 From Brian
 """
 
-import pg8000  # pg8000 access SQL databases
 import pandas as pd  # pandas will be needed to work in a dataframe
+import pg8000  # pg8000 access SQL databases
 
 # code from Agata
 # these are nice functions to open LIMS, make a query and then close LIMS after
@@ -24,7 +24,8 @@ def _select(cursor, query):
 def limsquery(
     query, user="limsreader", host="limsdb2", database="lims2", password="limsro", port=5432
 ):
-    """A function that takes a string containing a SQL query, connects to the LIMS database and outputs the result."""
+    """A function that takes a string containing a SQL query, connects to the LIMS database
+    and outputs the result."""
     conn, cursor = _connect(user, host, database, password, port)
     try:
         results = _select(cursor, query)
@@ -34,7 +35,8 @@ def limsquery(
     return results
 
 
-# this last function will take our query results and put them in a dataframe so that they are easy to work with
+# this last function will take our query results and put them in a dataframe
+# so that they are easy to work with
 def get_lims_dataframe(query):
     """Return a dataframe with lims query"""
     result = limsquery(query)
@@ -49,13 +51,13 @@ def get_lims_dataframe(query):
 # Query for LCNE patchseq experiments
 def get_lims_LCNE_patchseq():
     lims_query = """
-        SELECT 
-            s.id AS specimen_id, 
-            s.name AS specimen_name, 
-            proj.code, 
-            err.id AS ephys_roi_id, 
-            err.workflow_state AS Ephys_QC, 
-            s.patched_cell_container, 
+        SELECT
+            s.id AS specimen_id,
+            s.name AS specimen_name,
+            proj.code,
+            err.id AS ephys_roi_id,
+            err.workflow_state AS Ephys_QC,
+            s.patched_cell_container,
             err.storage_directory
         FROM ephys_roi_results AS err
         JOIN specimens AS s ON s.ephys_roi_result_id = err.id
