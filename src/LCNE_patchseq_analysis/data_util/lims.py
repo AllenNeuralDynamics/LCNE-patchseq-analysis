@@ -1,3 +1,8 @@
+"""Utilities for querying the LIMS database.
+
+From Brian
+"""
+
 import pg8000          #pg8000 access SQL databases
 import pandas as pd    #pandas will be needed to work in a dataframe
 
@@ -36,13 +41,25 @@ def get_lims_dataframe(query):
     return data_df
 
 
-#callout the abreveations in the FROM section
-# ephys_roi_results err
+# Query for LCNE patchseq experiments
+def get_lims_LCNE_patchseq():
+    lims_query = """
+        SELECT 
+            s.id AS specimen_id, 
+            s.name AS specimen_name, 
+            proj.code, 
+            err.id AS ephys_roi_id, 
+            err.workflow_state AS Ephys_QC, 
+            s.patched_cell_container, 
+            err.storage_directory
+        FROM ephys_roi_results AS err
+        JOIN specimens AS s ON s.ephys_roi_result_id = err.id
+        JOIN projects AS proj ON s.project_id = proj.id
+        WHERE proj.code = 'mIVSCC-MET-R01_LC';
+    """
+    lims_df = get_lims_dataframe(lims_query)
+    return lims_df
 
-lims_query = "SELECT s.id as specimen_id, s.name as specimen_name, proj.code, err.id as ephys_roi_id, err.workflow_state as Ephys_QC, s.patched_cell_container, err.storage_directory \
-FROM ephys_roi_results err JOIN specimens s ON s.ephys_roi_result_id = err.id \
-JOIN projects proj ON s.project_id = proj.id \
-WHERE proj.code = 'mIVSCC-MET-R01_LC'"
-
-lims_df = get_lims_dataframe(lims_query)
-print(lims_df)
+if __name__ == "__main__":
+    lims_df = get_lims_LCNE_patchseq()
+    print(lims_df.head())
