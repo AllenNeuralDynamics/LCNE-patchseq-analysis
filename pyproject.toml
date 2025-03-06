@@ -21,6 +21,7 @@ dependencies = [
     'numpy',
     'pandas',
     'openpyxl',
+    'matplotlib',
 ]
 
 [project.optional-dependencies]
