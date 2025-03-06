@@ -10,6 +10,7 @@ if code-server --disable-telemetry --version; then
 			 fi
        
        code-server --disable-telemetry --extensions-dir=/.vscode/extensions --install-extension ms-python.python
+       code-server --disable-telemetry --extensions-dir=/.vscode/extensions --install-extension ms-toolsai.jupyter
        code-server --disable-telemetry --extensions-dir=/.vscode/extensions --install-extension njpwerner.autodocstring
        code-server --disable-telemetry --extensions-dir=/.vscode/extensions --install-extension KevinRose.vsc-python-indent
        code-server --disable-telemetry --extensions-dir=/.vscode/extensions --install-extension mhutchie.git-graph
