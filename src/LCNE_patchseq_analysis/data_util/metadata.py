@@ -12,10 +12,10 @@ def read_brian_spreadsheet(file_path=file_path):
     
     Assuming IVSCC_LC_summary.xlsx is downloaded at file_path
     """
-    
+
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"File not found at {file_path}")
-    
+
     tab_names = pd.ExcelFile(file_path).sheet_names
 
     # Get the master table
@@ -25,7 +25,13 @@ def read_brian_spreadsheet(file_path=file_path):
     # Get xyz coordinates
     tab_xyz = [name for name in tab_names if "xyz" in name.lower()][0]
     df_xyz = pd.read_excel(file_path, sheet_name=tab_xyz)
-    df_xyz.rename(columns={"specimen_name": "jem-id_cell_specimen"}, inplace=True)
+    df_xyz.rename(
+        columns={
+            "specimen_name": "jem-id_cell_specimen",
+            "structure_acronym": "Annotated structure",
+        },
+        inplace=True,
+    )
 
     # Get ephys features
     tab_ephys_fx = [name for name in tab_names if "ephys_fx" in name.lower()][0]
@@ -34,7 +40,7 @@ def read_brian_spreadsheet(file_path=file_path):
     # Merge the tables
     df_all = df_master.merge(df_xyz, on="jem-id_cell_specimen", how="outer", suffixes=('_master', '_xyz')).merge(
         df_ephys_fx, on="cell_specimen_id", how="outer", suffixes=('_master', 'ephys_fx')
-    )
+    ).sort_values("Date", ascending=False)
 
     return df_all, df_master, df_xyz, df_ephys_fx
 
