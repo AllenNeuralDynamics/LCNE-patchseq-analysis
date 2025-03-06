@@ -20,7 +20,6 @@ dynamic = ["version"]
 dependencies = [
     'numpy',
     'pandas',
-    'openpyxl',
     'matplotlib',
 ]
 
@@ -33,6 +32,18 @@ dev = [
     'isort',
     'Sphinx',
     'furo'
+]
+
+pipeline = [
+    'black',
+    'coverage',
+    'flake8',
+    'interrogate',
+    'isort',
+    'Sphinx',
+    'furo',
+    'openpyxl',
+    'pg8000',
 ]
 
 [tool.setuptools.packages.find]
