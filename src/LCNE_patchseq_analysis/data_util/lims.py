@@ -22,9 +22,7 @@ def _select(cursor, query):
     return [dict(zip(columns, c)) for c in cursor.fetchall()]
 
 
-def limsquery(
-    query, user, host, database, password, port
-):
+def limsquery(query, user, host, database, password, port):
     """A function that takes a string containing a SQL query, connects to the LIMS database
     and outputs the result."""
     conn, cursor = _connect(user, host, database, password, port)
@@ -40,11 +38,11 @@ def limsquery(
 # so that they are easy to work with
 def get_lims_dataframe(query):
     """Return a dataframe with lims query"""
-    
+
     # Get credentials from json
     with open("LIMS_credentials.json") as f:
         credentials = json.load(f)
-    
+
     result = limsquery(query, **credentials)
     try:
         data_df = pd.DataFrame(data=result, columns=result[0].keys())
