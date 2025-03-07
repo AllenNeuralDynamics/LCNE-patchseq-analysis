@@ -82,8 +82,8 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
         )
 
         df_merged['_merge'] = df_merged['_merge'].replace(
-            {'left_only': 'tab_master_only', 'right_only': 'lims_only', 'both': 'both'})
-        df_merged.rename(columns={"_merge": "tab_master_or_lims"}, inplace=True)
+            {'left_only': 'spreadsheet_only', 'right_only': 'lims_only', 'both': 'both'})
+        df_merged.rename(columns={"_merge": "spreadsheet_or_lims"}, inplace=True)
 
         # Combine storage directories: use LIMS if available, otherwise use master
         df_merged["storage_directory_combined"] = df_merged["storage_directory_lims"].combine_first(
@@ -99,12 +99,18 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
     }
 
 
-def cross_check_metadata(df, source):
+def cross_check_metadata(df, source, check_separately=True):
     """Cross-check metadata between source and master tables
 
-    source in ["tab_xyz", "tab_ephys_fx", "lims]
+    source in ["tab_xyz", "tab_ephys_fx", "lims"]
+    
+    Args:
+        df (pd.DataFrame): The merged dataframe
+        source (str): The source table to cross-check with the master table
+        check_separately (bool): Whether to check each column separately or all columns together
     """
-    source_columns = [col for col in df.columns if source in col]
+    source_columns = [col for col in df.columns if source in col and col not in [
+        "spreadsheet_or_lims"]]  # Exclude merge indicator column
     master_columns = [col.replace(source, "tab_master") for col in source_columns]
 
     logger.info(f"Cross-checking metadata between {source} and master tables...")
@@ -112,31 +118,51 @@ def cross_check_metadata(df, source):
     logger.info(f"Master columns: {master_columns}")
 
     # Find out inconsistencies between source and master, if both of them are not null
-    df_inconsistencies = df.loc[
-        (
-            df[source_columns].notnull()
-            & df[source_columns].notnull()
-            & (df[source_columns].to_numpy() != df[master_columns].to_numpy())
-        ).any(axis=1),
-        ["Date", "jem-id_cell_specimen"] + master_columns + source_columns,
-    ]
-
-    return df_inconsistencies
+    if check_separately:
+        df_inconsistencies_all = {}
+        for source_col, master_col in zip(source_columns, master_columns):
+            df_inconsistencies = df.loc[
+                (
+                    df[source_col].notnull()
+                    & df[master_col].notnull()
+                    & (df[source_col] != df[master_col])
+                ),
+                ["Date", "jem-id_cell_specimen", master_col, source_col],
+            ]
+            if len(df_inconsistencies) > 0:
+                logger.warning(
+                    f"Found {len(df_inconsistencies)} inconsistencies between {source_col} and {master_col}:"
+                )
+                logger.warning(df_inconsistencies)
+                logger.warning("\n")
+            else:
+                logger.info(f"All good between {source_col} and {master_col}!")
+            df_inconsistencies_all[source_col] = df_inconsistencies
+        return df_inconsistencies_all
+    else:
+        df_inconsistencies = df.loc[
+            (
+                df[source_columns].notnull()
+                & df[source_columns].notnull()
+                & (df[source_columns].to_numpy() != df[master_columns].to_numpy())
+            ).any(axis=1),
+            ["Date", "jem-id_cell_specimen"] + master_columns + source_columns,
+        ]
+        if len(df_inconsistencies) > 0:
+            logger.warning(
+                f"Found {len(df_inconsistencies)} inconsistencies between {source} and master tables:"
+            )
+            logger.warning(df_inconsistencies)
+            logger.warning("\n")
+        else:
+            logger.info(f"All good between {source} and master tables!")
+        return df_inconsistencies
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
     dfs = read_brian_spreadsheet()
+    
     for source in ["tab_xyz", "tab_ephys_fx", "lims"]:
-        df_inconsistencies = cross_check_metadata(dfs["df_merged"], source)
-
-        if len(df_inconsistencies) == 0:
-            print("All good!")
-            continue
-
-        print(
-            f"Found {len(df_inconsistencies)} inconsistencies between {source} and master tables:"
-        )
-        print(df_inconsistencies)
-        print("\n")
+        df_inconsistencies = cross_check_metadata(dfs["df_merged"], source, check_separately=True)
