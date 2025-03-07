@@ -15,16 +15,22 @@ logger = logging.getLogger(__name__)
 s3_bucket = "s3://aind-scratch-data/aind-patchseq-data/raw"
 
 
-def sync_directory(local_dir, destination):
+def sync_directory(local_dir, destination, if_copy=False):
     """
     Sync the local directory with the given S3 destination using aws s3 sync.
     Returns a status string based on the command output.
     """
     try:
-        # Run aws s3 sync command and capture the output
-        result = subprocess.run(
-            ["aws", "s3", "sync", local_dir, destination], capture_output=True, text=True
-        )
+        if if_copy:
+            # Run aws s3 cp command and capture the output
+            result = subprocess.run(
+                ["aws", "s3", "cp", local_dir, destination], capture_output=True, text=True
+            )
+        else:
+            # Run aws s3 sync command and capture the output
+            result = subprocess.run(
+                ["aws", "s3", "sync", local_dir, destination], capture_output=True, text=True
+            )
         output = result.stdout + result.stderr
 
         # Check output: if "upload:" appears, files were sent;
@@ -33,6 +39,7 @@ def sync_directory(local_dir, destination):
             logger.info(f'Uploaded {local_dir} to {destination}!')
             return "successfully uploaded"
         else:
+            logger.info(output)
             logger.info(f'Already exists, skip {local_dir}.')
             return "already exists, skip"
     except Exception as e:
@@ -95,12 +102,22 @@ def upload_raw_from_isilon_to_s3_batch(df, s3_bucket=s3_bucket, max_workers=10):
     return pd.DataFrame(results)
 
 
+def trigger_patchseq_upload(metadata_path=os.path.expanduser(R"~\Downloads\IVSCC_LC_summary.xlsx")):
+    # Generate a list of isilon paths
+    dfs = read_brian_spreadsheet(file_path=metadata_path, add_lims=True)
+    df_merged = dfs["df_all"]
+
+    # Upload raw data
+    upload_raw_from_isilon_to_s3_batch(df_merged, s3_bucket=s3_bucket, max_workers=10)
+    
+    # Also save df_merged as csv and upload to s3
+    df_merged.to_csv("df_merged.csv", index=False)
+    sync_directory("df_merged.csv", s3_bucket + "/df_merged.csv", if_copy=True)    
+
+
 if __name__ == "__main__":
 
     # Set logger level
     logging.basicConfig(level=logging.INFO)
-
-    # Generate a list of isilon paths
-    dfs = read_brian_spreadsheet(add_lims=True)
-
-    upload_raw_from_isilon_to_s3_batch(dfs["df_all"], s3_bucket=s3_bucket, max_workers=10)
+    
+    trigger_patchseq_upload(os.path.expanduser(R"~\Downloads\IVSCC_LC_summary.xlsx"))
