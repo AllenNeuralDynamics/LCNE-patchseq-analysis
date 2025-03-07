@@ -30,8 +30,10 @@ def sync_directory(local_dir, destination):
         # Check output: if "upload:" appears, files were sent;
         # otherwise, assume that nothing needed uploading.
         if "upload:" in output:
+            logger.info(f'Uploaded {local_dir} to {destination}!')
             return "successfully uploaded"
         else:
+            logger.info(f'Already exists, skip {local_dir}.')
             return "already exists, skip"
     except Exception as e:
         return f"error during sync: {e}"
@@ -43,6 +45,7 @@ def upload_one(row, s3_bucket):
     """
     # Check if the storage_directory_combined value is null.
     if pd.isnull(row["storage_directory_combined"]):
+        logger.info("The path is null")
         status = "the path is null"
         path = None
     else:
@@ -52,18 +55,20 @@ def upload_one(row, s3_bucket):
 
         # Check if the local path exists.
         if not os.path.exists(path):
+            logger.info(f"Cannot find the path: {path}")
             status = "cannot find the path"
         else:
+            logger.info(f"Syncing {path} to {s3_bucket}/{roi_name}...")
             status = sync_directory(path, s3_bucket + "/" + roi_name)
     return {"storage_directory": path, "status": status}
 
 
-def upload_raw_from_isilon_to_s3_batch(df, s3_bucket=s3_bucket):
+def upload_raw_from_isilon_to_s3_batch(df, s3_bucket=s3_bucket, max_workers=10):
     """Upload raw data from Isilon to S3, using the metadata dataframe in parallel."""
     results = []
 
     # Create a thread pool to process rows in parallel.
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         # Submit each row for processing.
         futures = [executor.submit(upload_one, row, s3_bucket) for idx, row in df.iterrows()]
 
@@ -98,4 +103,4 @@ if __name__ == "__main__":
     # Generate a list of isilon paths
     dfs = read_brian_spreadsheet(add_lims=True)
 
-    upload_raw_from_isilon_to_s3_batch(dfs["df_all"], s3_bucket=s3_bucket)
+    upload_raw_from_isilon_to_s3_batch(dfs["df_all"].iloc[:10], s3_bucket=s3_bucket, max_workers=10)
