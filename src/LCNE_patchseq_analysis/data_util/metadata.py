@@ -74,28 +74,31 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
                 columns={
                     "specimen_name": "jem-id_cell_specimen",
                     "specimen_id": "cell_specimen_id",
-                }),
+                }
+            ),
             on="jem-id_cell_specimen",
             how="outer",  # Do an outer join to keep all rows
             suffixes=("_tab_master", "_lims"),
-            indicator=True
+            indicator=True,
         )
 
-        df_merged['_merge'] = df_merged['_merge'].replace(
-            {'left_only': 'spreadsheet_only', 'right_only': 'lims_only', 'both': 'both'})
+        df_merged["_merge"] = df_merged["_merge"].replace(
+            {"left_only": "spreadsheet_only", "right_only": "lims_only", "both": "both"}
+        )
         df_merged.rename(columns={"_merge": "spreadsheet_or_lims"}, inplace=True)
 
         # Combine storage directories: use LIMS if available, otherwise use master
         df_merged["storage_directory_combined"] = df_merged["storage_directory_lims"].combine_first(
             df_merged["storage_directory_tab_master"]
         )
-        
+
         logger.info(
             f"Merged LIMS to spreadsheet, total {len(df_merged)} rows: "
             f"{len(df_merged[df_merged['spreadsheet_or_lims'] == 'both'])} in both, "
             f"{len(df_merged[df_merged['spreadsheet_or_lims'] == 'spreadsheet_only'])} "
             f"in spreadsheet only, "
-            f"{len(df_merged[df_merged['spreadsheet_or_lims'] == 'lims_only'])} in LIMS only.\n")
+            f"{len(df_merged[df_merged['spreadsheet_or_lims'] == 'lims_only'])} in LIMS only.\n"
+        )
 
     return {
         "df_merged": df_merged,
@@ -110,14 +113,15 @@ def cross_check_metadata(df, source, check_separately=True):
     """Cross-check metadata between source and master tables
 
     source in ["tab_xyz", "tab_ephys_fx", "lims"]
-    
+
     Args:
         df (pd.DataFrame): The merged dataframe
         source (str): The source table to cross-check with the master table
         check_separately (bool): Whether to check each column separately or all columns together
     """
-    source_columns = [col for col in df.columns if source in col and col not in [
-        "spreadsheet_or_lims"]]  # Exclude merge indicator column
+    source_columns = [
+        col for col in df.columns if source in col and col not in ["spreadsheet_or_lims"]
+    ]  # Exclude merge indicator column
     master_columns = [col.replace(source, "tab_master") for col in source_columns]
 
     logger.info(f"\nCross-checking metadata between {source} and master tables...")
@@ -138,7 +142,8 @@ def cross_check_metadata(df, source, check_separately=True):
             ]
             if len(df_inconsistencies) > 0:
                 logger.warning(
-                    f"Found {len(df_inconsistencies)} inconsistencies between {source_col} and {master_col}:"
+                    f"Found {len(df_inconsistencies)} inconsistencies between "
+                    f"{source_col} and {master_col}:"
                 )
                 logger.warning(df_inconsistencies)
                 logger.warning("\n")
@@ -157,7 +162,8 @@ def cross_check_metadata(df, source, check_separately=True):
         ]
         if len(df_inconsistencies) > 0:
             logger.warning(
-                f"Found {len(df_inconsistencies)} inconsistencies between {source} and master tables:"
+                f"Found {len(df_inconsistencies)} inconsistencies between "
+                f"{source} and master tables:"
             )
             logger.warning(df_inconsistencies)
             logger.warning("\n")
@@ -170,6 +176,6 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
     dfs = read_brian_spreadsheet()
-    
+
     for source in ["tab_xyz", "tab_ephys_fx", "lims"]:
         df_inconsistencies = cross_check_metadata(dfs["df_merged"], source, check_separately=True)
