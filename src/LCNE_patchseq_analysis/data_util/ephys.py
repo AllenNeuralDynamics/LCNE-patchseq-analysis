@@ -103,4 +103,4 @@ if __name__ == "__main__":
     # Generate a list of isilon paths
     dfs = read_brian_spreadsheet(add_lims=True)
 
-    upload_raw_from_isilon_to_s3_batch(dfs["df_all"].iloc, s3_bucket=s3_bucket, max_workers=10)
+    upload_raw_from_isilon_to_s3_batch(dfs["df_all"], s3_bucket=s3_bucket, max_workers=10)
