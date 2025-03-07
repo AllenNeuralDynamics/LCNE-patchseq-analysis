@@ -1,12 +1,12 @@
 """Ephys-related data utils"""
 
+import concurrent.futures
+import logging
 import os
 import subprocess
-import logging
-import concurrent.futures
-from tqdm import tqdm
 
 import pandas as pd
+from tqdm import tqdm
 
 from LCNE_patchseq_analysis.data_util.metadata import read_brian_spreadsheet
 
@@ -36,11 +36,11 @@ def sync_directory(local_dir, destination, if_copy=False):
         # Check output: if "upload:" appears, files were sent;
         # otherwise, assume that nothing needed uploading.
         if "upload:" in output:
-            logger.info(f'Uploaded {local_dir} to {destination}!')
+            logger.info(f"Uploaded {local_dir} to {destination}!")
             return "successfully uploaded"
         else:
             logger.info(output)
-            logger.info(f'Already exists, skip {local_dir}.')
+            logger.info(f"Already exists, skip {local_dir}.")
             return "already exists, skip"
     except Exception as e:
         return f"error during sync: {e}"
@@ -109,15 +109,15 @@ def trigger_patchseq_upload(metadata_path=os.path.expanduser(R"~\Downloads\IVSCC
 
     # Upload raw data
     upload_raw_from_isilon_to_s3_batch(df_merged, s3_bucket=s3_bucket, max_workers=10)
-    
+
     # Also save df_merged as csv and upload to s3
     df_merged.to_csv("df_merged.csv", index=False)
-    sync_directory("df_merged.csv", s3_bucket + "/df_merged.csv", if_copy=True)    
+    sync_directory("df_merged.csv", s3_bucket + "/df_merged.csv", if_copy=True)
 
 
 if __name__ == "__main__":
 
     # Set logger level
     logging.basicConfig(level=logging.INFO)
-    
+
     trigger_patchseq_upload(os.path.expanduser(R"~\Downloads\IVSCC_LC_summary.xlsx"))
