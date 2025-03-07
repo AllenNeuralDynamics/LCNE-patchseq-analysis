@@ -3,9 +3,10 @@
 From Brian
 """
 
+import json
+
 import pandas as pd  # pandas will be needed to work in a dataframe
 import pg8000  # pg8000 access SQL databases
-import json
 
 # code from Agata
 # these are nice functions to open LIMS, make a query and then close LIMS after
