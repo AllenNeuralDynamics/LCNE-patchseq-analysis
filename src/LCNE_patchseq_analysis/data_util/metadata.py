@@ -89,6 +89,13 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
         df_merged["storage_directory_combined"] = df_merged["storage_directory_lims"].combine_first(
             df_merged["storage_directory_tab_master"]
         )
+        
+        logger.info(
+            f"Merged LIMS to spreadsheet, total {len(df_merged)} rows: "
+            f"{len(df_merged[df_merged['spreadsheet_or_lims'] == 'both'])} in both, "
+            f"{len(df_merged[df_merged['spreadsheet_or_lims'] == 'spreadsheet_only'])} "
+            f"in spreadsheet only, "
+            f"{len(df_merged[df_merged['spreadsheet_or_lims'] == 'lims_only'])} in LIMS only.\n")
 
     return {
         "df_merged": df_merged,
@@ -113,7 +120,7 @@ def cross_check_metadata(df, source, check_separately=True):
         "spreadsheet_or_lims"]]  # Exclude merge indicator column
     master_columns = [col.replace(source, "tab_master") for col in source_columns]
 
-    logger.info(f"Cross-checking metadata between {source} and master tables...")
+    logger.info(f"\nCross-checking metadata between {source} and master tables...")
     logger.info(f"Source columns: {source_columns}")
     logger.info(f"Master columns: {master_columns}")
 
