@@ -51,9 +51,7 @@ def upload_one(row, s3_bucket):
         if not os.path.exists(path):
             status = "cannot find the path"
         else:
-            # Here you would perform the sync. For now we simulate a successful upload.
-            # For example: status = sync_directory(path, s3_bucket + "/" + roi_name)
-            status = "successfully uploaded"
+            status = sync_directory(path, s3_bucket + "/" + roi_name)
     return {'storage_directory': path, 'status': status}
 
 def upload_raw_from_isilon_to_s3_batch(df, s3_bucket=s3_bucket):
