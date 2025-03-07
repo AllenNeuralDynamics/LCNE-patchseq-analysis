@@ -124,7 +124,9 @@ def cross_check_metadata(df, source, check_separately=True):
     ]  # Exclude merge indicator column
     master_columns = [col.replace(source, "tab_master") for col in source_columns]
 
-    logger.info(f"\nCross-checking metadata between {source} and master tables...")
+    logger.info("")
+    logger.info("-" * 50)
+    logger.info(f"Cross-checking metadata between {source} and master tables...")
     logger.info(f"Source columns: {source_columns}")
     logger.info(f"Master columns: {master_columns}")
 
@@ -145,8 +147,8 @@ def cross_check_metadata(df, source, check_separately=True):
                     f"Found {len(df_inconsistencies)} inconsistencies between "
                     f"{source_col} and {master_col}:"
                 )
-                logger.warning(df_inconsistencies)
-                logger.warning("\n")
+                logger.warning(df_inconsistencies.to_string(index=False))
+                logger.warning("")
             else:
                 logger.info(f"All good between {source_col} and {master_col}!")
             df_inconsistencies_all[source_col] = df_inconsistencies
@@ -165,8 +167,8 @@ def cross_check_metadata(df, source, check_separately=True):
                 f"Found {len(df_inconsistencies)} inconsistencies between "
                 f"{source} and master tables:"
             )
-            logger.warning(df_inconsistencies)
-            logger.warning("\n")
+            logger.warning(df_inconsistencies.to_string(index=False))
+            logger.warning("")
         else:
             logger.info(f"All good between {source} and master tables!")
         return df_inconsistencies
