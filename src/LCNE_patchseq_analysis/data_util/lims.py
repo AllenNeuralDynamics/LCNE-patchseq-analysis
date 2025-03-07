@@ -5,12 +5,13 @@ From Brian
 
 import pandas as pd  # pandas will be needed to work in a dataframe
 import pg8000  # pg8000 access SQL databases
+import json
 
 # code from Agata
 # these are nice functions to open LIMS, make a query and then close LIMS after
 
 
-def _connect(user="limsreader", host="limsdb2", database="lims2", password="limsro", port=5432):
+def _connect(user, host, database, password, port):
     conn = pg8000.connect(user=user, host=host, database=database, password=password, port=port)
     return conn, conn.cursor()
 
@@ -22,7 +23,7 @@ def _select(cursor, query):
 
 
 def limsquery(
-    query, user="limsreader", host="limsdb2", database="lims2", password="limsro", port=5432
+    query, user, host, database, password, port
 ):
     """A function that takes a string containing a SQL query, connects to the LIMS database
     and outputs the result."""
@@ -39,7 +40,12 @@ def limsquery(
 # so that they are easy to work with
 def get_lims_dataframe(query):
     """Return a dataframe with lims query"""
-    result = limsquery(query)
+    
+    # Get credentials from json
+    with open("LIMS_credentials.json") as f:
+        credentials = json.load(f)
+    
+    result = limsquery(query, **credentials)
     try:
         data_df = pd.DataFrame(data=result, columns=result[0].keys())
     except IndexError:
