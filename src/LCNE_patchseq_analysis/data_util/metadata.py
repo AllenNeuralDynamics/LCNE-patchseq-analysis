@@ -76,6 +76,11 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
             how="left",
             suffixes=("_tab_master", "_lims"),
         )
+        
+        # Combine storage directories: use LIMS if available, otherwise use master
+        df_all["storage_directory_combined"] = df_all["storage_directory_lims"].combine_first(
+            df_all["storage_directory_tab_master"]
+        )
 
     return {
         "df_all": df_all,
