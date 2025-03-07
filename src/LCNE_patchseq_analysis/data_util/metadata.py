@@ -29,20 +29,20 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
 
     # Get the master table
     tab_master = [name for name in tab_names if "updated" in name.lower()][0]
-    df_master = pd.read_excel(file_path, sheet_name=tab_master)
+    df_tab_master = pd.read_excel(file_path, sheet_name=tab_master)
 
     # Get xyz coordinates
     tab_xyz = [name for name in tab_names if "xyz" in name.lower()][0]
-    df_xyz = pd.read_excel(file_path, sheet_name=tab_xyz)
+    df_tab_xyz = pd.read_excel(file_path, sheet_name=tab_xyz)
 
     # Get ephys features
     tab_ephys_fx = [name for name in tab_names if "ephys_fx" in name.lower()][0]
-    df_ephys_fx = pd.read_excel(file_path, sheet_name=tab_ephys_fx)
+    df_tab_ephys_fx = pd.read_excel(file_path, sheet_name=tab_ephys_fx)
 
     # Merge the tables
-    df_all = (
-        df_master.merge(
-            df_xyz.rename(
+    df_merged = (
+        df_tab_master.merge(
+            df_tab_xyz.rename(
                 columns={
                     "specimen_name": "jem-id_cell_specimen",
                     "structure_acronym": "Annotated structure",
@@ -53,7 +53,7 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
             suffixes=("_tab_master", "_tab_xyz"),
         )
         .merge(
-            df_ephys_fx.rename(
+            df_tab_ephys_fx.rename(
                 columns={
                     "failed_seal": "failed_no_seal",
                     "failed_input_access_resistance": "failed_bad_rs",
@@ -69,24 +69,32 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
     if add_lims:
         logger.info("Querying and adding LIMS data...")
         df_lims = get_lims_LCNE_patchseq()
-        df_all = df_all.merge(
-            df_lims,
-            left_on="jem-id_cell_specimen",
-            right_on="specimen_name",
-            how="left",
+        df_merged = df_merged.merge(
+            df_lims.rename(
+                columns={
+                    "specimen_name": "jem-id_cell_specimen",
+                    "specimen_id": "cell_specimen_id",
+                }),
+            on="jem-id_cell_specimen",
+            how="outer",  # Do an outer join to keep all rows
             suffixes=("_tab_master", "_lims"),
+            indicator=True
         )
 
+        df_merged['_merge'] = df_merged['_merge'].replace(
+            {'left_only': 'tab_master_only', 'right_only': 'lims_only', 'both': 'both'})
+        df_merged.rename(columns={"_merge": "tab_master_or_lims"}, inplace=True)
+
         # Combine storage directories: use LIMS if available, otherwise use master
-        df_all["storage_directory_combined"] = df_all["storage_directory_lims"].combine_first(
-            df_all["storage_directory_tab_master"]
+        df_merged["storage_directory_combined"] = df_merged["storage_directory_lims"].combine_first(
+            df_merged["storage_directory_tab_master"]
         )
 
     return {
-        "df_all": df_all,
-        "df_master": df_master,
-        "df_xyz": df_xyz,
-        "df_ephys_fx": df_ephys_fx,
+        "df_merged": df_merged,
+        "df_tab_master": df_tab_master,
+        "df_tab_xyz": df_tab_xyz,
+        "df_tab_ephys_fx": df_tab_ephys_fx,
         **({"df_lims": df_lims} if add_lims else {}),
     }
 
@@ -121,7 +129,7 @@ if __name__ == "__main__":
 
     dfs = read_brian_spreadsheet()
     for source in ["tab_xyz", "tab_ephys_fx", "lims"]:
-        df_inconsistencies = cross_check_metadata(dfs["df_all"], source)
+        df_inconsistencies = cross_check_metadata(dfs["df_merged"], source)
 
         if len(df_inconsistencies) == 0:
             print("All good!")
