@@ -21,6 +21,8 @@ dependencies = [
     'numpy',
     'pandas',
     'matplotlib',
+    'panel',
+    'jupyter_bokeh',
 ]
 
 [project.optional-dependencies]
