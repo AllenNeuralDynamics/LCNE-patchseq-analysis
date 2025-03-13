@@ -32,7 +32,7 @@ def update_plot(n, nwb):
     stimulus = nwb.stimulus[f"data_{n:05}_DA0"].data[:]
     time = np.arange(len(trace)) * dt_ms
     
-    fig, ax = plt.subplots(2, 1, figsize=(6, 4), dpi=100)
+    fig, ax = plt.subplots(2, 1, figsize=(6, 4))
     ax[0].plot(time, trace)
     ax[0].set_title(f'Sweep number {n}')
     
@@ -61,8 +61,10 @@ def main():
     # pn.bind creates a reactive function that updates the plot whenever the slider changes.
     plot_panel = pn.bind(update_plot, n=slider, nwb=nwb_data)
     
+    mpl_pane = pn.pane.Matplotlib(plot_panel, dpi=400, width=600, height=400)
+    
     # Compose the layout: place the slider above the plot.
-    layout = pn.Column(slider, pn.panel(plot_panel, sizing_mode='stretch_both'))
+    layout = pn.Column(slider, mpl_pane)
     
     # Make the panel servable if running with 'panel serve'
     return layout
