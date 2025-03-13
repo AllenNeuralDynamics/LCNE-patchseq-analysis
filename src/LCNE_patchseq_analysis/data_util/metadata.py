@@ -3,8 +3,11 @@
 import json
 import glob
 import pandas as pd
+import logging
 
 from LCNE_patchseq_analysis import RAW_DIRECTORY
+
+logger = logging.getLogger(__name__)
 
 json_name_mapper = {
     "stimulus_summary": "EPHYS_NWB_STIMULUS_SUMMARY",
@@ -25,6 +28,7 @@ def read_json_files(ephys_roi_id="1410790193"):
         else:
             with open(json_files[0], "r") as f:
                 json_dicts[key] = json.load(f)
+            logger.info(f"Loaded {key} from {json_files[0]}")
     return json_dicts
 
 
@@ -47,6 +51,7 @@ def jsons_to_df(json_dicts):
         on="sweep_number",
         how="left"
     )
+    logger.info(f"Merged sweep metadata, shape: {df_merged.shape}")
     return df_merged
 
 if __name__ == "__main__":

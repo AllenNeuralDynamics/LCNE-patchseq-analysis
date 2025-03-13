@@ -2,10 +2,12 @@
 
 import glob
 import h5py
+import logging
 
 from LCNE_patchseq_analysis import RAW_DIRECTORY
 from LCNE_patchseq_analysis.data_util.metadata import read_json_files, jsons_to_df
 
+logger = logging.getLogger(__name__)
 
 class PatchSeqNWB():
     """Class for accessing patch-seq NWB files using h5py."""
@@ -21,6 +23,7 @@ class PatchSeqNWB():
             raise FileNotFoundError(f"No NWB files found for {ephys_roi_id}")
         
         # Load nwb
+        logger.info(f"Loading NWB file {self.nwbs[0]}")
         self.hdf = h5py.File(self.nwbs[0], 'r')
         
         # Load metadata from jsons
@@ -44,15 +47,12 @@ class PatchSeqNWB():
 
 
 if __name__ == "__main__":
+    
+    logging.basicConfig(level=logging.INFO)
+    
     # Test the class
     ephys_roi_id = "1410790193"
     raw = PatchSeqNWB(ephys_roi_id)
-    print(f"Found {len(raw.nwbs)} NWB files for {ephys_roi_id}")
-    print(raw.hdf.keys())
-    print(raw.hdf["stimulus/presentation/data_00000_DA0/data"])
-    
-    # Test the data extraction
-    print(raw.hdf["acquisition/data_00000_AD0/data"])
-    print(raw.hdf["stimulus/presentation/data_00000_DA0/data"])
-    
-    print(raw.df_sweep.head(10))  # Check the first 10 rows of the merged dataframe
+   
+    print(raw.get_raw_trace(0))  # Get the raw trace for the first sweep
+    print(raw.get_stimulus(0))  # Get the stimulus for the first sweep
