@@ -44,8 +44,8 @@ def show_df_with_highlight(df, selected_sweep):
 # ---- Main Panel App Layout ----
 def main():
 
-    pn.config.throttled = True
-    
+    pn.config.throttled = False
+
     # Load the NWB file.
     raw = PatchSeqNWB(ephys_roi_id="1410790193")
 
@@ -53,8 +53,6 @@ def main():
     slider = pn.widgets.IntSlider(
         name="Sweep number", start=0, end=raw.n_sweeps - 1, value=0
     )
-
-    text_panel = pn.pane.Markdown("# Patch-seq Ephys Data Navigator\nUse the slider to navigate through the sweeps in the NWB file.")
 
     # Bind the slider value to the update_plot function.
     plot_panel = pn.bind(update_plot, raw=raw, sweep=slider.param.value)
@@ -109,10 +107,28 @@ def main():
     slider.param.watch(update_table_selection, 'value')
     # --- End Synchronization ---
 
-    # Compose the layout: place the slider and plot on the left, table on the right.
-    layout = pn.Column(
-        text_panel,
-        pn.Row(pn.Column(slider, mpl_pane), tab),
+    # --- Error Message if Sweep Not Found ---
+    def get_error_message(sweep):
+        if sweep not in raw.df_sweeps['sweep_number'].values:
+            return "<span style='color:red;'>Sweep number not found in the jsons!</span>"
+        return ""
+    error_msg = pn.bind(get_error_message, slider.param.value)
+    error_msg_panel = pn.pane.Markdown(error_msg, width=600, height=30)
+    # --- End Error Message ---
+
+    # Compose the layout: error message, slider, and plot on the left; table on the right.
+    left_col = pn.Column(slider, error_msg_panel, mpl_pane)
+    layout = pn.Row(
+        pn.Column(
+            pn.pane.Markdown(
+                "# Patch-seq Ephys Data Navigator\nUse the slider to navigate through the sweeps in the NWB file."
+            ),
+            left_col,
+        ),
+        pn.Column(
+            pn.pane.Markdown("## Metadata from jsons"),
+            tab,
+        ),
     )
 
     # Make the panel servable if running with 'panel serve'
