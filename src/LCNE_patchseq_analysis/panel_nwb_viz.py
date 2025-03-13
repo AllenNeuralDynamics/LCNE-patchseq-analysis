@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from pynwb import NWBHDF5IO
 import numpy as np
 import glob
+import h5py
 
 sampling_rate = 50000
 dt_ms = 1 / sampling_rate * 1000
@@ -20,16 +21,23 @@ def load_nwb_data(file_path):
     nwbfile = NWBHDF5IO(file_path, 'r').read()
     return nwbfile
 
+def load_h5py_data(file_path):
+    """
+    Loads an h5py file and returns the h5py object.
+    """
+    h5pyfile = h5py.File(file_path, 'r')
+    return h5pyfile
+
 # ---- Plotting Function ----
-def update_plot(n, nwb):
+def update_plot(n, hdf):
     """
     Extracts a slice of data from the NWB file and returns a matplotlib figure.
     Adjust the data extraction logic based on your NWB file structure.
     """
 
     # Using nwb
-    trace = nwb.acquisition[f"data_{n:05}_AD0"].data[:]
-    stimulus = nwb.stimulus[f"data_{n:05}_DA0"].data[:]
+    trace = np.array(hdf[f"/acquisition/data_{n:05}_AD0/data"])
+    stimulus = np.array(hdf[f"/stimulus/presentation/data_{n:05}_DA0/data"])
     time = np.arange(len(trace)) * dt_ms
     
     fig, ax = plt.subplots(2, 1, figsize=(6, 4))
@@ -51,15 +59,15 @@ def main():
     nwbs = glob.glob(f"{raw_path_this}/*.nwb")
     
     # Load NWB data (adjust the file path as needed)
-    nwb_data = load_nwb_data(nwbs[1])
+    hdf = load_h5py_data(nwbs[1])
     
     # Define a slider widget. Adjust the range based on your NWB data dimensions.
-    n_sweeps = len(nwb_data.acquisition)
+    n_sweeps = len(hdf["acquisition"])
     slider = pn.widgets.IntSlider(name='Data Slice', start=0, end=n_sweeps-1, value=0)
     
     # Bind the slider value to the update_plot function.
     # pn.bind creates a reactive function that updates the plot whenever the slider changes.
-    plot_panel = pn.bind(update_plot, n=slider, nwb=nwb_data)
+    plot_panel = pn.bind(update_plot, n=slider, hdf=hdf)
     
     mpl_pane = pn.pane.Matplotlib(plot_panel, dpi=400, width=600, height=400)
     
