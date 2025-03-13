@@ -33,25 +33,36 @@ def update_plot(raw, sweep):
     
     plt.close(fig)  # Prevents duplicate display
     return fig
-  
+
+# Function to style the DataFrame, highlighting the row with the selected sweep_number.
+def show_df_with_highlight(df, selected_sweep):
+    def highlight_row(row):
+        return ['background-color: yellow' if row.sweep_number == selected_sweep else '' 
+                for _ in row.index]
+    return df.style.apply(highlight_row, axis=1)
 
 # ---- Main Panel App Layout ----
 def main():
-    
+
     # Define a slider widget. Adjust the range based on your NWB data dimensions.
     raw = PatchSeqNWB(ephys_roi_id="1410790193")  # Load the NWB file
-    
+
     slider = pn.widgets.IntSlider(name='Sweep number', start=0, end=raw.n_sweeps-1, value=0)
-    
+
+    text_panel = pn.pane.Markdown("# Patch-seq Ephys Data\nUse the slider to navigate through the sweeps in the NWB file.",)
+
     # Bind the slider value to the update_plot function.
-    # pn.bind creates a reactive function that updates the plot whenever the slider changes.
     plot_panel = pn.bind(update_plot, raw=raw, sweep=slider.param.value_throttled)
-    
     mpl_pane = pn.pane.Matplotlib(plot_panel, dpi=400, width=600, height=400)
-    
+
+    panel_df = pn.bind(show_df_with_highlight, raw.df_sweeps, selected_sweep=slider.param.value_throttled)
+
     # Compose the layout: place the slider above the plot.
-    layout = pn.Column(slider, mpl_pane)
-    
+    layout = pn.Column(
+        text_panel,
+        pn.Row(pn.Column(slider, mpl_pane), pn.panel(panel_df, sizing_mode="stretch_width")),
+    )
+
     # Make the panel servable if running with 'panel serve'
     return layout
 
