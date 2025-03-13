@@ -4,7 +4,7 @@ import json
 import glob
 import pandas as pd
 
-RAW_DIRECTORY = "/root/capsule/data/LCNE-patchseq-ephys-raw"
+from LCNE_patchseq_analysis import RAW_DIRECTORY
 
 json_name_mapper = {
     "stimulus_summary": "EPHYS_NWB_STIMULUS_SUMMARY",
