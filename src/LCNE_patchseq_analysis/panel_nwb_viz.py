@@ -44,11 +44,15 @@ def show_df_with_highlight(df, selected_sweep):
 # ---- Main Panel App Layout ----
 def main():
 
+    pn.config.throttled = True
+    
     # Load the NWB file.
     raw = PatchSeqNWB(ephys_roi_id="1410790193")
 
     # Define a slider widget. Adjust the range based on your NWB data dimensions.
-    slider = pn.widgets.IntSlider(name='Sweep number', start=0, end=raw.n_sweeps-1, value=0)
+    slider = pn.widgets.IntSlider(
+        name="Sweep number", start=0, end=raw.n_sweeps - 1, value=0
+    )
 
     text_panel = pn.pane.Markdown("# Patch-seq Ephys Data Navigator\nUse the slider to navigate through the sweeps in the NWB file.")
 
@@ -64,14 +68,16 @@ def main():
                 "stimulus_code_ext",
                 "stimulus_name",
                 "stimulus_amplitude",
+                "passed",
+                "num_spikes",
                 "stimulus_start_time",
                 "stimulus_duration",
                 "tags",
-                "passed",
                 "reasons",
-                "num_spikes",
+                "stimulus_code",
             ]
         ],
+        hidden_columns=["stimulus_code"],
         selectable=1,
         disabled=True,  # Not editable
         frozen_columns=["sweep_number"],
@@ -80,6 +86,7 @@ def main():
         height=700,
         width=1000,
         groupby=["stimulus_code"],
+        stylesheets=[":host .tabulator {font-size: 12px;}"]
     )
 
     # --- Two-Way Synchronization between Slider and Table ---
