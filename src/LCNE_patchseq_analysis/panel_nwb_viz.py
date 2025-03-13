@@ -71,7 +71,7 @@ def main():
     
     # Bind the slider value to the update_plot function.
     # pn.bind creates a reactive function that updates the plot whenever the slider changes.
-    plot_panel = pn.bind(update_plot, n=slider, hdf=hdf)
+    plot_panel = pn.bind(update_plot, n=slider.param.value_throttled, hdf=hdf)
     
     mpl_pane = pn.pane.Matplotlib(plot_panel, dpi=400, width=600, height=400)
     
