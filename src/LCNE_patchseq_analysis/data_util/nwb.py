@@ -4,6 +4,8 @@ import glob
 import h5py
 import logging
 
+import numpy as np
+
 from LCNE_patchseq_analysis import RAW_DIRECTORY
 from LCNE_patchseq_analysis.data_util.metadata import read_json_files, jsons_to_df
 
@@ -19,28 +21,37 @@ class PatchSeqNWB():
         self.ephys_roi_id = ephys_roi_id
         self.raw_path_this = f"{RAW_DIRECTORY}/Ephys_Roi_Result_{ephys_roi_id}"
         self.nwbs = glob.glob(f"{self.raw_path_this}/*spikes.nwb")
+        
         if len(self.nwbs) == 0:
-            raise FileNotFoundError(f"No NWB files found for {ephys_roi_id}")
+            raise FileNotFoundError(f"No *spike NWB files found for {ephys_roi_id}")
+
+        if len(self.nwbs) > 1:
+            raise ValueError(f"Multiple *spike NWB files found for {ephys_roi_id}")
         
         # Load nwb
         logger.info(f"Loading NWB file {self.nwbs[0]}")
         self.hdf = h5py.File(self.nwbs[0], 'r')
+        self.n_sweeps = len(self.hdf["acquisition"])
         
+        # Load metadata
+        self.load_metadata()
+
+    def load_metadata(self):
         # Load metadata from jsons
-        self.json_dicts = read_json_files(ephys_roi_id)
+        self.json_dicts = read_json_files(self.ephys_roi_id)
         self.df_sweep = jsons_to_df(self.json_dicts)
     
     def get_raw_trace(self, sweep_number):
         """Get the raw trace for a given sweep number."""
         try:
-            return self.hdf[f"acquisition/data_{sweep_number:05}_AD0/data"]
+            return np.array(self.hdf[f"acquisition/data_{sweep_number:05}_AD0/data"])
         except KeyError:
             raise KeyError(f"Sweep number {sweep_number} not found in NWB file.")
 
     def get_stimulus(self, sweep_number):
         """Get the stimulus trace for a given sweep number."""
         try:
-            return self.hdf[f"stimulus/presentation/data_{sweep_number:05}_DA0/data"]
+            return np.array(self.hdf[f"stimulus/presentation/data_{sweep_number:05}_DA0/data"])
         except KeyError:
             raise KeyError(f"Sweep number {sweep_number} not found in NWB file.")
 
