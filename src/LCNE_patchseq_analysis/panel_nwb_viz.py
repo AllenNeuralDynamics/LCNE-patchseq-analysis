@@ -53,7 +53,7 @@ def main():
     text_panel = pn.pane.Markdown("# Patch-seq Ephys Data Navigator\nUse the slider to navigate through the sweeps in the NWB file.")
 
     # Bind the slider value to the update_plot function.
-    plot_panel = pn.bind(update_plot, raw=raw, sweep=slider.param.value_throttled)
+    plot_panel = pn.bind(update_plot, raw=raw, sweep=slider.param.value)
     mpl_pane = pn.pane.Matplotlib(plot_panel, dpi=400, width=600, height=400)
 
     # Create a Tabulator widget for the DataFrame with row selection enabled.
