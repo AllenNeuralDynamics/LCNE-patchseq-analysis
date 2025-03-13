@@ -39,7 +39,7 @@ class PatchSeqNWB():
     def load_metadata(self):
         # Load metadata from jsons
         self.json_dicts = read_json_files(self.ephys_roi_id)
-        self.df_sweep = jsons_to_df(self.json_dicts)
+        self.df_sweeps = jsons_to_df(self.json_dicts)
     
     def get_raw_trace(self, sweep_number):
         """Get the raw trace for a given sweep number."""
