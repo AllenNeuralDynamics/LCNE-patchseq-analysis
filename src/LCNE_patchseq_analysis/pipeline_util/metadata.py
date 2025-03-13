@@ -5,7 +5,7 @@ import os
 
 import pandas as pd
 
-from LCNE_patchseq_analysis.data_util.lims import get_lims_LCNE_patchseq
+from LCNE_patchseq_analysis.pipeline_util.lims import get_lims_LCNE_patchseq
 
 metadata_path = os.path.expanduser(R"~\Downloads\IVSCC_LC_summary.xlsx")
 logger = logging.getLogger(__name__)

@@ -8,7 +8,7 @@ import subprocess
 import pandas as pd
 from tqdm import tqdm
 
-from LCNE_patchseq_analysis.data_util.metadata import read_brian_spreadsheet
+from LCNE_patchseq_analysis.pipeline_util.metadata import read_brian_spreadsheet
 
 logger = logging.getLogger(__name__)
 
