@@ -90,9 +90,10 @@ exclude_lines = [
 fail_under = 80
 
 [tool.isort]
+skip = ["build", "docs", "code"]
 line_length = 100
 profile = "black"
 
 [tool.interrogate]
-exclude = ["setup.py", "docs", "build"]
+exclude = ["setup.py", "docs", "build", "code"]
 fail-under = 80
