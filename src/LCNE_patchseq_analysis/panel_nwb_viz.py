@@ -3,9 +3,9 @@ Run this in command line:
     panel serve panel_nwb_viz.py --dev --allow-websocket-origin=codeocean.allenneuraldynamics.org
 """
 
-import panel as pn
 import matplotlib.pyplot as plt
 import numpy as np
+import panel as pn
 
 from LCNE_patchseq_analysis.data_util.nwb import PatchSeqNWB
 
@@ -37,6 +37,7 @@ def update_plot(raw, sweep):
 
 # Function to style the DataFrame, highlighting the row with the selected sweep_number.
 def show_df_with_highlight(df, selected_sweep):
+    """Util for show df with one row highlighted"""
     def highlight_row(row):
         return [
             "background-color: yellow" if row.sweep_number == selected_sweep else ""

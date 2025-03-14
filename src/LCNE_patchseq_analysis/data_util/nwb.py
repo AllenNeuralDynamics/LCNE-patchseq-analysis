@@ -1,13 +1,13 @@
 """Get raw data traces from NWB files."""
 
 import glob
-import h5py
 import logging
 
+import h5py
 import numpy as np
 
 from LCNE_patchseq_analysis import RAW_DIRECTORY
-from LCNE_patchseq_analysis.data_util.metadata import read_json_files, jsons_to_df
+from LCNE_patchseq_analysis.data_util.metadata import jsons_to_df, read_json_files
 
 logger = logging.getLogger(__name__)
 
