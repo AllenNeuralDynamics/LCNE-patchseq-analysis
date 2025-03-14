@@ -1,9 +1,10 @@
 """Get session-wise metadata from the JSON files."""
 
-import json
 import glob
-import pandas as pd
+import json
 import logging
+
+import pandas as pd
 
 from LCNE_patchseq_analysis import RAW_DIRECTORY
 
