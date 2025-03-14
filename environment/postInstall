@@ -16,6 +16,7 @@ if code-server --disable-telemetry --version; then
        code-server --disable-telemetry --extensions-dir=/.vscode/extensions --install-extension mhutchie.git-graph
        code-server --disable-telemetry --extensions-dir=/.vscode/extensions --install-extension zhuangtongfa.material-theme
        code-server --disable-telemetry --extensions-dir=/.vscode/extensions --install-extension ms-python.black-formatter
+	  	 code-server --disable-telemetry --extensions-dir=/.vscode/extensions --install-extension randomfractalsinc.vscode-data-preview
 	  	 # code-server --disable-telemetry --extensions-dir=/.vscode/extensions --install-extension ryanluker.vscode-coverage-gutters
        
        curl -L -o copilot_1.161.zip https://github.com/user-attachments/files/16859733/copilot_1.161.zip
