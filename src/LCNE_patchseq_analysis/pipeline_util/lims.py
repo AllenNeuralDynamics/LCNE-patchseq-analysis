@@ -13,6 +13,7 @@ import pg8000  # pg8000 access SQL databases
 
 
 def _connect(user, host, database, password, port):
+    """Connect to the database"""
     conn = pg8000.connect(user=user, host=host, database=database, password=password, port=port)
     return conn, conn.cursor()
 
@@ -55,6 +56,7 @@ def get_lims_dataframe(query):
 
 # Query for LCNE patchseq experiments
 def get_lims_LCNE_patchseq():
+    """Code from Brian"""
     lims_query = """
         SELECT
             s.id AS specimen_id,

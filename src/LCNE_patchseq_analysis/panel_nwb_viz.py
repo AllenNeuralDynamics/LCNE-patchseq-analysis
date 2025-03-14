@@ -49,6 +49,7 @@ def show_df_with_highlight(df, selected_sweep):
 
 # ---- Main Panel App Layout ----
 def main():
+    """main app"""
 
     pn.config.throttled = False
 
@@ -94,6 +95,7 @@ def main():
     # --- Two-Way Synchronization between Slider and Table ---
     # When the user selects a row in the table, update the slider.
     def update_slider_from_table(event):
+        """table --> slider"""
         if event.new:
             # event.new is a list of selected row indices; assume single selection.
             selected_index = event.new[0]
@@ -104,6 +106,7 @@ def main():
 
     # When the slider value changes, update the table selection.
     def update_table_selection(event):
+        """Update slider --> table"""
         new_val = event.new
         row_index = raw.df_sweeps.index[raw.df_sweeps["sweep_number"] == new_val].tolist()
         tab.selection = row_index
@@ -113,6 +116,7 @@ def main():
 
     # --- Error Message if Sweep Not Found ---
     def get_error_message(sweep):
+        """Get error message"""
         if sweep not in raw.df_sweeps["sweep_number"].values:
             return "<span style='color:red;'>Sweep number not found in the jsons!</span>"
         return ""

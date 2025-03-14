@@ -19,6 +19,7 @@ class PatchSeqNWB:
     dt_ms = 1 / SAMPLING_RATE * 1000
 
     def __init__(self, ephys_roi_id):
+        """Initialization using the ephys_roi_id"""
         self.ephys_roi_id = ephys_roi_id
         self.raw_path_this = f"{RAW_DIRECTORY}/Ephys_Roi_Result_{ephys_roi_id}"
         self.nwbs = glob.glob(f"{self.raw_path_this}/*spikes.nwb")
@@ -38,7 +39,7 @@ class PatchSeqNWB:
         self.load_metadata()
 
     def load_metadata(self):
-        # Load metadata from jsons
+        """Load metadata from jsons"""
         self.json_dicts = read_json_files(self.ephys_roi_id)
         self.df_sweeps = jsons_to_df(self.json_dicts)
 
