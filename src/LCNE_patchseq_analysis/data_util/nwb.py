@@ -11,28 +11,29 @@ from LCNE_patchseq_analysis.data_util.metadata import read_json_files, jsons_to_
 
 logger = logging.getLogger(__name__)
 
-class PatchSeqNWB():
+
+class PatchSeqNWB:
     """Class for accessing patch-seq NWB files using h5py."""
-    
+
     SAMPLING_RATE = 50000  # Hard-coded sampling rate for patch-seq data
     dt_ms = 1 / SAMPLING_RATE * 1000
-    
+
     def __init__(self, ephys_roi_id):
         self.ephys_roi_id = ephys_roi_id
         self.raw_path_this = f"{RAW_DIRECTORY}/Ephys_Roi_Result_{ephys_roi_id}"
         self.nwbs = glob.glob(f"{self.raw_path_this}/*spikes.nwb")
-        
+
         if len(self.nwbs) == 0:
             raise FileNotFoundError(f"No *spike NWB files found for {ephys_roi_id}")
 
         if len(self.nwbs) > 1:
             raise ValueError(f"Multiple *spike NWB files found for {ephys_roi_id}")
-        
+
         # Load nwb
         logger.info(f"Loading NWB file {self.nwbs[0]}")
-        self.hdf = h5py.File(self.nwbs[0], 'r')
+        self.hdf = h5py.File(self.nwbs[0], "r")
         self.n_sweeps = len(self.hdf["acquisition"])
-        
+
         # Load metadata
         self.load_metadata()
 
@@ -40,7 +41,7 @@ class PatchSeqNWB():
         # Load metadata from jsons
         self.json_dicts = read_json_files(self.ephys_roi_id)
         self.df_sweeps = jsons_to_df(self.json_dicts)
-    
+
     def get_raw_trace(self, sweep_number):
         """Get the raw trace for a given sweep number."""
         try:
@@ -56,14 +57,13 @@ class PatchSeqNWB():
             raise KeyError(f"Sweep number {sweep_number} not found in NWB file.")
 
 
-
 if __name__ == "__main__":
-    
+
     logging.basicConfig(level=logging.INFO)
-    
+
     # Test the class
     ephys_roi_id = "1410790193"
     raw = PatchSeqNWB(ephys_roi_id)
-   
+
     print(raw.get_raw_trace(0))  # Get the raw trace for the first sweep
     print(raw.get_stimulus(0))  # Get the stimulus for the first sweep

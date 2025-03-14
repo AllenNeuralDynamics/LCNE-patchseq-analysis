@@ -9,6 +9,7 @@ import numpy as np
 
 from LCNE_patchseq_analysis.data_util.nwb import PatchSeqNWB
 
+
 # ---- Plotting Function ----
 def update_plot(raw, sweep):
     """
@@ -20,26 +21,30 @@ def update_plot(raw, sweep):
     trace = raw.get_raw_trace(sweep)
     stimulus = raw.get_stimulus(sweep)
     time = np.arange(len(trace)) * raw.dt_ms
-    
-    print(time)
-    fig, ax = plt.subplots(2, 1, figsize=(6, 4), gridspec_kw={'height_ratios': [3, 1]})
+
+    fig, ax = plt.subplots(2, 1, figsize=(6, 4), gridspec_kw={"height_ratios": [3, 1]})
     ax[0].plot(time, trace)
-    ax[0].set_title(f'Sweep number {sweep}')
-    ax[0].set(ylabel='Vm (mV)')
-    
+    ax[0].set_title(f"Sweep number {sweep}")
+    ax[0].set(ylabel="Vm (mV)")
+
     ax[1].plot(time, stimulus)
-    ax[1].set(xlabel='Time (ms)', ylabel='I (pA)')
+    ax[1].set(xlabel="Time (ms)", ylabel="I (pA)")
     ax[0].label_outer()
-    
+
     plt.close(fig)  # Prevents duplicate display
     return fig
+
 
 # Function to style the DataFrame, highlighting the row with the selected sweep_number.
 def show_df_with_highlight(df, selected_sweep):
     def highlight_row(row):
-        return ['background-color: yellow' if row.sweep_number == selected_sweep else '' 
-                for _ in row.index]
+        return [
+            "background-color: yellow" if row.sweep_number == selected_sweep else ""
+            for _ in row.index
+        ]
+
     return df.style.apply(highlight_row, axis=1)
+
 
 # ---- Main Panel App Layout ----
 def main():
@@ -50,9 +55,7 @@ def main():
     raw = PatchSeqNWB(ephys_roi_id="1410790193")
 
     # Define a slider widget. Adjust the range based on your NWB data dimensions.
-    slider = pn.widgets.IntSlider(
-        name="Sweep number", start=0, end=raw.n_sweeps - 1, value=0
-    )
+    slider = pn.widgets.IntSlider(name="Sweep number", start=0, end=raw.n_sweeps - 1, value=0)
 
     # Bind the slider value to the update_plot function.
     plot_panel = pn.bind(update_plot, raw=raw, sweep=slider.param.value)
@@ -84,7 +87,7 @@ def main():
         height=700,
         width=1000,
         groupby=["stimulus_code"],
-        stylesheets=[":host .tabulator {font-size: 12px;}"]
+        stylesheets=[":host .tabulator {font-size: 12px;}"],
     )
 
     # --- Two-Way Synchronization between Slider and Table ---
@@ -93,25 +96,26 @@ def main():
         if event.new:
             # event.new is a list of selected row indices; assume single selection.
             selected_index = event.new[0]
-            new_sweep = raw.df_sweeps.loc[selected_index, 'sweep_number']
+            new_sweep = raw.df_sweeps.loc[selected_index, "sweep_number"]
             slider.value = new_sweep
 
-    tab.param.watch(update_slider_from_table, 'selection')
+    tab.param.watch(update_slider_from_table, "selection")
 
     # When the slider value changes, update the table selection.
     def update_table_selection(event):
         new_val = event.new
-        row_index = raw.df_sweeps.index[raw.df_sweeps['sweep_number'] == new_val].tolist()
+        row_index = raw.df_sweeps.index[raw.df_sweeps["sweep_number"] == new_val].tolist()
         tab.selection = row_index
 
-    slider.param.watch(update_table_selection, 'value')
+    slider.param.watch(update_table_selection, "value")
     # --- End Synchronization ---
 
     # --- Error Message if Sweep Not Found ---
     def get_error_message(sweep):
-        if sweep not in raw.df_sweeps['sweep_number'].values:
+        if sweep not in raw.df_sweeps["sweep_number"].values:
             return "<span style='color:red;'>Sweep number not found in the jsons!</span>"
         return ""
+
     error_msg = pn.bind(get_error_message, slider.param.value)
     error_msg_panel = pn.pane.Markdown(error_msg, width=600, height=30)
     # --- End Error Message ---
@@ -121,7 +125,8 @@ def main():
     layout = pn.Row(
         pn.Column(
             pn.pane.Markdown(
-                "# Patch-seq Ephys Data Navigator\nUse the slider to navigate through the sweeps in the NWB file."
+                "# Patch-seq Ephys Data Navigator\n"
+                "Use the slider to navigate through the sweeps in the NWB file."
             ),
             left_col,
         ),
@@ -133,6 +138,7 @@ def main():
 
     # Make the panel servable if running with 'panel serve'
     return layout
+
 
 layout = main()
 layout.servable()
