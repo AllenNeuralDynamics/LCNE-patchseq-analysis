@@ -35,6 +35,19 @@ def update_plot(raw, sweep):
     return fig
 
 
+def highlight_selected_rows(row, highlight_subset, color, fields=None):
+    """Highlight rows based on a subset of values.
+    
+    If fields is None, highlight the entire row.
+    """
+    style = [''] * len(row)
+    if row['sweep_number'] in highlight_subset:
+        if fields is None:
+            return [f'background-color: {color}'] * len(row)
+        else:
+            for field in fields:
+                style[list(row.keys()).index(field)] = f'background-color: {color}'
+    return style
 
 # ---- Main Panel App Layout ----
 def main():
@@ -79,6 +92,33 @@ def main():
         width=1000,
         groupby=["stimulus_code"],
         stylesheets=[":host .tabulator {font-size: 12px;}"],
+    )
+
+    # Highlight rows based on the sweep metadata.
+    tab.style.apply(
+        highlight_selected_rows,
+        highlight_subset=raw.df_sweeps.query("passed == True")["sweep_number"].tolist(),
+        color="lightgreen",
+        fields=["passed"],
+        axis=1,
+    ).apply(
+        highlight_selected_rows,
+        highlight_subset=raw.df_sweeps.query("passed != passed")["sweep_number"].tolist(),
+        color="salmon",
+        fields=["passed"],
+        axis=1,
+    ).apply(
+        highlight_selected_rows,
+        highlight_subset=raw.df_sweeps.query("passed == False")["sweep_number"].tolist(),
+        color="yellow",
+        fields=["passed"],
+        axis=1,
+    ).apply(
+        highlight_selected_rows,
+        highlight_subset=raw.df_sweeps.query("num_spikes > 0")["sweep_number"].tolist(),
+        color="lightgreen",
+        fields=["num_spikes"],
+        axis=1,
     )
 
     # --- Two-Way Synchronization between Slider and Table ---
