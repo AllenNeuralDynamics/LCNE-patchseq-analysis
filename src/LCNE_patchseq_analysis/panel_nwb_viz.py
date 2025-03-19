@@ -35,17 +35,6 @@ def update_plot(raw, sweep):
     return fig
 
 
-# Function to style the DataFrame, highlighting the row with the selected sweep_number.
-def show_df_with_highlight(df, selected_sweep):
-    """Util for show df with one row highlighted"""
-    def highlight_row(row):
-        return [
-            "background-color: yellow" if row.sweep_number == selected_sweep else ""
-            for _ in row.index
-        ]
-
-    return df.style.apply(highlight_row, axis=1)
-
 
 # ---- Main Panel App Layout ----
 def main():
