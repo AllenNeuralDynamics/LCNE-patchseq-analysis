@@ -49,6 +49,20 @@ def highlight_selected_rows(row, highlight_subset, color, fields=None):
                 style[list(row.keys()).index(field)] = f'background-color: {color}'
     return style
 
+# --- Generate QC message ---
+def get_qc_message(sweep, df_sweeps):
+    """Get error message"""
+    if sweep not in df_sweeps["sweep_number"].values:
+        return "<span style='color:red;'>Sweep number not found in the jsons!</span>"
+    if sweep in df_sweeps.query("passed != passed")["sweep_number"].values:
+        return "<span style='background:salmon;'>Sweep terminated by the experimenter!</span>"
+    if sweep in df_sweeps.query("passed == False")["sweep_number"].values:
+        return (
+            f"<span style='background:yellow;'>Sweep failed QC! "
+            f"({df_sweeps[df_sweeps.sweep_number == sweep].reasons.iloc[0][0]})</span>"
+        )
+    return "<span style='background:lightgreen;'>Sweep passed QC!</span>"
+
 # ---- Main Panel App Layout ----
 def main():
     """main app"""
@@ -143,21 +157,7 @@ def main():
     slider.param.watch(update_table_selection, "value")
     # --- End Synchronization ---
 
-    # --- Error Message if Sweep Not Found ---
-    def get_sweep_message(sweep):
-        """Get error message"""
-        if sweep not in raw.df_sweeps["sweep_number"].values:
-            return "<span style='color:red;'>Sweep number not found in the jsons!</span>"
-        if sweep in raw.df_sweeps.query("passed != passed")["sweep_number"].values:
-            return "<span style='background:salmon;'>Sweep terminated by the experimenter!</span>"
-        if sweep in raw.df_sweeps.query("passed == False")["sweep_number"].values:
-            return (
-                f"<span style='background:yellow;'>Sweep failed QC! "
-                f"({raw.df_sweeps[raw.df_sweeps.sweep_number == sweep].reasons.iloc[0][0]})</span>"
-            )
-        return "<span style='background:lightgreen;'>Sweep passed QC!</span>"
-
-    sweep_msg = pn.bind(get_sweep_message, slider.param.value)
+    sweep_msg = pn.bind(get_qc_message, sweep=slider.param.value, df_sweeps=raw.df_sweeps)
     sweep_msg_panel = pn.pane.Markdown(sweep_msg, width=600, height=30)
     # --- End Error Message ---
 
