@@ -103,7 +103,7 @@ def main():
         axis=1,
     ).apply(
         highlight_selected_rows,
-        highlight_subset=raw.df_sweeps.query("passed != passed")["sweep_number"].tolist(),
+        highlight_subset=raw.df_sweeps.query("passed != passed")["sweep_number"].tolist(), # NaN
         color="salmon",
         fields=["passed"],
         axis=1,
@@ -144,18 +144,25 @@ def main():
     # --- End Synchronization ---
 
     # --- Error Message if Sweep Not Found ---
-    def get_error_message(sweep):
+    def get_sweep_message(sweep):
         """Get error message"""
         if sweep not in raw.df_sweeps["sweep_number"].values:
             return "<span style='color:red;'>Sweep number not found in the jsons!</span>"
-        return ""
+        if sweep in raw.df_sweeps.query("passed != passed")["sweep_number"].values:
+            return "<span style='background:salmon;'>Sweep terminated by the experimenter!</span>"
+        if sweep in raw.df_sweeps.query("passed == False")["sweep_number"].values:
+            return (
+                f"<span style='background:yellow;'>Sweep failed QC! "
+                f"({raw.df_sweeps[raw.df_sweeps.sweep_number == sweep].reasons.iloc[0][0]})</span>"
+            )
+        return "<span style='background:lightgreen;'>Sweep passed QC!</span>"
 
-    error_msg = pn.bind(get_error_message, slider.param.value)
-    error_msg_panel = pn.pane.Markdown(error_msg, width=600, height=30)
+    sweep_msg = pn.bind(get_sweep_message, slider.param.value)
+    sweep_msg_panel = pn.pane.Markdown(sweep_msg, width=600, height=30)
     # --- End Error Message ---
 
     # Compose the layout: error message, slider, and plot on the left; table on the right.
-    left_col = pn.Column(slider, error_msg_panel, mpl_pane)
+    left_col = pn.Column(slider, sweep_msg_panel, mpl_pane)
     layout = pn.Row(
         pn.Column(
             pn.pane.Markdown(
