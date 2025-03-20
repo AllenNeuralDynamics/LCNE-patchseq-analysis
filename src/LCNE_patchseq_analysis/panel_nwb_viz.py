@@ -8,6 +8,8 @@ import numpy as np
 import panel as pn
 import pandas as pd
 
+from bokeh.models.widgets.tables import NumberFormatter, BooleanFormatter
+
 from LCNE_patchseq_analysis import RAW_DIRECTORY
 from LCNE_patchseq_analysis.data_util.nwb import PatchSeqNWB
 
@@ -81,20 +83,38 @@ def main():
     pn.config.throttled = False
 
     df_meta = load_ephys_metadata()
+    df_meta = df_meta.rename(
+        columns={col: col.replace("_tab_master", "") for col in df_meta.columns}
+    ).sort_values(["injection region"])
+
+    bokeh_formatters = {
+        'float': NumberFormatter(format='0.0000'),
+        'bool': BooleanFormatter(),
+        'int': NumberFormatter(format='0'),
+    }
+
     tab_df_meta = pn.widgets.Tabulator(
         df_meta,
         selectable=1,
-        frozen_columns=["specimen_name"],
+        disabled=True,  # Not editable
+        frozen_columns=["Date", "jem-id_cell_specimen", "ephys_roi_id", "ephys_qc"],
+        groupby=["injection region"],
         header_filters=True,
         show_index=False,
         height=500,
         width=1300,
-        pagination="local",
-        page_size=15,
+        pagination=None,
+        # page_size=15,
         stylesheets=[":host .tabulator {font-size: 12px;}"],
+        formatters=bokeh_formatters,
     )
-    
+
     pane_cell_selector = pn.Row(
+        pn.Column(
+            pn.pane.Markdown("## Cell selector"),
+            pn.pane.Markdown(f"### Total LC-NE patch-seq cells: {len(df_meta)}"),
+            width=400
+        ),
         tab_df_meta,
     )
 
