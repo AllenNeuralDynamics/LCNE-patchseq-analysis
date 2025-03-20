@@ -6,9 +6,20 @@ Run this in command line:
 import matplotlib.pyplot as plt
 import numpy as np
 import panel as pn
+import pandas as pd
 
+from LCNE_patchseq_analysis import RAW_DIRECTORY
 from LCNE_patchseq_analysis.data_util.nwb import PatchSeqNWB
 
+def load_ephys_metadata():
+    """Load ephys metadata
+    
+    Per discussion with Brian, we should only look at those in the spreadsheet.
+    https://www.notion.so/hanhou/LCNE-patch-seq-analysis-1ae3ef97e735808eb12ec452d2dc4369?pvs=4#1ba3ef97e73580ac9a5ee6e53e9b3dbe  # noqa: E501
+    """
+    df = pd.read_csv(RAW_DIRECTORY + "/df_metadata_merged.csv")
+    df = df.query("spreadsheet_or_lims in ('both', 'spreadsheet_only')")
+    return df
 
 # ---- Plotting Function ----
 def update_plot(raw, sweep):
@@ -68,6 +79,24 @@ def main():
     """main app"""
 
     pn.config.throttled = False
+
+    df_meta = load_ephys_metadata()
+    tab_df_meta = pn.widgets.Tabulator(
+        df_meta,
+        selectable=1,
+        frozen_columns=["specimen_name"],
+        header_filters=True,
+        show_index=False,
+        height=500,
+        width=1300,
+        pagination="local",
+        page_size=15,
+        stylesheets=[":host .tabulator {font-size: 12px;}"],
+    )
+    
+    pane_cell_selector = pn.Row(
+        tab_df_meta,
+    )
 
     # Load the NWB file.
     raw = PatchSeqNWB(ephys_roi_id="1410790193")
@@ -163,17 +192,18 @@ def main():
 
     # Compose the layout: error message, slider, and plot on the left; table on the right.
     left_col = pn.Column(slider, sweep_msg_panel, mpl_pane)
-    layout = pn.Row(
-        pn.Column(
-            pn.pane.Markdown(
-                "# Patch-seq Ephys Data Navigator\n"
-                "Use the slider to navigate through the sweeps in the NWB file."
+    layout = pn.Column(
+        pn.pane.Markdown("# Patch-seq Ephys Data Navigator\n"),
+        pane_cell_selector,
+        pn.Row(
+            pn.Column(
+                pn.pane.Markdown("Use the slider to navigate through the sweeps in the NWB file."),
+                left_col,
             ),
-            left_col,
-        ),
-        pn.Column(
-            pn.pane.Markdown("## Metadata from jsons"),
-            tab,
+            pn.Column(
+                pn.pane.Markdown("## Metadata from jsons"),
+                tab,
+            ),
         ),
     )
 
