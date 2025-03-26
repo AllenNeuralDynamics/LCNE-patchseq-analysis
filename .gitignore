@@ -140,5 +140,8 @@ dmypy.json
 
 .vscode
 metadata.yml
-data
 LIMS_credentials.json
+
+data/**
+!data/napari/
+!data/napari/**
