@@ -48,6 +48,11 @@ pipeline = [
     'pg8000',
 ]
 
+mesh = [
+    'trimesh',
+    'napari',  # To use napari on Mac, use "conda install -c conda-forge napari pyqt"
+]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
