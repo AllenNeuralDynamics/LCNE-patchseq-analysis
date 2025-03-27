@@ -25,6 +25,9 @@ def read_json_files(ephys_roi_id="1410790193"):
             f"{RAW_DIRECTORY}/Ephys_Roi_Result_{ephys_roi_id}/*{json_name_mapper[key]}*output.json"
         )
         if len(json_files) == 0:
+            if key == "ephys_fx":
+                logger.warning(f"ephys_fx json file not found for {key} in {ephys_roi_id}, skippin..")
+                continue
             raise FileNotFoundError(f"JSON file not found for {key} in {ephys_roi_id}")
         elif len(json_files) > 1:
             raise ValueError(f"Multiple JSON files found for {key} in {ephys_roi_id}")
@@ -43,7 +46,18 @@ def jsons_to_df(json_dicts):
 
     df_sweep_features = pd.DataFrame(json_dicts["stimulus_summary"]["sweep_features"])
     df_qc = pd.DataFrame(json_dicts["qc"]["sweep_states"])
-    df_ephys_fx = pd.DataFrame(json_dicts["ephys_fx"]["sweep_records"])
+    
+    if "ephys_fx" not in json_dicts:
+        logger.warning("ephys_fx json file not found, skipping...")
+        df_ephys_fx = pd.DataFrame(
+            {
+                "sweep_number": df_sweep_features["sweep_number"],
+                "peak_deflection": [None] * len(df_sweep_features),
+                "num_spikes": [None] * len(df_sweep_features),
+            }
+        )
+    else:
+        df_ephys_fx = pd.DataFrame(json_dicts["ephys_fx"]["sweep_records"])
 
     df_merged = df_sweep_features.merge(
         df_qc,
@@ -59,5 +73,9 @@ def jsons_to_df(json_dicts):
 
 
 if __name__ == "__main__":
-    json_dicts = read_json_files(ephys_roi_id="1410790193")
-    pass
+    json_dicts = read_json_files(
+        # ephys_roi_id="1410790193"  # Examle cell that has ephys_fx
+        ephys_roi_id="1417382638",  # Example cell that does not have ephys_fx
+        )
+    df_merged = jsons_to_df(json_dicts)
+    print(df_merged.head())
