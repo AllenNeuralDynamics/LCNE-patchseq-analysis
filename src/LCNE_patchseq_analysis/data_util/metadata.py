@@ -26,7 +26,7 @@ def read_json_files(ephys_roi_id="1410790193"):
         )
         if len(json_files) == 0:
             if key == "ephys_fx":
-                logger.warning(f"ephys_fx json file not found for {key} in {ephys_roi_id}, skippin..")
+                logger.warning(f"ephys_fx json file not found for {key} in {ephys_roi_id}, skipping..")
                 continue
             raise FileNotFoundError(f"JSON file not found for {key} in {ephys_roi_id}")
         elif len(json_files) > 1:
@@ -48,7 +48,6 @@ def jsons_to_df(json_dicts):
     df_qc = pd.DataFrame(json_dicts["qc"]["sweep_states"])
     
     if "ephys_fx" not in json_dicts:
-        logger.warning("ephys_fx json file not found, skipping...")
         df_ephys_fx = pd.DataFrame(
             {
                 "sweep_number": df_sweep_features["sweep_number"],
