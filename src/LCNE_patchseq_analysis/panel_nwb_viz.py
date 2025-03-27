@@ -242,6 +242,6 @@ def main():
     # Make the panel servable if running with 'panel serve'
     return layout
 
-
-layout = main()
-layout.servable()
+if __name__ == "__main__":
+    layout = main()
+    layout.servable()
