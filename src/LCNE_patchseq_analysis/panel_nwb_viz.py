@@ -21,6 +21,12 @@ def load_ephys_metadata():
     """
     df = pd.read_csv(RAW_DIRECTORY + "/df_metadata_merged.csv")
     df = df.query("spreadsheet_or_lims in ('both', 'spreadsheet_only')")
+
+    # Rename "Crus 1" to "Crus1"
+    df.loc[
+        df["injection region"].astype(str).str.contains("Crus", na=False),
+        "injection region",
+    ] = "Crus 1"
     return df
 
 # ---- Plotting Function ----
@@ -225,7 +231,7 @@ def main():
 
     # Layout
     pane_one_cell = panel_show_sweeps_of_one_cell(
-        ephys_roi_id="1410790193"
+        ephys_roi_id="1417382638"
     )
     layout = pn.Column(
         pn.pane.Markdown("# Patch-seq Ephys Data Navigator\n"),
