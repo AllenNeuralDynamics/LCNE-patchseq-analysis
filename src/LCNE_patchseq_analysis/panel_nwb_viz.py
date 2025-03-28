@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import panel as pn
 import pandas as pd
+import param
 
 from bokeh.models.widgets.tables import NumberFormatter, BooleanFormatter
 
@@ -83,7 +84,10 @@ def get_qc_message(sweep, df_sweeps):
     return "<span style='background:lightgreen;'>Sweep passed QC!</span>"
 
 
-def panel_show_sweeps_of_one_cell(ephys_roi_id="1410790193"):
+def pane_show_sweeps_of_one_cell(ephys_roi_id="1410790193"):
+    if ephys_roi_id == "":
+        return pn.pane.Markdown("Please select a cell from the table above.")
+    
     # Load the NWB file.
     raw_this_cell = PatchSeqNWB(ephys_roi_id=ephys_roi_id)
 
@@ -178,6 +182,7 @@ def panel_show_sweeps_of_one_cell(ephys_roi_id="1410790193"):
 
     return pn.Row(
         pn.Column(
+            pn.pane.Markdown(f"# {ephys_roi_id}"),
             pn.pane.Markdown("Use the slider to navigate through the sweeps in the NWB file."),
             pn.Column(slider, sweep_msg_panel, mpl_pane),
         ),
@@ -191,6 +196,14 @@ def panel_show_sweeps_of_one_cell(ephys_roi_id="1410790193"):
 def main():
     """main app"""
 
+    # Create a Parameterized object to store the current ephys_roi_id.
+    class DataHolder(param.Parameterized):
+        ephys_roi_id = param.String(default="")
+
+    data_holder = DataHolder()
+
+    # ----
+
     pn.config.throttled = False
 
     df_meta = load_ephys_metadata()
@@ -198,17 +211,30 @@ def main():
         columns={col: col.replace("_tab_master", "") for col in df_meta.columns}
     ).sort_values(["injection region"])
 
-    bokeh_formatters = {
-        'float': NumberFormatter(format='0.0000'),
-        'bool': BooleanFormatter(),
-        'int': NumberFormatter(format='0'),
-    }
+    cell_key = ["Date", "jem-id_cell_specimen", "ephys_roi_id", "ephys_qc", "injection region"]
+
+    # MultiSelect widget to choose which columns to display.
+    cols = list(df_meta.columns)
+    cols.sort()
+    col_selector = pn.widgets.MultiSelect(
+        name='Add Columns to show',
+        options=[col for col in cols if col not in cell_key],
+        value=[],  # start with all columns
+        height=500,
+    )
+
+    # Define a function to filter the DataFrame based on selected columns.
+    def add_df_meta_col(selected_columns):
+        return df_meta[cell_key + selected_columns]
+
+    # Use pn.bind to create a reactive DataFrame that updates as the selection changes.
+    filtered_df_meta = pn.bind(add_df_meta_col, col_selector)
 
     tab_df_meta = pn.widgets.Tabulator(
-        df_meta,
+        filtered_df_meta,
         selectable=1,
         disabled=True,  # Not editable
-        frozen_columns=["Date", "jem-id_cell_specimen", "ephys_roi_id", "ephys_qc"],
+        frozen_columns=cell_key,
         groupby=["injection region"],
         header_filters=True,
         show_index=False,
@@ -217,8 +243,17 @@ def main():
         pagination=None,
         # page_size=15,
         stylesheets=[":host .tabulator {font-size: 12px;}"],
-        formatters=bokeh_formatters,
     )
+
+    # When the user selects a row in the table, update the sweep view.
+    def update_sweep_view_from_table(event):
+        """table --> sweep view"""
+        if event.new:
+            # event.new is a list of selected row indices; assume single selection.
+            selected_index = event.new[0]
+            data_holder.ephys_roi_id = str(int(df_meta.iloc[selected_index]["ephys_roi_id"]))
+
+    tab_df_meta.param.watch(update_sweep_view_from_table, "selection")
 
     pane_cell_selector = pn.Row(
         pn.Column(
@@ -226,16 +261,19 @@ def main():
             pn.pane.Markdown(f"### Total LC-NE patch-seq cells: {len(df_meta)}"),
             width=400
         ),
+        col_selector,
         tab_df_meta,
     )
 
     # Layout
-    pane_one_cell = panel_show_sweeps_of_one_cell(
-        ephys_roi_id="1417382638"
+    pane_one_cell = pn.bind(
+        pane_show_sweeps_of_one_cell, ephys_roi_id=data_holder.param.ephys_roi_id
     )
+
     layout = pn.Column(
         pn.pane.Markdown("# Patch-seq Ephys Data Navigator\n"),
         pane_cell_selector,
+        pn.layout.Divider(),
         pane_one_cell,
     )
 
