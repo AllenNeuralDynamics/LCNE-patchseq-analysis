@@ -23,6 +23,7 @@ dependencies = [
     'matplotlib',
     'panel',
     'jupyter_bokeh',
+    'umap-learn',
 ]
 
 [project.optional-dependencies]
