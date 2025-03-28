@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import panel as pn
 import pandas as pd
+import param
 
 from bokeh.models.widgets.tables import NumberFormatter, BooleanFormatter
 
@@ -84,6 +85,9 @@ def get_qc_message(sweep, df_sweeps):
 
 
 def pane_show_sweeps_of_one_cell(ephys_roi_id="1410790193"):
+    if ephys_roi_id == "":
+        return pn.pane.Markdown("Please select a cell from the table above.")
+    
     # Load the NWB file.
     raw_this_cell = PatchSeqNWB(ephys_roi_id=ephys_roi_id)
 
@@ -178,6 +182,7 @@ def pane_show_sweeps_of_one_cell(ephys_roi_id="1410790193"):
 
     return pn.Row(
         pn.Column(
+            pn.pane.Markdown(f"# {ephys_roi_id}"),
             pn.pane.Markdown("Use the slider to navigate through the sweeps in the NWB file."),
             pn.Column(slider, sweep_msg_panel, mpl_pane),
         ),
@@ -191,15 +196,23 @@ def pane_show_sweeps_of_one_cell(ephys_roi_id="1410790193"):
 def main():
     """main app"""
 
+    # Create a Parameterized object to store the current ephys_roi_id.
+    class DataHolder(param.Parameterized):
+        ephys_roi_id = param.String(default="")
+
+    data_holder = DataHolder()
+
+    # ----
+
     pn.config.throttled = False
 
     df_meta = load_ephys_metadata()
     df_meta = df_meta.rename(
         columns={col: col.replace("_tab_master", "") for col in df_meta.columns}
     ).sort_values(["injection region"])
-    
+
     cell_key = ["Date", "jem-id_cell_specimen", "ephys_roi_id", "ephys_qc", "injection region"]
-    
+
     # MultiSelect widget to choose which columns to display.
     cols = list(df_meta.columns)
     cols.sort()
@@ -232,6 +245,16 @@ def main():
         stylesheets=[":host .tabulator {font-size: 12px;}"],
     )
 
+    # When the user selects a row in the table, update the sweep view.
+    def update_sweep_view_from_table(event):
+        """table --> sweep view"""
+        if event.new:
+            # event.new is a list of selected row indices; assume single selection.
+            selected_index = event.new[0]
+            data_holder.ephys_roi_id = str(int(df_meta.iloc[selected_index]["ephys_roi_id"]))
+
+    tab_df_meta.param.watch(update_sweep_view_from_table, "selection")
+
     pane_cell_selector = pn.Row(
         pn.Column(
             pn.pane.Markdown("## Cell selector"),
@@ -243,9 +266,10 @@ def main():
     )
 
     # Layout
-    pane_one_cell = pane_show_sweeps_of_one_cell(
-        ephys_roi_id="1417382638"
+    pane_one_cell = pn.bind(
+        pane_show_sweeps_of_one_cell, ephys_roi_id=data_holder.param.ephys_roi_id
     )
+
     layout = pn.Column(
         pn.pane.Markdown("# Patch-seq Ephys Data Navigator\n"),
         pane_cell_selector,
