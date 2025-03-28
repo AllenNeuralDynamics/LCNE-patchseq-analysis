@@ -30,6 +30,7 @@ class PatchSeqNWBApp(param.Parameterized):
             "jem-id_cell_specimen",
             "ephys_roi_id",
             "ephys_qc",
+            "LC_targeting",
             "injection region",
         ]
 
