@@ -273,6 +273,7 @@ def main():
     layout = pn.Column(
         pn.pane.Markdown("# Patch-seq Ephys Data Navigator\n"),
         pane_cell_selector,
+        pn.layout.Divider(),
         pane_one_cell,
     )
 
