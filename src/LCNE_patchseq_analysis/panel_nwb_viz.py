@@ -13,22 +13,7 @@ from bokeh.models.widgets.tables import NumberFormatter, BooleanFormatter
 
 from LCNE_patchseq_analysis import RAW_DIRECTORY
 from LCNE_patchseq_analysis.data_util.nwb import PatchSeqNWB
-
-def load_ephys_metadata():
-    """Load ephys metadata
-    
-    Per discussion with Brian, we should only look at those in the spreadsheet.
-    https://www.notion.so/hanhou/LCNE-patch-seq-analysis-1ae3ef97e735808eb12ec452d2dc4369?pvs=4#1ba3ef97e73580ac9a5ee6e53e9b3dbe  # noqa: E501
-    """
-    df = pd.read_csv(RAW_DIRECTORY + "/df_metadata_merged.csv")
-    df = df.query("spreadsheet_or_lims in ('both', 'spreadsheet_only')")
-
-    # Rename "Crus 1" to "Crus1"
-    df.loc[
-        df["injection region"].astype(str).str.contains("Crus", na=False),
-        "injection region",
-    ] = "Crus 1"
-    return df
+from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
 
 # ---- Plotting Function ----
 def update_plot(raw, sweep):
@@ -280,6 +265,5 @@ def main():
     # Make the panel servable if running with 'panel serve'
     return layout
 
-if __name__ == "__main__":
-    layout = main()
-    layout.servable()
+layout = main()
+layout.servable()

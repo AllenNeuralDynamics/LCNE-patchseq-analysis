@@ -71,6 +71,23 @@ def jsons_to_df(json_dicts):
     return df_merged
 
 
+def load_ephys_metadata():
+    """Load ephys metadata
+    
+    Per discussion with Brian, we should only look at those in the spreadsheet.
+    https://www.notion.so/hanhou/LCNE-patch-seq-analysis-1ae3ef97e735808eb12ec452d2dc4369?pvs=4#1ba3ef97e73580ac9a5ee6e53e9b3dbe  # noqa: E501
+    """
+    df = pd.read_csv(RAW_DIRECTORY + "/df_metadata_merged.csv")
+    df = df.query("spreadsheet_or_lims in ('both', 'spreadsheet_only')")
+
+    # Rename "Crus 1" to "Crus1"
+    df.loc[
+        df["injection region"].astype(str).str.contains("Crus", na=False),
+        "injection region",
+    ] = "Crus 1"
+    return df
+
+
 if __name__ == "__main__":
     json_dicts = read_json_files(
         # ephys_roi_id="1410790193"  # Examle cell that has ephys_fx
