@@ -23,7 +23,7 @@ class PatchSeqNWB:
         self.ephys_roi_id = ephys_roi_id
         self.raw_path_this = f"{RAW_DIRECTORY}/Ephys_Roi_Result_{ephys_roi_id}"
         nwbs = glob.glob(f"{self.raw_path_this}/*.nwb")
-        self.nwbs = [f for f in nwbs if 'spike' not in f]
+        self.nwbs = [f for f in nwbs if "spike" not in f]
 
         if len(self.nwbs) == 0:
             raise FileNotFoundError(f"No NWB files found for {ephys_roi_id}")

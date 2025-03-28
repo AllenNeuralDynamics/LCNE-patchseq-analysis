@@ -6,14 +6,11 @@ Run this in command line:
 import matplotlib.pyplot as plt
 import numpy as np
 import panel as pn
-import pandas as pd
 import param
 
-from bokeh.models.widgets.tables import NumberFormatter, BooleanFormatter
-
-from LCNE_patchseq_analysis import RAW_DIRECTORY
-from LCNE_patchseq_analysis.data_util.nwb import PatchSeqNWB
 from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
+from LCNE_patchseq_analysis.data_util.nwb import PatchSeqNWB
+
 
 # ---- Plotting Function ----
 def update_plot(raw, sweep):
@@ -42,17 +39,18 @@ def update_plot(raw, sweep):
 
 def highlight_selected_rows(row, highlight_subset, color, fields=None):
     """Highlight rows based on a subset of values.
-    
+
     If fields is None, highlight the entire row.
     """
-    style = [''] * len(row)
-    if row['sweep_number'] in highlight_subset:
+    style = [""] * len(row)
+    if row["sweep_number"] in highlight_subset:
         if fields is None:
-            return [f'background-color: {color}'] * len(row)
+            return [f"background-color: {color}"] * len(row)
         else:
             for field in fields:
-                style[list(row.keys()).index(field)] = f'background-color: {color}'
+                style[list(row.keys()).index(field)] = f"background-color: {color}"
     return style
+
 
 # --- Generate QC message ---
 def get_qc_message(sweep, df_sweeps):
@@ -72,12 +70,14 @@ def get_qc_message(sweep, df_sweeps):
 def pane_show_sweeps_of_one_cell(ephys_roi_id="1410790193"):
     if ephys_roi_id == "":
         return pn.pane.Markdown("Please select a cell from the table above.")
-    
+
     # Load the NWB file.
     raw_this_cell = PatchSeqNWB(ephys_roi_id=ephys_roi_id)
 
     # Define a slider widget. Adjust the range based on your NWB data dimensions.
-    slider = pn.widgets.IntSlider(name="Sweep number", start=0, end=raw_this_cell.n_sweeps - 1, value=0)
+    slider = pn.widgets.IntSlider(
+        name="Sweep number", start=0, end=raw_this_cell.n_sweeps - 1, value=0
+    )
 
     # Bind the slider value to the update_plot function.
     plot_panel = pn.bind(update_plot, raw=raw_this_cell, sweep=slider.param.value)
@@ -121,7 +121,9 @@ def pane_show_sweeps_of_one_cell(ephys_roi_id="1410790193"):
         axis=1,
     ).apply(
         highlight_selected_rows,
-        highlight_subset=raw_this_cell.df_sweeps.query("passed != passed")["sweep_number"].tolist(), # NaN
+        highlight_subset=raw_this_cell.df_sweeps.query("passed != passed")[
+            "sweep_number"
+        ].tolist(),  # NaN
         color="salmon",
         fields=["passed"],
         axis=1,
@@ -155,7 +157,9 @@ def pane_show_sweeps_of_one_cell(ephys_roi_id="1410790193"):
     def update_table_selection(event):
         """Update slider --> table"""
         new_val = event.new
-        row_index = raw_this_cell.df_sweeps.index[raw_this_cell.df_sweeps["sweep_number"] == new_val].tolist()
+        row_index = raw_this_cell.df_sweeps.index[
+            raw_this_cell.df_sweeps["sweep_number"] == new_val
+        ].tolist()
         tab_sweeps.selection = row_index
 
     slider.param.watch(update_table_selection, "value")
@@ -176,6 +180,7 @@ def pane_show_sweeps_of_one_cell(ephys_roi_id="1410790193"):
             tab_sweeps,
         ),
     )
+
 
 # ---- Main Panel App Layout ----
 def main():
@@ -202,7 +207,7 @@ def main():
     cols = list(df_meta.columns)
     cols.sort()
     col_selector = pn.widgets.MultiSelect(
-        name='Add Columns to show',
+        name="Add Columns to show",
         options=[col for col in cols if col not in cell_key],
         value=[],  # start with all columns
         height=500,
@@ -244,7 +249,7 @@ def main():
         pn.Column(
             pn.pane.Markdown("## Cell selector"),
             pn.pane.Markdown(f"### Total LC-NE patch-seq cells: {len(df_meta)}"),
-            width=400
+            width=400,
         ),
         col_selector,
         tab_df_meta,
@@ -264,6 +269,7 @@ def main():
 
     # Make the panel servable if running with 'panel serve'
     return layout
+
 
 layout = main()
 layout.servable()
