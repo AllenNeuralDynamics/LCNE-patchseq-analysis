@@ -83,7 +83,7 @@ def get_qc_message(sweep, df_sweeps):
     return "<span style='background:lightgreen;'>Sweep passed QC!</span>"
 
 
-def panel_show_sweeps_of_one_cell(ephys_roi_id="1410790193"):
+def pane_show_sweeps_of_one_cell(ephys_roi_id="1410790193"):
     # Load the NWB file.
     raw_this_cell = PatchSeqNWB(ephys_roi_id=ephys_roi_id)
 
@@ -197,18 +197,31 @@ def main():
     df_meta = df_meta.rename(
         columns={col: col.replace("_tab_master", "") for col in df_meta.columns}
     ).sort_values(["injection region"])
+    
+    cell_key = ["Date", "jem-id_cell_specimen", "ephys_roi_id", "ephys_qc", "injection region"]
+    
+    # MultiSelect widget to choose which columns to display.
+    cols = list(df_meta.columns)
+    cols.sort()
+    col_selector = pn.widgets.MultiSelect(
+        name='Add Columns to show',
+        options=[col for col in cols if col not in cell_key],
+        value=[],  # start with all columns
+        height=500,
+    )
 
-    bokeh_formatters = {
-        'float': NumberFormatter(format='0.0000'),
-        'bool': BooleanFormatter(),
-        'int': NumberFormatter(format='0'),
-    }
+    # Define a function to filter the DataFrame based on selected columns.
+    def add_df_meta_col(selected_columns):
+        return df_meta[cell_key + selected_columns]
+
+    # Use pn.bind to create a reactive DataFrame that updates as the selection changes.
+    filtered_df_meta = pn.bind(add_df_meta_col, col_selector)
 
     tab_df_meta = pn.widgets.Tabulator(
-        df_meta,
+        filtered_df_meta,
         selectable=1,
         disabled=True,  # Not editable
-        frozen_columns=["Date", "jem-id_cell_specimen", "ephys_roi_id", "ephys_qc"],
+        frozen_columns=cell_key,
         groupby=["injection region"],
         header_filters=True,
         show_index=False,
@@ -217,7 +230,6 @@ def main():
         pagination=None,
         # page_size=15,
         stylesheets=[":host .tabulator {font-size: 12px;}"],
-        formatters=bokeh_formatters,
     )
 
     pane_cell_selector = pn.Row(
@@ -226,11 +238,12 @@ def main():
             pn.pane.Markdown(f"### Total LC-NE patch-seq cells: {len(df_meta)}"),
             width=400
         ),
+        col_selector,
         tab_df_meta,
     )
 
     # Layout
-    pane_one_cell = panel_show_sweeps_of_one_cell(
+    pane_one_cell = pane_show_sweeps_of_one_cell(
         ephys_roi_id="1417382638"
     )
     layout = pn.Column(
