@@ -21,8 +21,6 @@ dependencies = [
     'numpy',
     'pandas',
     'matplotlib',
-    'panel',
-    'jupyter_bokeh',
     'umap-learn',
     'seaborn',
     'h5py',
@@ -39,6 +37,11 @@ dev = [
     'furo'
 ]
 
+panel = [
+    'panel',
+    'watchfiles',
+]
+
 pipeline = [
     'black',
     'coverage',
@@ -51,6 +54,20 @@ pipeline = [
     'pg8000',
 ]
 
+all = [
+    'black',
+    'coverage',
+    'flake8',
+    'interrogate',
+    'isort',
+    'Sphinx',
+    'furo',
+    'panel',
+    'watchfiles',
+    'openpyxl',
+    'pg8000',
+]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
@@ -59,7 +76,6 @@ version = {attr = "LCNE_patchseq_analysis.__version__"}
 
 [tool.black]
 line-length = 100
-target_version = ['py39']
 exclude = '''
 
 (
