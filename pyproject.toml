@@ -24,6 +24,8 @@ dependencies = [
     'panel',
     'jupyter_bokeh',
     'umap-learn',
+    'seaborn',
+    'h5py',
 ]
 
 [project.optional-dependencies]
