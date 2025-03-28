@@ -1,7 +1,7 @@
 """Init package"""
-import os
-import logging
 
+import logging
+import os
 
 logger = logging.getLogger(__name__)
 
