@@ -22,13 +22,14 @@ class PatchSeqNWB:
         """Initialization using the ephys_roi_id"""
         self.ephys_roi_id = ephys_roi_id
         self.raw_path_this = f"{RAW_DIRECTORY}/Ephys_Roi_Result_{ephys_roi_id}"
-        self.nwbs = glob.glob(f"{self.raw_path_this}/*spikes.nwb")
+        nwbs = glob.glob(f"{self.raw_path_this}/*.nwb")
+        self.nwbs = [f for f in nwbs if "spike" not in f]
 
         if len(self.nwbs) == 0:
-            raise FileNotFoundError(f"No *spike NWB files found for {ephys_roi_id}")
+            raise FileNotFoundError(f"No NWB files found for {ephys_roi_id}")
 
         if len(self.nwbs) > 1:
-            raise ValueError(f"Multiple *spike NWB files found for {ephys_roi_id}")
+            raise ValueError(f"Multiple NWB files found for {ephys_roi_id}")
 
         # Load nwb
         logger.info(f"Loading NWB file {self.nwbs[0]}")
