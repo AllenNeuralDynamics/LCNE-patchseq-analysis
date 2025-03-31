@@ -24,6 +24,7 @@ dependencies = [
     'umap-learn',
     'seaborn',
     'h5py',
+    'efel',
 ]
 
 [project.optional-dependencies]
