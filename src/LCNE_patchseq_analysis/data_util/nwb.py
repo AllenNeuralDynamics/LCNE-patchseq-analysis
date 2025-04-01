@@ -43,6 +43,11 @@ class PatchSeqNWB:
         """Load metadata from jsons"""
         self.json_dicts = read_json_files(self.ephys_roi_id)
         self.df_sweeps = jsons_to_df(self.json_dicts)
+        
+        # Turn start_time and duration into ms
+        self.df_sweeps["stimulus_start_time"] = self.df_sweeps["stimulus_start_time"] * 1000
+        self.df_sweeps["stimulus_duration"] = self.df_sweeps["stimulus_duration"] * 1000
+        self.valid_sweeps = self.df_sweeps.loc[self.df_sweeps["passed"].notna(), "sweep_number"]
 
     def get_raw_trace(self, sweep_number):
         """Get the raw trace for a given sweep number."""
@@ -57,7 +62,6 @@ class PatchSeqNWB:
             return np.array(self.hdf[f"stimulus/presentation/data_{sweep_number:05}_DA0/data"])
         except KeyError:
             raise KeyError(f"Sweep number {sweep_number} not found in NWB file.")
-
 
 if __name__ == "__main__":
 
