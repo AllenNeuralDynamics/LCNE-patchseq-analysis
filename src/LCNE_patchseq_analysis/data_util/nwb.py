@@ -62,6 +62,14 @@ class PatchSeqNWB:
             return np.array(self.hdf[f"stimulus/presentation/data_{sweep_number:05}_DA0/data"])
         except KeyError:
             raise KeyError(f"Sweep number {sweep_number} not found in NWB file.")
+        
+    def get_time(self, sweep_number):
+        """Get the time for a given sweep number."""
+        try:
+            length = len(self.hdf[f"acquisition/data_{sweep_number:05}_AD0/data"])
+            return self.dt_ms * np.arange(length)
+        except KeyError:
+            raise KeyError(f"Sweep number {sweep_number} not found in NWB file.")
 
 if __name__ == "__main__":
 
@@ -71,5 +79,6 @@ if __name__ == "__main__":
     ephys_roi_id = "1410790193"
     raw = PatchSeqNWB(ephys_roi_id)
 
-    print(raw.get_raw_trace(0))  # Get the raw trace for the first sweep
-    print(raw.get_stimulus(0))  # Get the stimulus for the first sweep
+    print(len(raw.get_raw_trace(0)))  # Get the raw trace for the first sweep
+    print(len(raw.get_stimulus(0)))  # Get the stimulus for the first sweep
+    print(len(raw.get_time(0)))  # Get the time for the first sweep
