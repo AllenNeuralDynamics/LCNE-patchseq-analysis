@@ -92,17 +92,23 @@ def save_to_hdf5(output_path, df_features, df_sweeps, traces, valid_sweep_number
     logger.info(f"Saved data to {output_path}")
 
 def reformat_features(features):
-    """Reformat features."""
+    """Reformat features extracted from eFEL.
+    
+    This function processes the raw features dictionary and creates two DataFrames:
+    1. A per-sweep DataFrame with scalar values (single values per sweep)
+    2. A per-spike DataFrame for features that have multiple values per sweep
+    
+    For multi-spike features, the first spike's value is also stored in the per-sweep
+    DataFrame with a 'first_spike_' prefix.
+    
+    Args:
+        features (dict): Dictionary of features extracted by eFEL
+        
+    Returns:
+        dict: Dictionary containing reformatted DataFrames and interpolated data
+    """
     df_features = pd.DataFrame(features, index=valid_sweep_numbers)
     df_features.index.name = "sweep_number"
-    
-    # Reformat df_features_per_sweep
-    # For each row (sweep),
-    #  if any element is len(1), make it a scalar
-    #  if any element is len(n) > 1, means these are features for multiple spikes,
-    #    then 1. extract the first element as a scalar, and save to first_spike_{col_name},
-    #         2. use a new df_features_per_spike, and save to index = {sweep_number, spike_number}
-    # If all elements are len(1), then just use df_features_per_sweep
 
     # Create a new DataFrame for per-spike features
     list_features_per_spike = []
