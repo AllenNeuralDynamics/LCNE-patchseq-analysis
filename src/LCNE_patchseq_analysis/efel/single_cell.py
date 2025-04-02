@@ -8,7 +8,7 @@ import efel
 import pandas as pd
 import numpy as np
 
-from LCNE_patchseq_analysis import TIME_STEP
+from LCNE_patchseq_analysis import TIME_STEP, RESULTS_DIRECTORY
 from LCNE_patchseq_analysis.data_util.nwb import PatchSeqNWB
 from LCNE_patchseq_analysis.efel.io import save_dict_to_hdf5
 from LCNE_patchseq_analysis.efel.plot import plot_sweep_summary
@@ -297,7 +297,7 @@ def extract_features_using_efel(
 def process_one_nwb(
     ephys_roi_id: str,
     if_save_interpolated: bool = False,
-    save_dir: str = "results"
+    save_dir: str = RESULTS_DIRECTORY
 ) -> None:
     """Process one NWB file.
     
@@ -306,18 +306,26 @@ def process_one_nwb(
         if_save_interpolated: Whether to save interpolated data
         save_dir: Directory to save results
     """
-    # --- 1. Get raw data ---
-    raw = PatchSeqNWB(ephys_roi_id=ephys_roi_id)
+    try:
+        # --- 1. Get raw data ---
+        raw = PatchSeqNWB(ephys_roi_id=ephys_roi_id)
 
-    # --- 2. Extract features using eFEL ---
-    features_dict, raw_traces = extract_features_using_efel(raw, if_save_interpolated)
+        # --- 2. Extract features using eFEL ---
+        features_dict, raw_traces = extract_features_using_efel(raw, if_save_interpolated)
 
-    # --- 3. Save features_dict to HDF5 using panda's hdf5 store ---
-    os.makedirs(f"{save_dir}/features", exist_ok=True)
-    save_dict_to_hdf5(features_dict, f"{save_dir}/features/{ephys_roi_id}_efel_features.h5")
+        # --- 3. Save features_dict to HDF5 using panda's hdf5 store ---
+        os.makedirs(f"{save_dir}/features", exist_ok=True)
+        save_dict_to_hdf5(features_dict, f"{save_dir}/features/{ephys_roi_id}_efel_features.h5")
 
-    # --- 4. Generate sweep plots ---
-    plot_sweep_summary(features_dict, save_dir=f"{save_dir}/plots")
+        # --- 4. Generate sweep plots ---
+        plot_sweep_summary(features_dict, save_dir=f"{save_dir}/plots")
+        return "Success"
+    
+    except Exception as e:
+        import traceback
+        error_message = f"Error processing {ephys_roi_id}: {str(e)}\n{traceback.format_exc()}"
+        logger.error(error_message)
+        return error_message
 
 
 if __name__ == "__main__":
@@ -333,5 +341,6 @@ if __name__ == "__main__":
         logger.info(f"Processing {_ephys_roi_id}...")
         process_one_nwb(
             ephys_roi_id=str(int(_ephys_roi_id)),
-            if_save_interpolated=False
+            if_save_interpolated=False,
+            save_dir=RESULTS_DIRECTORY
         )
