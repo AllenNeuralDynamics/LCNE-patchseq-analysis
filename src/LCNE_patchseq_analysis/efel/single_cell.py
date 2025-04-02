@@ -121,12 +121,19 @@ def reformat_features(df_features, if_save_interpolated: bool = False):
         dict_to_save["interpolated_voltage"] = interpolated_voltage
     
     return dict_to_save
-    
 
-def process_one_nwb(ephys_roi_id: str, if_save_interpolated: bool = False):
-    # Get raw data
-    raw = PatchSeqNWB(ephys_roi_id=ephys_roi_id)
-   
+
+def extract_spike_waveforms(raw, features_dict):
+    """Extract spike waveforms from raw data."""
+    
+    
+    
+    return pd.DataFrame()
+
+
+def extract_features_using_efel(raw, if_save_interpolated):
+    """Extract features using eFEL."""
+
     # Package all valid sweeps for eFEL
     traces, valid_sweep_numbers = pack_traces_for_efel(raw)
       
@@ -159,22 +166,32 @@ def process_one_nwb(ephys_roi_id: str, if_save_interpolated: bool = False):
     
     df_sweeps = df_sweeps.merge(_df_to_df_sweeps, on="sweep_number", how="left")
     
-    # TODO: Extract spike waveforms
-    df_spike_waveforms = pd.DataFrame()
+    # Extract spike waveforms
+    df_spike_waveforms = extract_spike_waveforms(raw, features_dict)
     
     # Add metadata to features_dict
     features_dict["df_sweeps"] = df_sweeps
     features_dict["df_spike_waveforms"] = df_spike_waveforms
     features_dict["efel_settings"] = pd.DataFrame([efel.get_settings().__dict__])
     
+    return features_dict
+
+
+def process_one_nwb(ephys_roi_id: str, if_save_interpolated: bool = False):
+    # --- 1. Get raw data ---
+    raw = PatchSeqNWB(ephys_roi_id=ephys_roi_id)
+   
+    # --- 2. Extract features using eFEL ---
+    features_dict = extract_features_using_efel(raw, if_save_interpolated)
+    
     # Save features_dict to HDF5 using panda's hdf5 store
     save_dict_to_hdf5(features_dict, f"data/efel_features/{ephys_roi_id}_efel_features.h5")
     
-    # test load
-    features_dict_loaded = load_dict_from_hdf5(
-        f"data/efel_features/{ephys_roi_id}_efel_features.h5"
-    )
-    return features_dict_loaded
+    # # test load
+    # features_dict_loaded = load_dict_from_hdf5(
+    #     f"data/efel_features/{ephys_roi_id}_efel_features.h5"
+    # )
+    return
     
 
 if __name__ == "__main__":
@@ -186,7 +203,7 @@ if __name__ == "__main__":
 
     df_meta = load_ephys_metadata()
     
-    for ephys_roi_id in tqdm.tqdm(df_meta["ephys_roi_id_tab_master"]):
+    for ephys_roi_id in tqdm.tqdm(df_meta["ephys_roi_id_tab_master"][:2]):
         logger.info(f"Processing {ephys_roi_id}...")
         process_one_nwb(ephys_roi_id=str(int(ephys_roi_id)), 
                         if_save_interpolated=False)

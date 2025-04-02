@@ -39,7 +39,7 @@ dev = [
 
 efel = [
     'efel',
-    'h5py',
+    'tables',
 ]
 
 panel = [
