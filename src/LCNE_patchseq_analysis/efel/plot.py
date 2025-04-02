@@ -209,7 +209,7 @@ def plot_overlaid_spikes(raw, df_features):
     return fig
 
 
-def plot_sweep_summary(raw_traces, features_dict):
+def plot_sweep_summary(raw_traces, features_dict, save_dir: str = "data/efel_features"):
     
     ephys_roi_id = features_dict["df_sweeps"]["ephys_roi_id"][0]
     
@@ -218,5 +218,10 @@ def plot_sweep_summary(raw_traces, features_dict):
         df_sweep_feature = features_dict["df_features_per_sweep"].query("sweep_number == @sweep_number")
         df_spike_feature = features_dict["df_features_per_spike"].query("sweep_number == @sweep_number")
         
-        fig = plot_sweep_raw(raw_trace, df_sweep_feature)
-        fig.savefig(f"{save_dir}/{ephys_roi_id}/{ephys_roi_id}_sweep_{sweep_number}.png")
+        fig_sweep = plot_sweep_raw(raw_trace, df_sweep_feature, df_spike_feature)
+        fig_sweep.savefig(f"{save_dir}/{ephys_roi_id}/{ephys_roi_id}_sweep_{sweep_number}.png", dpi=400)
+        
+        if len(df_spike_feature) > 0:
+            fig_spikes = plot_overlaid_spikes(raw_trace, df_spike_feature)
+            fig_spikes.savefig(
+                f"{save_dir}/{ephys_roi_id}/{ephys_roi_id}_spikes_{sweep_number}_spikes.png", dpi=400)
