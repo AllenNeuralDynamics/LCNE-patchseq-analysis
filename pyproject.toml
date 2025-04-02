@@ -73,6 +73,8 @@ all = [
     'pg8000',
     'efel',
     'h5py',
+    'tqdm',
+    'tables',
 ]
 
 [tool.setuptools.packages.find]
