@@ -317,8 +317,6 @@ def process_one_nwb(
         os.makedirs(f"{save_dir}/features", exist_ok=True)
         save_dict_to_hdf5(features_dict, f"{save_dir}/features/{ephys_roi_id}_efel_features.h5")
 
-        # --- 4. Generate sweep plots ---
-        plot_sweep_summary(features_dict, save_dir=f"{save_dir}/plots")
         return "Success"
     
     except Exception as e:
@@ -337,7 +335,7 @@ if __name__ == "__main__":
 
     df_meta = load_ephys_metadata()
 
-    for _ephys_roi_id in ["1418799012"]: #tqdm.tqdm(df_meta["ephys_roi_id_tab_master"][:10]):
+    for _ephys_roi_id in ["1418561975"]: #tqdm.tqdm(df_meta["ephys_roi_id_tab_master"][:10]):
         logger.info(f"Processing {_ephys_roi_id}...")
         process_one_nwb(
             ephys_roi_id=str(int(_ephys_roi_id)),

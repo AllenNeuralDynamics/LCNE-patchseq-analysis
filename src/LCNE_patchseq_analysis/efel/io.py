@@ -31,4 +31,5 @@ def load_dict_from_hdf5(filename: str):
         dict: Dictionary of DataFrames
     """
     with pd.HDFStore(filename, mode='r') as store:
-        return {key: store[key] for key in store.keys()} 
+        dict_key = [key.replace("/", "") for key in store.keys()]
+        return {key: store[key] for key in dict_key}
