@@ -192,11 +192,13 @@ def extract_peri_stimulus_raw_traces(
     """
     
     vs = []
+    Is = []
     begin_ts = []
     end_ts = []
     
     for raw_trace in raw_traces:
         v = raw_trace["V"]
+        I = raw_trace["stimulus"]
         t = raw_trace["T"]
         stim_start = raw_trace["stim_start"][0]
         stim_end = raw_trace["stim_end"][0]
@@ -209,16 +211,22 @@ def extract_peri_stimulus_raw_traces(
         idx_before = np.where(t >= begin_t)[0][0]
         idx_after = np.where(t >= end_t)[0][0]
         
-        vs.append([v[idx_before:idx_after]])
+        vs.append(v[idx_before:idx_after])
+        Is.append(I[idx_before:idx_after])
         begin_ts.append(begin_t)
         end_ts.append(end_t)
+        
     df_peri_stimulus_raw_traces = pd.DataFrame(
-        vs,
+        {
+            "V": vs,
+            "I": Is,
+            "begin_t": begin_ts,
+            "end_t": end_ts
+        },
         index=features_dict["df_features_per_sweep"].index,
-        columns=["peri_stimulus_voltage"]
     )
-    df_peri_stimulus_raw_traces["begin_t"] = begin_ts
-    df_peri_stimulus_raw_traces["end_t"] = end_ts
+
+    return df_peri_stimulus_raw_traces
 
 
 def extract_features_using_efel(
@@ -257,6 +265,9 @@ def extract_features_using_efel(
     df_spike_waveforms = extract_spike_waveforms(raw_traces, features_dict)
     
     # -- Extract peri-stimulus raw traces --
+    # Append stimulus to raw_traces (doing here because eFEL cannot handle it)
+    for raw_trace in raw_traces:
+        raw_trace["stimulus"] = raw.get_stimulus(raw_trace["sweep_number"][0])
     df_peri_stimulus_raw_traces = extract_peri_stimulus_raw_traces(raw_traces, features_dict)
 
     # -- Enrich df_sweeps --
@@ -304,9 +315,6 @@ def process_one_nwb(
     save_dict_to_hdf5(features_dict, f"{save_dir}/features/{ephys_roi_id}_efel_features.h5")
 
     # --- 4. Generate sweep plots ---
-    # Append stimulus to raw_traces
-    for raw_trace in raw_traces:
-        raw_trace["stimulus"] = raw.get_stimulus(raw_trace["sweep_number"][0])
     plot_sweep_summary(raw_traces, features_dict, f"{save_dir}/plots")
 
 

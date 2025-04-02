@@ -15,7 +15,7 @@ sns.set_context("talk")
 
 
 def plot_sweep_raw(
-    raw_trace: Dict[str, Any],
+    sweep_this: pd.DataFrame,
     df_sweep_meta: pd.DataFrame,
     df_sweep_feature: pd.Series,
     df_spike_feature: pd.DataFrame
@@ -31,14 +31,14 @@ def plot_sweep_raw(
     Returns:
         Matplotlib figure object
     """
-    time, trace, stimulus, stim_start, stim_end = (
-        raw_trace["T"],
-        raw_trace["V"],
-        raw_trace["stimulus"],
-        raw_trace["stim_start"][0],
-        raw_trace["stim_end"][0]
+    
+    trace, stimulus, begin_t = (
+        sweep_this["V"].iloc[0],
+        sweep_this["I"].iloc[0],
+        sweep_this["begin_t"].iloc[0],
     )
-
+    
+    time = begin_t + np.arange(len(trace)) * TIME_STEP
     time_interpolated = time  # This only works for non-interpolated case
 
     # Plot the trace
@@ -108,11 +108,6 @@ def plot_sweep_raw(
         f'{df_sweep_meta.stimulus_code.values[0]}'
     )
     ax.set_title(title)
-
-    # Set x-axis limits
-    xlim_start = stim_start - max(3, (stim_end - stim_start) * 0.2)
-    xlim_end = stim_end + max(150, (stim_end - stim_start) * 0.4)
-    ax.set_xlim(xlim_start, xlim_end)
 
     ax.legend(loc="best", fontsize=12)
     ax.label_outer()
@@ -282,9 +277,12 @@ def plot_sweep_summary(
         df_spike_feature = features_dict["df_features_per_spike"].loc[
             sweep_number] if has_spikes else None
         df_sweep_meta = features_dict["df_sweeps"].query("sweep_number == @sweep_number")
+        sweep_this = features_dict["df_peri_stimulus_raw_traces"].query(
+            "sweep_number == @sweep_number"
+        )
 
         # Plot raw sweep
-        fig_sweep = plot_sweep_raw(raw_trace, df_sweep_meta, df_sweep_feature,
+        fig_sweep = plot_sweep_raw(sweep_this, df_sweep_meta, df_sweep_feature,
                                    df_spike_feature)
         fig_sweep.savefig(
             f"{save_dir}/{ephys_roi_id}/{ephys_roi_id}_sweep_{sweep_number}.png",
