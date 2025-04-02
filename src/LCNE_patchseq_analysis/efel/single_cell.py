@@ -4,6 +4,7 @@ import logging
 
 import efel
 import pandas as pd
+import numpy as np
 
 from LCNE_patchseq_analysis.data_util.nwb import PatchSeqNWB
 from LCNE_patchseq_analysis.efel.io import save_dict_to_hdf5, load_dict_from_hdf5
@@ -36,6 +37,7 @@ def pack_traces_for_efel(raw):
             "V": trace,
             "stim_start": [stim_start],
             "stim_end": [stim_end],
+            "sweep_number": [sweep_number],
         })
 
     logger.info(f"Packed {len(traces)} traces for eFEL.")
@@ -123,18 +125,45 @@ def reformat_features(df_features, if_save_interpolated: bool = False):
     return dict_to_save
 
 
-def extract_spike_waveforms(raw, features_dict):
-    """Extract spike waveforms from raw data."""
+def extract_spike_waveforms(traces, features_dict, spike_window: tuple = (-5, 10)):
+    """Extract spike waveforms from raw data.
     
+    Args:
+        traces: raw traces
+        features_dict: Dictionary containing features extracted by eFEL
+        spike_window: Tuple of two integers, the start and end of the spike window
+            in milliseconds relative to the peak time
+    """
+    peak_times = features_dict["df_features_per_spike"].reset_index(
+        ).set_index("sweep_number")["peak_time"]
     
+    # Time can be determined by the sampling rate
+    t_aligned = np.arange(spike_window[0], spike_window[1], step=0.02)
+    spike_waveforms = []
+
+    for trace in traces:
+        if trace["sweep_number"][0] not in peak_times.index:
+            continue    
+        peak_times_this_sweep = peak_times.loc[trace["sweep_number"]]
+        t = trace["T"]
+        v = trace["V"]
+        
+        for peak_time in peak_times_this_sweep:
+            idx = np.where((t >= peak_time + spike_window[0]) & (t < peak_time + spike_window[1]))[0]
+            spike_waveforms.append(v[idx])
     
-    return pd.DataFrame()
+    df_spike_waveforms = pd.DataFrame(spike_waveforms, 
+                                      index=features_dict["df_features_per_spike"].index,
+                                      columns=pd.Index(t_aligned, name="ms_to_peak"),
+                                      )
+    
+    return df_spike_waveforms
 
 
 def extract_features_using_efel(raw, if_save_interpolated):
     """Extract features using eFEL."""
 
-    # Package all valid sweeps for eFEL
+    # -- Package all valid sweeps for eFEL --
     traces, valid_sweep_numbers = pack_traces_for_efel(raw)
       
     # Get all features
@@ -151,10 +180,12 @@ def extract_features_using_efel(raw, if_save_interpolated):
     df_features.index.name = "sweep_number"
     features_dict = reformat_features(df_features, if_save_interpolated)
     
-    # Enrich df_sweeps
+    # -- Extract spike waveforms --
+    df_spike_waveforms = extract_spike_waveforms(traces, features_dict)
+
+    # -- Enrich df_sweeps --
     df_sweeps = raw.df_sweeps.copy()
     df_sweeps.insert(0, "ephys_roi_id", ephys_roi_id)
-    
     col_to_df_sweeps = {
         "spike_count": "efel_num_spikes",
         "first_spike_AP_width": "efel_first_spike_AP_width",
@@ -163,12 +194,8 @@ def extract_features_using_efel(raw, if_save_interpolated):
         features_dict["df_features_per_sweep"][list(col_to_df_sweeps.keys())]
         .rename(columns=col_to_df_sweeps)
     )
-    
     df_sweeps = df_sweeps.merge(_df_to_df_sweeps, on="sweep_number", how="left")
-    
-    # Extract spike waveforms
-    df_spike_waveforms = extract_spike_waveforms(raw, features_dict)
-    
+                   
     # Add metadata to features_dict
     features_dict["df_sweeps"] = df_sweeps
     features_dict["df_spike_waveforms"] = df_spike_waveforms
@@ -184,13 +211,10 @@ def process_one_nwb(ephys_roi_id: str, if_save_interpolated: bool = False):
     # --- 2. Extract features using eFEL ---
     features_dict = extract_features_using_efel(raw, if_save_interpolated)
     
-    # Save features_dict to HDF5 using panda's hdf5 store
+    # --- 3. Save features_dict to HDF5 using panda's hdf5 store ---
     save_dict_to_hdf5(features_dict, f"data/efel_features/{ephys_roi_id}_efel_features.h5")
     
-    # # test load
-    # features_dict_loaded = load_dict_from_hdf5(
-    #     f"data/efel_features/{ephys_roi_id}_efel_features.h5"
-    # )
+
     return
     
 
@@ -209,4 +233,8 @@ if __name__ == "__main__":
                         if_save_interpolated=False)
  
 
-    
+    # test load
+    features_dict_loaded = load_dict_from_hdf5(
+         f"data/efel_features/{ephys_roi_id}_efel_features.h5"
+    )
+    print(features_dict_loaded)
