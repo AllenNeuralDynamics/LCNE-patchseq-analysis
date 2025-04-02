@@ -16,11 +16,20 @@ from LCNE_patchseq_analysis.efel.plot import plot_sweep_summary
 logger = logging.getLogger(__name__)
 
 
-def extract_efel_features_in_parallel():
+def extract_efel_features_in_parallel(only_new: bool = True):
     """Extract eFEL features in parallel."""
     pool = mp.Pool(processes=mp.cpu_count())
     df_meta = load_ephys_metadata()
     all_ephys_roi_ids = df_meta["ephys_roi_id_tab_master"]
+
+    if only_new:
+        # Exclude ROI IDs that already have eFEL features
+        all_ephys_roi_ids = [
+            eph for eph in all_ephys_roi_ids if not os.path.exists(
+                f"{RESULTS_DIRECTORY}/features/{int(eph)}_efel.h5"
+            )
+        ]
+        n_skipped = len(df_meta) - len(all_ephys_roi_ids)
 
     with pool:
         # Queue all tasks
@@ -42,6 +51,8 @@ def extract_efel_features_in_parallel():
         logger.error(f"Failed processes: {len(error_roi_ids)}")
         logger.error(f"Failed ROI IDs: {error_roi_ids}")
     logger.info(f"Successful processes: {len(results) - len(error_roi_ids)}")
+    if only_new:
+        logger.info(f"Skipped {n_skipped} ROI IDs that already have eFEL features")
 
     return results
 
@@ -61,7 +72,7 @@ def generate_sweep_plots_one(feature_h5_file: str):
         return error_message
 
 
-def generate_sweep_plots_in_parallel():
+def generate_sweep_plots_in_parallel(only_new: bool = True):
     """Generate sweep plots in parallel."""
     pool = mp.Pool(processes=mp.cpu_count())
 
@@ -70,6 +81,15 @@ def generate_sweep_plots_in_parallel():
     ephys_roi_ids = [
         os.path.basename(feature_h5_file).split("_")[0] for feature_h5_file in feature_h5_files
     ]
+
+    if only_new:
+        # Exclude ROI IDs that already have sweep plots
+        ephys_roi_ids = [
+            eph for eph in ephys_roi_ids if not os.path.exists(
+                f"{RESULTS_DIRECTORY}/plots/{int(eph)}.png"
+            )
+        ]
+        n_skipped = len(feature_h5_files) - len(ephys_roi_ids)
 
     # Queue all tasks
     jobs = []
@@ -86,6 +106,8 @@ def generate_sweep_plots_in_parallel():
         logger.error(f"Failed processes: {len(error_roi_ids)}")
         logger.error(f"Failed ROI IDs: {error_roi_ids}")
     logger.info(f"Successful processes: {len(results) - len(error_roi_ids)}")
+    if only_new:
+        logger.info(f"Skipped {n_skipped} ROI IDs that already have sweep plots")
 
 
 if __name__ == "__main__":
@@ -93,8 +115,8 @@ if __name__ == "__main__":
 
     logger.info("-" * 80)
     logger.info("Extracting features in parallel...")
-    extract_efel_features_in_parallel()
+    extract_efel_features_in_parallel(only_new=True)
 
     logger.info("-" * 80)
     logger.info("Generating sweep plots in parallel...")
-    generate_sweep_plots_in_parallel()
+    generate_sweep_plots_in_parallel(only_new=True)
