@@ -45,52 +45,6 @@ def pack_traces_for_efel(raw):
     return traces, valid_sweep_numbers
 
 
-def save_to_hdf5(output_path, df_features, df_sweeps, traces, valid_sweep_numbers, ephys_roi_id):
-    """Save data to HDF5 format.
-    
-    Args:
-        output_path (str): Path to save the HDF5 file
-        df_features (pd.DataFrame): DataFrame containing eFEL features
-        df_sweeps (pd.DataFrame): DataFrame containing sweep metadata
-        traces (list): List of trace dictionaries containing time and voltage data
-        valid_sweep_numbers (np.ndarray): Array of valid sweep numbers
-        ephys_roi_id (str): The ephys ROI ID
-    """
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    
-    with h5py.File(output_path, 'w') as f:
-        # Save metadata
-        f.attrs['ephys_roi_id'] = ephys_roi_id
-        
-        # Save features DataFrame
-        features_group = f.create_group('features')
-        for col in df_features.columns:
-            features_group.create_dataset(col, data=df_features[col].values)
-        features_group.attrs['index'] = list(df_features.index)
-        
-        # Save sweep metadata
-        sweeps_group = f.create_group('sweeps')
-        for col in df_sweeps.columns:
-            if df_sweeps[col].dtype == 'object':
-                # Convert object columns to strings for HDF5 storage
-                sweeps_group.create_dataset(col, data=df_sweeps[col].astype(str).values)
-            else:
-                sweeps_group.create_dataset(col, data=df_sweeps[col].values)
-        
-        # Save traces
-        traces_group = f.create_group('traces')
-        for i, trace in enumerate(traces):
-            trace_group = traces_group.create_group(f'sweep_{valid_sweep_numbers[i]}')
-            trace_group.create_dataset('time', data=trace['T'])
-            trace_group.create_dataset('voltage', data=trace['V'])
-            trace_group.create_dataset('stim_start', data=trace['stim_start'])
-            trace_group.create_dataset('stim_end', data=trace['stim_end'])
-        
-        # Save valid sweep numbers
-        f.create_dataset('valid_sweep_numbers', data=valid_sweep_numbers)
-    
-    logger.info(f"Saved data to {output_path}")
-
 def reformat_features(features):
     """Reformat features extracted from eFEL.
     
@@ -125,6 +79,10 @@ def reformat_features(features):
     for col in df_features.columns:
         lengths = df_features[col].map(lambda x: 0 if x is None else len(x))
         
+        # If all values are None, skip this column
+        if max(lengths) == 0:
+            continue
+        
         # Check if it's a scalar or array feature
         if max(lengths) == 1:
             # For single values, extract the scalar
@@ -154,6 +112,37 @@ def reformat_features(features):
         "interpolated_time": interpolated_time,
         "interpolated_voltage": interpolated_voltage
     }
+    
+
+def save_dict_to_hdf5(data_dict: dict, filename: str, compress: bool = False):
+    """
+    Save a dictionary of DataFrames to an HDF5 file using pandas.HDFStore.
+
+    Args:
+        data_dict: dict of {str: pd.DataFrame}
+        filename: path to .h5 file
+        compress: whether to use compression (blosc, level 9)
+    """
+    with pd.HDFStore(filename, mode='w') as store:
+        for key, df in data_dict.items():
+            if compress:
+                store.put(key, df, format='table', complib='blosc', complevel=9)
+            else:
+                store.put(key, df)
+
+                
+def load_dict_from_hdf5(filename: str):
+    """
+    Load a dictionary of DataFrames from an HDF5 file using pandas.HDFStore.
+
+    Args:
+        filename: path to .h5 file
+        
+    Returns:
+        dict: Dictionary of DataFrames
+    """
+    with pd.HDFStore(filename, mode='r') as store:
+        return {key: store[key] for key in store.keys()}
 
 
 if __name__ == "__main__":
@@ -181,5 +170,9 @@ if __name__ == "__main__":
     # Reformat features
     features_dict = reformat_features(features)
     
-    # Save features to HDF5
+    # Save features_dict to HDF5 using panda's hdf5 store
+    save_dict_to_hdf5(features_dict, f"data/efel_features/{ephys_roi_id}_efel_features.h5")
 
+    # Load features_dict from HDF5
+    features_dict_loaded = load_dict_from_hdf5(f"data/efel_features/{ephys_roi_id}_efel_features.h5")
+    pass
