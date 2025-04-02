@@ -62,7 +62,7 @@ def generate_sweep_plots_one(ephys_roi_id: str):
     try:
         features_dict = load_efel_features_from_roi(ephys_roi_id)
         plot_sweep_summary(features_dict, f"{RESULTS_DIRECTORY}/plots")
-        os.makedirs(f"{RESULTS_DIRECTORY}/plots/{ephys_roi_id}/success", exist_ok=True)
+        os.makedirs(f"{RESULTS_DIRECTORY}/plots/{ephys_roi_id}/all_success", exist_ok=True)
         return "Success"
     except Exception as e:
         import traceback
@@ -86,7 +86,7 @@ def generate_sweep_plots_in_parallel(only_new: bool = True):
         # Exclude ROI IDs that already have sweep plots
         ephys_roi_ids = [
             eph for eph in ephys_roi_ids if not os.path.exists(
-                f"{RESULTS_DIRECTORY}/plots/{int(eph)}"
+                f"{RESULTS_DIRECTORY}/plots/{int(eph)}/all_success"
             )
         ]
         n_skipped = len(feature_h5_files) - len(ephys_roi_ids)
