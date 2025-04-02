@@ -65,7 +65,6 @@ def reformat_features(df_features, if_save_interpolated: bool = False):
         dict: Dictionary containing reformatted DataFrames and interpolated data
     """
 
-
     # Create a new DataFrame for per-spike features
     list_features_per_spike = []
 
@@ -162,8 +161,8 @@ def process_one_nwb(ephys_roi_id: str, if_save_interpolated: bool = False):
     # Get all features
     logger.debug(f"Getting features for {len(traces)} traces...")
     features = efel.get_feature_values(
-        traces,
-        efel.get_feature_names(),  # Get all features
+        traces=traces,
+        feature_names=efel.get_feature_names(),  # Get all features
         raise_warnings=False,
     )
     logger.debug("Done!")
@@ -173,11 +172,32 @@ def process_one_nwb(ephys_roi_id: str, if_save_interpolated: bool = False):
     df_features.index.name = "sweep_number"
     features_dict = reformat_features(df_features, if_save_interpolated)
     
+    # Enrich df_sweeps
+    df_sweeps = raw.df_sweeps.copy()
+    df_sweeps.insert(0, "ephys_roi_id", ephys_roi_id)
+    
+    col_to_df_sweeps = {
+        "spike_count": "efel_num_spikes",
+        "first_spike_AP_width": "efel_first_spike_AP_width",
+    }
+    _df_to_df_sweeps = features_dict["df_features_per_sweep"][list(col_to_df_sweeps.keys())].rename(columns=col_to_df_sweeps)
+    
+    df_sweeps = df_sweeps.merge(_df_to_df_sweeps, on="sweep_number", how="left")
+    
+    # TODO: Extract spike waveforms
+    df_spike_waveforms = pd.DataFrame()
+    
+    # Add metadata to features_dict
+    features_dict["df_sweeps"] = df_sweeps
+    features_dict["df_spike_waveforms"] = df_spike_waveforms
+    features_dict["efel_settings"] = pd.Series(efel.get_settings().__dict__)
+    
     # Save features_dict to HDF5 using panda's hdf5 store
     save_dict_to_hdf5(features_dict, f"data/efel_features/{ephys_roi_id}_efel_features.h5")
-
-    # Load features_dict from HDF5
+    
+    # test load
     features_dict_loaded = load_dict_from_hdf5(f"data/efel_features/{ephys_roi_id}_efel_features.h5")
+    pass
     
 
 if __name__ == "__main__":
