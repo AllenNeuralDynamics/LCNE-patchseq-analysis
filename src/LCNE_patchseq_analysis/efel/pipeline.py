@@ -10,7 +10,7 @@ from tqdm import tqdm
 from LCNE_patchseq_analysis import RESULTS_DIRECTORY
 from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
 from LCNE_patchseq_analysis.efel.core import extract_efel_one
-from LCNE_patchseq_analysis.efel.io import load_dict_from_hdf5
+from LCNE_patchseq_analysis.efel.io import load_efel_features_from_roi
 from LCNE_patchseq_analysis.efel.plot import plot_sweep_summary
 
 logger = logging.getLogger(__name__)
@@ -57,12 +57,12 @@ def extract_efel_features_in_parallel(only_new: bool = True):
     return results
 
 
-def generate_sweep_plots_one(feature_h5_file: str):
+def generate_sweep_plots_one(ephys_roi_id: str):
     """Load from HDF5 file and generate sweep plots in parallel."""
-    ephys_roi_id = os.path.basename(feature_h5_file).split("_")[0]
     try:
-        features_dict = load_dict_from_hdf5(feature_h5_file)
+        features_dict = load_efel_features_from_roi(ephys_roi_id)
         plot_sweep_summary(features_dict, f"{RESULTS_DIRECTORY}/plots")
+        os.makedirs(f"{RESULTS_DIRECTORY}/plots/{ephys_roi_id}/success", exist_ok=True)
         return "Success"
     except Exception as e:
         import traceback
@@ -86,15 +86,15 @@ def generate_sweep_plots_in_parallel(only_new: bool = True):
         # Exclude ROI IDs that already have sweep plots
         ephys_roi_ids = [
             eph for eph in ephys_roi_ids if not os.path.exists(
-                f"{RESULTS_DIRECTORY}/plots/{int(eph)}.png"
+                f"{RESULTS_DIRECTORY}/plots/{int(eph)}"
             )
         ]
         n_skipped = len(feature_h5_files) - len(ephys_roi_ids)
 
     # Queue all tasks
     jobs = []
-    for feature_h5_file in feature_h5_files:
-        job = pool.apply_async(generate_sweep_plots_one, args=(feature_h5_file,))
+    for ephys_roi_id in ephys_roi_ids:
+        job = pool.apply_async(generate_sweep_plots_one, args=(ephys_roi_id,))
         jobs.append(job)
 
     # Wait for all processes to complete
@@ -115,7 +115,7 @@ if __name__ == "__main__":
 
     logger.info("-" * 80)
     logger.info("Extracting features in parallel...")
-    extract_efel_features_in_parallel(only_new=True)
+    # extract_efel_features_in_parallel(only_new=True)
 
     logger.info("-" * 80)
     logger.info("Generating sweep plots in parallel...")
