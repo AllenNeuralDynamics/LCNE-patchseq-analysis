@@ -1,15 +1,12 @@
 """Extracting features from a single cell."""
 
 import logging
-import multiprocessing as mp
-import os
 
 import efel
-import numpy as np
 import pandas as pd
-import h5py
 
 from LCNE_patchseq_analysis.data_util.nwb import PatchSeqNWB
+from LCNE_patchseq_analysis.efel.io import save_dict_to_hdf5, load_dict_from_hdf5
 
 logger = logging.getLogger(__name__)
     
@@ -71,7 +68,7 @@ def reformat_features(df_features, if_save_interpolated: bool = False):
     # Create a new DataFrame for per-sweep features (with scalar values)
     dict_features_per_sweep = {}
 
-    # Pop two columns "time" and "voltage" from df_features and save to "interpolated_time" and "interpolated_voltage"
+    # Pop time and voltage columns and save to interpolated data if requested
     if if_save_interpolated:
         interpolated_time = df_features["time"]
         interpolated_voltage = df_features["voltage"]
@@ -88,7 +85,9 @@ def reformat_features(df_features, if_save_interpolated: bool = False):
         # Check if it's a scalar or array feature
         if max(lengths) == 1:
             # For single values, extract the scalar
-            dict_features_per_sweep[col] = df_features[col].apply(lambda x: x[0] if x is not None and len(x) > 0 else None)
+            dict_features_per_sweep[col] = df_features[col].apply(
+                lambda x: x[0] if x is not None and len(x) > 0 else None
+            )
         else:
             # For multi-spike features
             # 1. Extract first spike value to per_sweep DataFrame
@@ -106,7 +105,11 @@ def reformat_features(df_features, if_save_interpolated: bool = False):
 
     # Pack dataframes
     df_features_per_sweep = pd.DataFrame(dict_features_per_sweep)
-    df_features_per_spike = pd.DataFrame(list_features_per_spike).pivot(index=["sweep_number", "spike_idx"], columns="feature", values="value")
+    df_features_per_spike = pd.DataFrame(list_features_per_spike).pivot(
+        index=["sweep_number", "spike_idx"], 
+        columns="feature", 
+        values="value"
+    )
     
     dict_to_save = {
         "df_features_per_sweep": df_features_per_sweep,
@@ -119,37 +122,6 @@ def reformat_features(df_features, if_save_interpolated: bool = False):
     
     return dict_to_save
     
-
-def save_dict_to_hdf5(data_dict: dict, filename: str, compress: bool = False):
-    """
-    Save a dictionary of DataFrames to an HDF5 file using pandas.HDFStore.
-
-    Args:
-        data_dict: dict of {str: pd.DataFrame}
-        filename: path to .h5 file
-        compress: whether to use compression (blosc, level 9)
-    """
-    with pd.HDFStore(filename, mode='w') as store:
-        for key, df in data_dict.items():
-            if compress:
-                store.put(key, df, format='table', complib='blosc', complevel=9)
-            else:
-                store.put(key, df)
-
-                
-def load_dict_from_hdf5(filename: str):
-    """
-    Load a dictionary of DataFrames from an HDF5 file using pandas.HDFStore.
-
-    Args:
-        filename: path to .h5 file
-        
-    Returns:
-        dict: Dictionary of DataFrames
-    """
-    with pd.HDFStore(filename, mode='r') as store:
-        return {key: store[key] for key in store.keys()}
-
 
 def process_one_nwb(ephys_roi_id: str, if_save_interpolated: bool = False):
     # Get raw data
@@ -180,7 +152,10 @@ def process_one_nwb(ephys_roi_id: str, if_save_interpolated: bool = False):
         "spike_count": "efel_num_spikes",
         "first_spike_AP_width": "efel_first_spike_AP_width",
     }
-    _df_to_df_sweeps = features_dict["df_features_per_sweep"][list(col_to_df_sweeps.keys())].rename(columns=col_to_df_sweeps)
+    _df_to_df_sweeps = (
+        features_dict["df_features_per_sweep"][list(col_to_df_sweeps.keys())]
+        .rename(columns=col_to_df_sweeps)
+    )
     
     df_sweeps = df_sweeps.merge(_df_to_df_sweeps, on="sweep_number", how="left")
     
@@ -190,18 +165,19 @@ def process_one_nwb(ephys_roi_id: str, if_save_interpolated: bool = False):
     # Add metadata to features_dict
     features_dict["df_sweeps"] = df_sweeps
     features_dict["df_spike_waveforms"] = df_spike_waveforms
-    features_dict["efel_settings"] = pd.Series(efel.get_settings().__dict__)
+    features_dict["efel_settings"] = pd.DataFrame([efel.get_settings().__dict__])
     
     # Save features_dict to HDF5 using panda's hdf5 store
     save_dict_to_hdf5(features_dict, f"data/efel_features/{ephys_roi_id}_efel_features.h5")
     
     # test load
-    features_dict_loaded = load_dict_from_hdf5(f"data/efel_features/{ephys_roi_id}_efel_features.h5")
-    pass
+    features_dict_loaded = load_dict_from_hdf5(
+        f"data/efel_features/{ephys_roi_id}_efel_features.h5"
+    )
+    return features_dict_loaded
     
 
 if __name__ == "__main__":
-    import LCNE_patchseq_analysis.efel  # Apply global efel settings
     import tqdm
     
     logging.basicConfig(level=logging.INFO)
