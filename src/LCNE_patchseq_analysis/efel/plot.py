@@ -1,7 +1,7 @@
 """Plotting functions for electrophysiology data."""
 
 import os
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,7 +15,7 @@ sns.set_context("talk")
 
 
 def plot_sweep_raw(
-    sweep_this: pd.DataFrame,
+    sweep_this: pd.Series,
     df_sweep_meta: pd.DataFrame,
     df_sweep_feature: pd.Series,
     df_spike_feature: pd.DataFrame
@@ -23,7 +23,7 @@ def plot_sweep_raw(
     """Plot raw sweep data with features.
     
     Args:
-        raw_trace: Dictionary containing raw trace data
+        sweep_this: Series containing sweep data
         df_sweep_meta: DataFrame containing sweep metadata
         df_sweep_feature: Series containing sweep features
         df_spike_feature: DataFrame containing spike features
@@ -32,14 +32,16 @@ def plot_sweep_raw(
         Matplotlib figure object
     """
     
-    trace, stimulus, begin_t = (
-        sweep_this["V"].iloc[0],
-        sweep_this["I"].iloc[0],
-        sweep_this["begin_t"].iloc[0],
+    trace, stimulus, begin_t, stim_start = (
+        sweep_this["V"],
+        sweep_this["I"],
+        sweep_this["begin_t"],
+        sweep_this["stim_start"],
     )
     
     time = begin_t + np.arange(len(trace)) * TIME_STEP
     time_interpolated = time  # This only works for non-interpolated case
+    begin_idx_in_raw = int(begin_t / TIME_STEP)
 
     # Plot the trace
     fig = plt.figure(figsize=(12, 6))
@@ -58,17 +60,23 @@ def plot_sweep_raw(
         ax.plot(df_spike_feature["peak_time"], df_spike_feature["peak_voltage"],
                 "ro", label="peak")
 
-        # Plot min_AHP
+        # Plot min_AHP (if in the peri-stimulus period)
         min_ahp_indices = df_spike_feature["min_AHP_indices"]
-        min_ahp_values = df_spike_feature["min_AHP_values"]
         min_ahp_indices = min_ahp_indices[min_ahp_indices.notna()].astype(int)
+        min_ahp_indices -= begin_idx_in_raw
+        min_ahp_indices = min_ahp_indices[min_ahp_indices < len(time_interpolated)]
+        min_ahp_values = df_spike_feature["min_AHP_values"]
+        
         ax.plot([time_interpolated[ind] for ind in min_ahp_indices],
                  min_ahp_values[min_ahp_indices.index], "ko", label="min_AHP")
 
-        # Plot min_between_peaks
+        # Plot min_between_peaks (if in the peri-stimulus period)
         min_between_indices = df_spike_feature["min_between_peaks_indices"]
         min_between_indices = min_between_indices[min_between_indices.notna()].astype(int)
+        min_between_indices -= begin_idx_in_raw
+        min_between_indices = min_between_indices[min_between_indices < len(time_interpolated)]
         min_between_values = df_spike_feature["min_between_peaks_values"]
+        
         ax.plot([time_interpolated[ind] for ind in min_between_indices],
                 min_between_values[min_between_indices.index], "bo",
                 label="min_between_peaks")
@@ -255,22 +263,19 @@ def plot_overlaid_spikes(
 
 
 def plot_sweep_summary(
-    raw_traces: List[Dict[str, Any]],
     features_dict: Dict[str, Any],
     save_dir: str
 ) -> None:
     """Generate and save sweep summary plots.
     
     Args:
-        raw_traces: List of raw trace dictionaries
         features_dict: Dictionary containing features
         save_dir: Directory to save plots
     """
     ephys_roi_id = features_dict["df_sweeps"]["ephys_roi_id"][0]
     os.makedirs(f"{save_dir}/{ephys_roi_id}", exist_ok=True)
 
-    for raw_trace in raw_traces:
-        sweep_number = raw_trace["sweep_number"][0]
+    for sweep_number in features_dict["df_features_per_sweep"].index:
         df_sweep_feature = features_dict["df_features_per_sweep"].loc[sweep_number]
         has_spikes = df_sweep_feature["spike_count"] > 0
 
@@ -279,7 +284,7 @@ def plot_sweep_summary(
         df_sweep_meta = features_dict["df_sweeps"].query("sweep_number == @sweep_number")
         sweep_this = features_dict["df_peri_stimulus_raw_traces"].query(
             "sweep_number == @sweep_number"
-        )
+        ).iloc[0]
 
         # Plot raw sweep
         fig_sweep = plot_sweep_raw(sweep_this, df_sweep_meta, df_sweep_feature,
