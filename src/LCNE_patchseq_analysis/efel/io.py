@@ -12,10 +12,10 @@ def save_dict_to_hdf5(data_dict: dict, filename: str, compress: bool = False):
         filename: path to .h5 file
         compress: whether to use compression (blosc, level 9)
     """
-    with pd.HDFStore(filename, mode='w') as store:
+    with pd.HDFStore(filename, mode="w") as store:
         for key, df in data_dict.items():
             if compress:
-                store.put(key, df, format='table', complib='blosc', complevel=9)
+                store.put(key, df, format="table", complib="blosc", complevel=9)
             else:
                 store.put(key, df)
 
@@ -26,10 +26,10 @@ def load_dict_from_hdf5(filename: str):
 
     Args:
         filename: path to .h5 file
-        
+
     Returns:
         dict: Dictionary of DataFrames
     """
-    with pd.HDFStore(filename, mode='r') as store:
+    with pd.HDFStore(filename, mode="r") as store:
         dict_key = [key.replace("/", "") for key in store.keys()]
         return {key: store[key] for key in dict_key}
