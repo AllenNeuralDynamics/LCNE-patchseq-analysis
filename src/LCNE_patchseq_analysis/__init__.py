@@ -10,9 +10,8 @@ __version__ = "0.7.0"
 
 # Get the path of this file
 PACKAGE_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
-RAW_DIRECTORY = os.path.join(PACKAGE_DIRECTORY, "../../data/LCNE-patchseq-ephys-raw/")
+RAW_DIRECTORY = os.path.join(PACKAGE_DIRECTORY, "../../data/LCNE-patchseq-ephys-raw/raw/")
 RESULTS_DIRECTORY = os.path.join(PACKAGE_DIRECTORY, "../../results/")
-
 TIME_STEP = 0.02  # ms
 
 # Check if Raw data directory exists

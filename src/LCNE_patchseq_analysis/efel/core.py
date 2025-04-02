@@ -10,6 +10,7 @@ import pandas as pd
 
 from LCNE_patchseq_analysis import RESULTS_DIRECTORY, TIME_STEP
 from LCNE_patchseq_analysis.data_util.nwb import PatchSeqNWB
+from LCNE_patchseq_analysis.efel import EFEL_NON_SCALAR_FEATURES
 from LCNE_patchseq_analysis.efel.io import save_dict_to_hdf5
 
 logger = logging.getLogger(__name__)
@@ -91,12 +92,7 @@ def reformat_features(
             continue
 
         # Check if it's a scalar or array feature
-        if max(lengths) == 1:
-            # For single values, extract the scalar
-            dict_features_per_sweep[col] = df_features[col].apply(
-                lambda x: x[0] if x is not None and len(x) > 0 else None
-            )
-        else:
+        if col in EFEL_NON_SCALAR_FEATURES:
             # For multi-spike features
             # 1. Extract first spike value to per_sweep DataFrame
             dict_features_per_sweep[f"first_spike_{col}"] = df_features[col].apply(
@@ -117,6 +113,11 @@ def reformat_features(
                             for i, val in enumerate(sweep_values)
                         ]
                     )
+        else:
+            # For single values, extract the scalar
+            dict_features_per_sweep[col] = df_features[col].apply(
+                lambda x: x[0] if x is not None and len(x) > 0 else None
+            )
 
     # Pack dataframes
     df_features_per_sweep = pd.DataFrame(dict_features_per_sweep)
@@ -329,7 +330,7 @@ if __name__ == "__main__":
 
     df_meta = load_ephys_metadata()
 
-    for _ephys_roi_id in ["1418561975"]:  # tqdm.tqdm(df_meta["ephys_roi_id_tab_master"][:10]):
+    for _ephys_roi_id in ["1298835612"]:  # tqdm.tqdm(df_meta["ephys_roi_id_tab_master"][:10]):
         logger.info(f"Processing {_ephys_roi_id}...")
         extract_efel_one(
             ephys_roi_id=str(int(_ephys_roi_id)),

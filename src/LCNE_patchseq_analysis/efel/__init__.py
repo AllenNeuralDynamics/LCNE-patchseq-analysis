@@ -1,14 +1,21 @@
 """Extracting features using eFEL."""
 
 import efel
-
+import json
+import os
 from LCNE_patchseq_analysis import TIME_STEP
 
 EFEL_SETTINGS = {
     "interp_step": TIME_STEP,
-    "Threshold": 0.0,
+    "Threshold": -20.0,
 }
 
 # Set global eFEL settings
 for setting, value in EFEL_SETTINGS.items():
     efel.api.set_setting(setting, value)
+
+# Load non-scalar features
+# Get the directory of the current file
+current_dir = os.path.dirname(os.path.abspath(__file__))
+with open(os.path.join(current_dir, "efel_non_scalar_features.json"), "r") as f:
+    EFEL_NON_SCALAR_FEATURES = json.load(f)

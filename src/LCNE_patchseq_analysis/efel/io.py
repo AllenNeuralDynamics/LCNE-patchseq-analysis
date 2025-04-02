@@ -2,6 +2,7 @@
 
 import pandas as pd
 
+from LCNE_patchseq_analysis import RESULTS_DIRECTORY
 
 def save_dict_to_hdf5(data_dict: dict, filename: str, compress: bool = False):
     """
@@ -33,3 +34,9 @@ def load_dict_from_hdf5(filename: str):
     with pd.HDFStore(filename, mode="r") as store:
         dict_key = [key.replace("/", "") for key in store.keys()]
         return {key: store[key] for key in dict_key}
+
+
+def load_efel_features_from_roi(roi_id: str):
+    """Load eFEL features from ROI ID."""
+    filename = f"{RESULTS_DIRECTORY}/features/{roi_id}_efel.h5"
+    return load_dict_from_hdf5(filename)
