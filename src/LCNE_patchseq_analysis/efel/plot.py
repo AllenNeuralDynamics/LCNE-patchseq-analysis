@@ -59,14 +59,18 @@ def plot_sweep_raw(
                 "ro", label="peak")
 
         # Plot min_AHP
-        min_ahp_indices = df_spike_feature["min_AHP_indices"].astype(int)
+        min_ahp_indices = df_spike_feature["min_AHP_indices"]
+        min_ahp_values = df_spike_feature["min_AHP_values"]
+        min_ahp_indices = min_ahp_indices[min_ahp_indices.notna()].astype(int)
         ax.plot([time_interpolated[ind] for ind in min_ahp_indices],
-                df_spike_feature["min_AHP_values"], "ko", label="min_AHP")
+                 min_ahp_values[min_ahp_indices.index], "ko", label="min_AHP")
 
         # Plot min_between_peaks
-        min_between_indices = df_spike_feature["min_between_peaks_indices"].astype(int)
+        min_between_indices = df_spike_feature["min_between_peaks_indices"]
+        min_between_indices = min_between_indices[min_between_indices.notna()].astype(int)
+        min_between_values = df_spike_feature["min_between_peaks_values"]
         ax.plot([time_interpolated[ind] for ind in min_between_indices],
-                df_spike_feature["min_between_peaks_values"], "bo",
+                min_between_values[min_between_indices.index], "bo",
                 label="min_between_peaks")
 
     # Plot sag, if "SubThresh" in stim_code
