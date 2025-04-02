@@ -12,6 +12,8 @@ __version__ = "0.6.0"
 PACKAGE_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 RAW_DIRECTORY = os.path.join(PACKAGE_DIRECTORY, "../../data/LCNE-patchseq-ephys-raw")
 
+TIME_STEP = 0.02  # ms
+
 # Check if Raw data directory exists
 if not os.path.exists(RAW_DIRECTORY):
     logger.warning(f"Raw data directory does not exist: {RAW_DIRECTORY}")

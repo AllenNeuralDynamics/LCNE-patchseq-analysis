@@ -2,8 +2,10 @@
 
 import efel
 
+from LCNE_patchseq_analysis import TIME_STEP
+
 EFEL_SETTINGS = {
-    "interp_step": 0.02,
+    "interp_step": TIME_STEP,
     "Threshold": 0.0,
 }
 
