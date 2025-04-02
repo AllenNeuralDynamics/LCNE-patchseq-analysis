@@ -1,6 +1,7 @@
 """eFEL pipeline."""
 
 import glob
+import json
 import logging
 import multiprocessing as mp
 import os
@@ -36,25 +37,39 @@ def extract_efel_features_in_parallel(only_new: bool = True):
         jobs = []
         for _ephys_roi_id in all_ephys_roi_ids:
             job = pool.apply_async(
-                extract_efel_one, args=(str(int(_ephys_roi_id)), False, RESULTS_DIRECTORY)
+                extract_efel_one, args=(_ephys_roi_id, False, RESULTS_DIRECTORY)
             )
             jobs.append(job)
 
         # Wait for all processes to complete
         results = [job.get() for job in tqdm(jobs)]
 
-    # Show how many successful and failed processes
-    error_roi_ids = [
-        all_ephys_roi_ids[i] for i, result in enumerate(results) if result != "Success"
-    ]
-    if len(error_roi_ids) > 0:
-        logger.error(f"Failed processes: {len(error_roi_ids)}")
-        logger.error(f"Failed ROI IDs: {error_roi_ids}")
-    logger.info(f"Successful processes: {len(results) - len(error_roi_ids)}")
-    if only_new:
-        logger.info(f"Skipped {n_skipped} ROI IDs that already have eFEL features")
+        handle_errors(results, all_ephys_roi_ids, "Extract eFEL features")
+        if only_new:
+            logger.info(f"Skipped {n_skipped} ROI IDs that already have eFEL features")
 
     return results
+
+
+def handle_errors(results, roi_ids, analysis_name: str):
+    # Show how many successful and failed processes
+    errors = [
+        {"roi_id": roi_ids[i], "error": result}
+        for i, result in enumerate(results)
+        if result != "Success"
+    ]
+
+    logger.info(f"{analysis_name}, Success: {len(results) - len(errors)}")
+    logger.error(f"{analysis_name}, Failed: {len(errors)}")
+    for error in errors:
+        logger.error(f"\nFailed ROI ID: {error['roi_id']}, Error: {error['error']}")
+
+    # Append erros to the list in json
+    with open(f"{RESULTS_DIRECTORY}/pipeline_error_{analysis_name}.json", "r") as f:
+        errors_list = json.load(f)
+    with open(f"{RESULTS_DIRECTORY}/pipeline_error_{analysis_name}.json", "w") as f:
+        json.dump(errors_list + errors, f, indent=4)
+    return
 
 
 def generate_sweep_plots_one(ephys_roi_id: str):
@@ -101,12 +116,8 @@ def generate_sweep_plots_in_parallel(only_new: bool = True):
     # Wait for all processes to complete
     results = [job.get() for job in tqdm(jobs)]
 
-    # Show how many successful and failed processes
-    error_roi_ids = [ephys_roi_ids[i] for i, result in enumerate(results) if result != "Success"]
-    if len(error_roi_ids) > 0:
-        logger.error(f"Failed processes: {len(error_roi_ids)}")
-        logger.error(f"Failed ROI IDs: {error_roi_ids}")
-    logger.info(f"Successful processes: {len(results) - len(error_roi_ids)}")
+    handle_errors(results, ephys_roi_ids, "Generate sweep plots")
+    
     if only_new:
         logger.info(f"Skipped {n_skipped} ROI IDs that already have sweep plots")
 
