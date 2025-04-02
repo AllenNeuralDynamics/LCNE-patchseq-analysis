@@ -6,6 +6,7 @@ import efel
 import pandas as pd
 import numpy as np
 
+from LCNE_patchseq_analysis import TIME_STEP
 from LCNE_patchseq_analysis.data_util.nwb import PatchSeqNWB
 from LCNE_patchseq_analysis.efel.io import save_dict_to_hdf5, load_dict_from_hdf5
 
@@ -138,9 +139,9 @@ def extract_spike_waveforms(traces, features_dict, spike_window: tuple = (-5, 10
         ).set_index("sweep_number")["peak_time"]
     
     # Time can be determined by the sampling rate
-    t_aligned = np.arange(spike_window[0], spike_window[1], step=0.02)
-    spike_waveforms = []
-
+    t_aligned = np.arange(spike_window[0], spike_window[1], step=TIME_STEP)
+    vs = []
+    
     for trace in traces:
         if trace["sweep_number"][0] not in peak_times.index:
             continue    
@@ -150,13 +151,13 @@ def extract_spike_waveforms(traces, features_dict, spike_window: tuple = (-5, 10
         
         for peak_time in peak_times_this_sweep:
             idx = np.where((t >= peak_time + spike_window[0]) & (t < peak_time + spike_window[1]))[0]
-            spike_waveforms.append(v[idx])
-    
-    df_spike_waveforms = pd.DataFrame(spike_waveforms, 
+            v_this = v[idx]
+            vs.append(v_this)
+            
+    df_spike_waveforms = pd.DataFrame(vs, 
                                       index=features_dict["df_features_per_spike"].index,
                                       columns=pd.Index(t_aligned, name="ms_to_peak"),
                                       )
-    
     return df_spike_waveforms
 
 
@@ -199,7 +200,7 @@ def extract_features_using_efel(raw, if_save_interpolated):
     # Add metadata to features_dict
     features_dict["df_sweeps"] = df_sweeps
     features_dict["df_spike_waveforms"] = df_spike_waveforms
-    features_dict["efel_settings"] = pd.DataFrame([efel.get_settings().__dict__])
+    features_dict["efel_settings"] = pd.Series([efel.get_settings().__dict__])
     
     return features_dict
 
@@ -207,16 +208,15 @@ def extract_features_using_efel(raw, if_save_interpolated):
 def process_one_nwb(ephys_roi_id: str, if_save_interpolated: bool = False):
     # --- 1. Get raw data ---
     raw = PatchSeqNWB(ephys_roi_id=ephys_roi_id)
-   
+
     # --- 2. Extract features using eFEL ---
     features_dict = extract_features_using_efel(raw, if_save_interpolated)
-    
+
     # --- 3. Save features_dict to HDF5 using panda's hdf5 store ---
     save_dict_to_hdf5(features_dict, f"data/efel_features/{ephys_roi_id}_efel_features.h5")
-    
 
     return
-    
+
 
 if __name__ == "__main__":
     import tqdm
@@ -227,14 +227,8 @@ if __name__ == "__main__":
 
     df_meta = load_ephys_metadata()
     
-    for ephys_roi_id in tqdm.tqdm(df_meta["ephys_roi_id_tab_master"][:2]):
+    for ephys_roi_id in tqdm.tqdm(df_meta["ephys_roi_id_tab_master"][:1]):
         logger.info(f"Processing {ephys_roi_id}...")
         process_one_nwb(ephys_roi_id=str(int(ephys_roi_id)), 
                         if_save_interpolated=False)
  
-
-    # test load
-    features_dict_loaded = load_dict_from_hdf5(
-         f"data/efel_features/{ephys_roi_id}_efel_features.h5"
-    )
-    print(features_dict_loaded)
