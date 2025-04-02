@@ -21,7 +21,7 @@ def process_all_nwbs_in_parallel():
     with pool:
         # Queue all tasks
         jobs = []
-        for _ephys_roi_id in all_ephys_roi_ids[:10]:
+        for _ephys_roi_id in all_ephys_roi_ids:
             job = pool.apply_async(
                 process_one_nwb,
                 args=(str(int(_ephys_roi_id)), False, RESULTS_DIRECTORY)
@@ -52,11 +52,11 @@ def generate_sweep_plots_one(ephys_roi_id: str):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
-    # logger.info("-" * 80)
-    # logger.info("Processing all NWBs in parallel...")
-    # process_all_nwbs_in_parallel()
+    logger.info("-" * 80)
+    logger.info("Processing all NWBs in parallel...")
+    process_all_nwbs_in_parallel()
     
     logger.info("-" * 80)
     logger.info("Generating sweep plots in parallel...")
     
-    generate_sweep_plots_one("1418561975")
+    # generate_sweep_plots_one("1418561975")
