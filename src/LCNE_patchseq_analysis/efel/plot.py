@@ -158,6 +158,10 @@ def plot_overlaid_spikes(
     for i in reversed(range(n_spikes)):
         v = spike_this.query("spike_idx == @i").values[0]
         peak_time = df_spike_feature["peak_time"].loc[i]
+        
+        if peak_time != peak_time:
+            continue
+        
         peak_time_idx_in_raw = int(peak_time / TIME_STEP)
         dvdt = np.gradient(v, t)
 
@@ -199,6 +203,7 @@ def plot_overlaid_spikes(
         threshold = efel_settings["Threshold"]
         threshold_time_idx = np.where(v >= threshold)[0][0]
         threshold_time = t[threshold_time_idx]
+        
         AP_width = df_spike_feature["AP_width"].loc[i]
         ax_v.plot(threshold_time, threshold, "ko", fillstyle="none",
                   ms=10, label=f"Threshold $\equiv$ {threshold} mV")
@@ -207,15 +212,16 @@ def plot_overlaid_spikes(
                   label=f"AP_width = {AP_width:.2f}")
 
         # AP_duration_half_width
-        half_rise_time = t[df_spike_feature["AP_rise_indices"].loc[0].astype(
-            int) - peak_time_idx_in_raw + peak_time_idx_in_t]
-        half_voltage = (df_spike_feature["AP_begin_voltage"].loc[i] +
-                        df_spike_feature["peak_voltage"].loc[i]) / 2
-        AP_duration_half_width = df_spike_feature["AP_duration_half_width"].loc[i]
-        ax_v.plot(half_rise_time, half_voltage, "mo", ms=10)
-        ax_v.plot([half_rise_time, half_rise_time + AP_duration_half_width],
-                  [half_voltage, half_voltage], "m-",
-                  label=f"AP_duration_half_width = {AP_duration_half_width:.2f}")
+        if df_spike_feature["AP_rise_indices"].notna().loc[i]:
+            half_rise_time = t[int(df_spike_feature["AP_rise_indices"].loc[i])
+                               - peak_time_idx_in_raw + peak_time_idx_in_t]
+            half_voltage = (df_spike_feature["AP_begin_voltage"].loc[i] +
+                            df_spike_feature["peak_voltage"].loc[i]) / 2
+            AP_duration_half_width = df_spike_feature["AP_duration_half_width"].loc[i]
+            ax_v.plot(half_rise_time, half_voltage, "mo", ms=10)
+            ax_v.plot([half_rise_time, half_rise_time + AP_duration_half_width],
+                    [half_voltage, half_voltage], "m-",
+                    label=f"AP_duration_half_width = {AP_duration_half_width:.2f}")
 
         # Phase plot: phaseslope
         begin_ind = np.where(t >= t_begin)[0][0]

@@ -11,6 +11,7 @@ from LCNE_patchseq_analysis.efel.single_cell import process_one_nwb
 from LCNE_patchseq_analysis.efel.plot import plot_sweep_summary
 logger = logging.getLogger(__name__)
 
+
 def process_all_nwbs_in_parallel():
     """Process all NWBs in parallel."""
     pool = mp.Pool(processes=mp.cpu_count())
@@ -43,9 +44,10 @@ def process_all_nwbs_in_parallel():
 def generate_sweep_plots_one(ephys_roi_id: str):
     """Load from HDF5 file and generate sweep plots in parallel."""
 
-    features_dict = load_dict_from_hdf5(f"{RESULTS_DIRECTORY}/features/{ephys_roi_id}_efel_features.h5")
+    features_dict = load_dict_from_hdf5(
+        f"{RESULTS_DIRECTORY}/features/{ephys_roi_id}_efel_features.h5")
     plot_sweep_summary(features_dict, f"{RESULTS_DIRECTORY}/plots/{ephys_roi_id}")
-    
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
