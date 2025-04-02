@@ -44,6 +44,11 @@ class PatchSeqNWB:
         self.json_dicts = read_json_files(self.ephys_roi_id)
         self.df_sweeps = jsons_to_df(self.json_dicts)
 
+        # Turn start_time and duration into ms
+        self.df_sweeps["stimulus_start_time"] = self.df_sweeps["stimulus_start_time"] * 1000
+        self.df_sweeps["stimulus_duration"] = self.df_sweeps["stimulus_duration"] * 1000
+        self.valid_sweeps = self.df_sweeps.loc[self.df_sweeps["passed"].notna(), "sweep_number"]
+
     def get_raw_trace(self, sweep_number):
         """Get the raw trace for a given sweep number."""
         try:
@@ -58,6 +63,14 @@ class PatchSeqNWB:
         except KeyError:
             raise KeyError(f"Sweep number {sweep_number} not found in NWB file.")
 
+    def get_time(self, sweep_number):
+        """Get the time for a given sweep number."""
+        try:
+            length = len(self.hdf[f"acquisition/data_{sweep_number:05}_AD0/data"])
+            return self.dt_ms * np.arange(length)
+        except KeyError:
+            raise KeyError(f"Sweep number {sweep_number} not found in NWB file.")
+
 
 if __name__ == "__main__":
 
@@ -67,5 +80,6 @@ if __name__ == "__main__":
     ephys_roi_id = "1410790193"
     raw = PatchSeqNWB(ephys_roi_id)
 
-    print(raw.get_raw_trace(0))  # Get the raw trace for the first sweep
-    print(raw.get_stimulus(0))  # Get the stimulus for the first sweep
+    print(len(raw.get_raw_trace(0)))  # Get the raw trace for the first sweep
+    print(len(raw.get_stimulus(0)))  # Get the stimulus for the first sweep
+    print(len(raw.get_time(0)))  # Get the time for the first sweep

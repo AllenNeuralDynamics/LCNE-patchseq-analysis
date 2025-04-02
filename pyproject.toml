@@ -24,7 +24,6 @@ dependencies = [
     'umap-learn',
     'seaborn',
     'h5py',
-    'efel',
 ]
 
 [project.optional-dependencies]
@@ -36,6 +35,11 @@ dev = [
     'isort',
     'Sphinx',
     'furo'
+]
+
+efel = [
+    'efel',
+    'tables',
 ]
 
 panel = [
@@ -67,6 +71,10 @@ all = [
     'watchfiles',
     'openpyxl',
     'pg8000',
+    'efel',
+    'h5py',
+    'tqdm',
+    'tables',
 ]
 
 [tool.setuptools.packages.find]

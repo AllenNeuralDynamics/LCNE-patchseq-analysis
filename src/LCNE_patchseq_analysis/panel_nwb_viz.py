@@ -1,4 +1,4 @@
-""" 
+"""
 Panel-based visualization tool for navigating and visualizing patch-seq NWB files.
 
 To start the app, run:
@@ -110,9 +110,7 @@ class PatchSeqNWBApp(param.Parameterized):
         )
         # Bind the slider to the plotting function.
         plot_panel = pn.bind(
-            PatchSeqNWBApp.update_plot,
-            raw=raw_this_cell,
-            sweep=slider.param.value
+            PatchSeqNWBApp.update_plot, raw=raw_this_cell, sweep=slider.param.value
         )
         mpl_pane = pn.pane.Matplotlib(plot_panel, dpi=400, width=600, height=400)
 
@@ -148,29 +146,33 @@ class PatchSeqNWBApp(param.Parameterized):
         # Apply conditional row highlighting.
         tab_sweeps.style.apply(
             PatchSeqNWBApp.highlight_selected_rows,
-            highlight_subset=raw_this_cell.df_sweeps.query(
-                "passed == True")["sweep_number"].tolist(),
+            highlight_subset=raw_this_cell.df_sweeps.query("passed == True")[
+                "sweep_number"
+            ].tolist(),
             color="lightgreen",
             fields=["passed"],
             axis=1,
         ).apply(
             PatchSeqNWBApp.highlight_selected_rows,
-            highlight_subset=raw_this_cell.df_sweeps.query(
-                "passed != passed")["sweep_number"].tolist(),
+            highlight_subset=raw_this_cell.df_sweeps.query("passed != passed")[
+                "sweep_number"
+            ].tolist(),
             color="salmon",
             fields=["passed"],
             axis=1,
         ).apply(
             PatchSeqNWBApp.highlight_selected_rows,
-            highlight_subset=raw_this_cell.df_sweeps.query(
-                "passed == False")["sweep_number"].tolist(),
+            highlight_subset=raw_this_cell.df_sweeps.query("passed == False")[
+                "sweep_number"
+            ].tolist(),
             color="yellow",
             fields=["passed"],
             axis=1,
         ).apply(
             PatchSeqNWBApp.highlight_selected_rows,
-            highlight_subset=raw_this_cell.df_sweeps.query(
-                "num_spikes > 0")["sweep_number"].tolist(),
+            highlight_subset=raw_this_cell.df_sweeps.query("num_spikes > 0")[
+                "sweep_number"
+            ].tolist(),
             color="lightgreen",
             fields=["num_spikes"],
             axis=1,
@@ -198,8 +200,11 @@ class PatchSeqNWBApp(param.Parameterized):
         # --- End Synchronization ---
 
         # Build a reactive QC message panel.
-        sweep_msg = pn.bind(PatchSeqNWBApp.get_qc_message,
-                            sweep=slider.param.value, df_sweeps=raw_this_cell.df_sweeps)
+        sweep_msg = pn.bind(
+            PatchSeqNWBApp.get_qc_message,
+            sweep=slider.param.value,
+            df_sweeps=raw_this_cell.df_sweeps,
+        )
         sweep_msg_panel = pn.pane.Markdown(sweep_msg, width=600, height=30)
 
         return pn.Row(
@@ -252,7 +257,8 @@ class PatchSeqNWBApp(param.Parameterized):
             if event.new:
                 selected_index = event.new[0]
                 self.data_holder.ephys_roi_id = str(
-                    int(self.df_meta.iloc[selected_index]["ephys_roi_id"]))
+                    int(self.df_meta.iloc[selected_index]["ephys_roi_id"])
+                )
 
         tab_df_meta.param.watch(update_sweep_view_from_table, "selection")
 
@@ -275,8 +281,9 @@ class PatchSeqNWBApp(param.Parameterized):
         pane_cell_selector = self.cell_selector_panel
 
         # Bind the sweep panel to the current cell selection.
-        pane_one_cell = pn.bind(self.create_sweep_panel,
-                                ephys_roi_id=self.data_holder.param.ephys_roi_id)
+        pane_one_cell = pn.bind(
+            self.create_sweep_panel, ephys_roi_id=self.data_holder.param.ephys_roi_id
+        )
 
         layout = pn.Column(
             pn.pane.Markdown("# Patch-seq Ephys Data Navigator\n"),
