@@ -60,9 +60,10 @@ def extract_efel_features_in_parallel(only_new: bool = True):
 def generate_sweep_plots_one(ephys_roi_id: str):
     """Load from HDF5 file and generate sweep plots in parallel."""
     try:
+        logger.info(f"Generating sweep plots for {ephys_roi_id}...")
         features_dict = load_efel_features_from_roi(ephys_roi_id)
         plot_sweep_summary(features_dict, f"{RESULTS_DIRECTORY}/plots")
-        os.makedirs(f"{RESULTS_DIRECTORY}/plots/{ephys_roi_id}/all_success", exist_ok=True)
+        logger.info(f"Successfully generated sweep plots for {ephys_roi_id}!")
         return "Success"
     except Exception as e:
         import traceback
@@ -83,7 +84,7 @@ def generate_sweep_plots_in_parallel(only_new: bool = True):
     ]
 
     if only_new:
-        # Exclude ROI IDs that already have sweep plots
+        # Exclude ROI IDs that already have ALL success sweep plots
         ephys_roi_ids = [
             eph for eph in ephys_roi_ids if not os.path.exists(
                 f"{RESULTS_DIRECTORY}/plots/{int(eph)}/all_success"
@@ -115,7 +116,7 @@ if __name__ == "__main__":
 
     logger.info("-" * 80)
     logger.info("Extracting features in parallel...")
-    # extract_efel_features_in_parallel(only_new=True)
+    extract_efel_features_in_parallel(only_new=True)
 
     logger.info("-" * 80)
     logger.info("Generating sweep plots in parallel...")
