@@ -22,7 +22,7 @@ def pack_traces_for_efel(raw):
         (df_sweeps["passed"].notna()) &
         ~(df_sweeps["stimulus_code"].str.contains("CHIRP", case=False)),
         "sweep_number"
-    ].values[:3]
+    ].values
 
     traces = []
     for sweep_number in valid_sweep_numbers:
@@ -45,7 +45,7 @@ def pack_traces_for_efel(raw):
     return traces, valid_sweep_numbers
 
 
-def reformat_features(features):
+def reformat_features(df_features, if_save_interpolated: bool = False):
     """Reformat features extracted from eFEL.
     
     This function processes the raw features dictionary and creates two DataFrames:
@@ -57,12 +57,14 @@ def reformat_features(features):
     
     Args:
         features (dict): Dictionary of features extracted by eFEL
+        if_save_interpolated (bool): Whether to save the interpolated data
+            By default, interp_step is set to 0.02 ms, which is the same as the sampling rate.
+            So there is no need to save the interpolated data.
         
     Returns:
         dict: Dictionary containing reformatted DataFrames and interpolated data
     """
-    df_features = pd.DataFrame(features, index=valid_sweep_numbers)
-    df_features.index.name = "sweep_number"
+
 
     # Create a new DataFrame for per-spike features
     list_features_per_spike = []
@@ -71,8 +73,9 @@ def reformat_features(features):
     dict_features_per_sweep = {}
 
     # Pop two columns "time" and "voltage" from df_features and save to "interpolated_time" and "interpolated_voltage"
-    interpolated_time = df_features["time"]
-    interpolated_voltage = df_features["voltage"]
+    if if_save_interpolated:
+        interpolated_time = df_features["time"]
+        interpolated_voltage = df_features["voltage"]
     df_features.drop(columns=["time", "voltage"], inplace=True)
 
     # Process each column in the original DataFrame
@@ -106,12 +109,16 @@ def reformat_features(features):
     df_features_per_sweep = pd.DataFrame(dict_features_per_sweep)
     df_features_per_spike = pd.DataFrame(list_features_per_spike).pivot(index=["sweep_number", "spike_idx"], columns="feature", values="value")
     
-    return {
+    dict_to_save = {
         "df_features_per_sweep": df_features_per_sweep,
         "df_features_per_spike": df_features_per_spike,
-        "interpolated_time": interpolated_time,
-        "interpolated_voltage": interpolated_voltage
     }
+    
+    if if_save_interpolated:
+        dict_to_save["interpolated_time"] = interpolated_time
+        dict_to_save["interpolated_voltage"] = interpolated_voltage
+    
+    return dict_to_save
     
 
 def save_dict_to_hdf5(data_dict: dict, filename: str, compress: bool = False):
@@ -145,34 +152,48 @@ def load_dict_from_hdf5(filename: str):
         return {key: store[key] for key in store.keys()}
 
 
-if __name__ == "__main__":
-    import LCNE_patchseq_analysis.efel  # Apply global efel settings
-    
-    logging.basicConfig(level=logging.INFO)
-
-    ephys_roi_id = "1212557784"
-    
+def process_one_nwb(ephys_roi_id: str, if_save_interpolated: bool = False):
     # Get raw data
     raw = PatchSeqNWB(ephys_roi_id=ephys_roi_id)
    
     # Package all valid sweeps for eFEL
     traces, valid_sweep_numbers = pack_traces_for_efel(raw)
-   
+      
     # Get all features
-    logger.info(f"Getting features for {len(traces)} traces...")
+    logger.debug(f"Getting features for {len(traces)} traces...")
     features = efel.get_feature_values(
         traces,
         efel.get_feature_names(),  # Get all features
         raise_warnings=False,
     )
-    logger.info("Done!")
+    logger.debug("Done!")
     
     # Reformat features
-    features_dict = reformat_features(features)
+    df_features = pd.DataFrame(features, index=valid_sweep_numbers)
+    df_features.index.name = "sweep_number"
+    features_dict = reformat_features(df_features, if_save_interpolated)
     
     # Save features_dict to HDF5 using panda's hdf5 store
     save_dict_to_hdf5(features_dict, f"data/efel_features/{ephys_roi_id}_efel_features.h5")
 
     # Load features_dict from HDF5
     features_dict_loaded = load_dict_from_hdf5(f"data/efel_features/{ephys_roi_id}_efel_features.h5")
-    pass
+    
+
+if __name__ == "__main__":
+    import LCNE_patchseq_analysis.efel  # Apply global efel settings
+    import tqdm
+    
+    logging.basicConfig(level=logging.INFO)
+
+    from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
+
+    df_meta = load_ephys_metadata()
+    
+    for ephys_roi_id in tqdm.tqdm(df_meta["ephys_roi_id_tab_master"]):
+        logger.info(f"Processing {ephys_roi_id}...")
+        process_one_nwb(ephys_roi_id=str(int(ephys_roi_id)), 
+                        if_save_interpolated=False)
+ 
+
+    
