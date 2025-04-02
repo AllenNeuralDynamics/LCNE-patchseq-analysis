@@ -43,7 +43,7 @@ class PatchSeqNWB:
         """Load metadata from jsons"""
         self.json_dicts = read_json_files(self.ephys_roi_id)
         self.df_sweeps = jsons_to_df(self.json_dicts)
-        
+
         # Turn start_time and duration into ms
         self.df_sweeps["stimulus_start_time"] = self.df_sweeps["stimulus_start_time"] * 1000
         self.df_sweeps["stimulus_duration"] = self.df_sweeps["stimulus_duration"] * 1000
@@ -62,7 +62,7 @@ class PatchSeqNWB:
             return np.array(self.hdf[f"stimulus/presentation/data_{sweep_number:05}_DA0/data"])
         except KeyError:
             raise KeyError(f"Sweep number {sweep_number} not found in NWB file.")
-        
+
     def get_time(self, sweep_number):
         """Get the time for a given sweep number."""
         try:
@@ -70,6 +70,7 @@ class PatchSeqNWB:
             return self.dt_ms * np.arange(length)
         except KeyError:
             raise KeyError(f"Sweep number {sweep_number} not found in NWB file.")
+
 
 if __name__ == "__main__":
 
