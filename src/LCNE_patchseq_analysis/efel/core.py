@@ -313,6 +313,7 @@ def extract_efel_one(
         os.makedirs(f"{save_dir}/features", exist_ok=True)
         save_dict_to_hdf5(features_dict, f"{save_dir}/features/{ephys_roi_id}_efel.h5")
 
+        logger.info(f"Successfully extracted eFEL features for {ephys_roi_id}!")
         return "Success"
 
     except Exception as e:
@@ -330,7 +331,7 @@ if __name__ == "__main__":
 
     df_meta = load_ephys_metadata()
 
-    for _ephys_roi_id in ["1298835612"]:  # tqdm.tqdm(df_meta["ephys_roi_id_tab_master"][:10]):
+    for _ephys_roi_id in ["1366424417"]:  # tqdm.tqdm(df_meta["ephys_roi_id_tab_master"][:10]):
         logger.info(f"Processing {_ephys_roi_id}...")
         extract_efel_one(
             ephys_roi_id=str(int(_ephys_roi_id)),

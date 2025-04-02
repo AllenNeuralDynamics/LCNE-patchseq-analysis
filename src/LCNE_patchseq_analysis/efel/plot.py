@@ -366,3 +366,7 @@ def plot_sweep_summary(features_dict: Dict[str, Any], save_dir: str) -> None:
                 dpi=400,
             )
             plt.close(fig_spikes)
+
+    # Indicate that all sweep plots have been successfully generated
+    os.makedirs(f"{save_dir}/{ephys_roi_id}/all_success", exist_ok=True)
+
