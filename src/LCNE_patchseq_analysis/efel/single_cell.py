@@ -178,13 +178,13 @@ def extract_spike_waveforms(
         index=features_dict["df_features_per_spike"].index,
         columns=pd.Index(t_aligned, name="ms_to_peak"),
     )
-
+    
 
 def extract_peri_stimulus_raw_traces(
     raw_traces: List[Dict[str, Any]],
     features_dict: Dict[str, Any],
     before_ratio: float = 0.2,
-    after_ratio: float = 0.4,
+    after_ratio: float = 0.5,
     min_before_ms: float = 10,
     min_after_ms: float = 100,
 ) -> pd.DataFrame:
@@ -206,8 +206,8 @@ def extract_peri_stimulus_raw_traces(
         before_ms = max(min_before_ms, before_ratio * (stim_end - stim_start))
         after_ms = max(min_after_ms, after_ratio * (stim_end - stim_start))
         
-        begin_t = stim_start - before_ms
-        end_t = stim_end + after_ms
+        begin_t = max(0, stim_start - before_ms)
+        end_t = min(t[-1], stim_end + after_ms)
         idx_before = np.where(t >= begin_t)[0][0]
         idx_after = np.where(t >= end_t)[0][0]
         
@@ -221,7 +221,9 @@ def extract_peri_stimulus_raw_traces(
             "V": vs,
             "I": Is,
             "begin_t": begin_ts,
-            "end_t": end_ts
+            "end_t": end_ts,
+            "stim_start": [raw_trace["stim_start"][0] for raw_trace in raw_traces],
+            "stim_end": [raw_trace["stim_end"][0] for raw_trace in raw_traces],
         },
         index=features_dict["df_features_per_sweep"].index,
     )
@@ -315,7 +317,7 @@ def process_one_nwb(
     save_dict_to_hdf5(features_dict, f"{save_dir}/features/{ephys_roi_id}_efel_features.h5")
 
     # --- 4. Generate sweep plots ---
-    plot_sweep_summary(raw_traces, features_dict, f"{save_dir}/plots")
+    plot_sweep_summary(features_dict, save_dir=f"{save_dir}/plots")
 
 
 if __name__ == "__main__":
@@ -327,7 +329,7 @@ if __name__ == "__main__":
 
     df_meta = load_ephys_metadata()
 
-    for _ephys_roi_id in ["1408897096"]: # tqdm.tqdm(df_meta["ephys_roi_id_tab_master"][:1]):
+    for _ephys_roi_id in ["1418799012"]: #tqdm.tqdm(df_meta["ephys_roi_id_tab_master"][:10]):
         logger.info(f"Processing {_ephys_roi_id}...")
         process_one_nwb(
             ephys_roi_id=str(int(_ephys_roi_id)),
