@@ -294,7 +294,7 @@ def extract_features_using_efel(
     return features_dict, raw_traces
 
 
-def process_one_nwb(
+def extract_efel_one(
     ephys_roi_id: str,
     if_save_interpolated: bool = False,
     save_dir: str = RESULTS_DIRECTORY
@@ -315,7 +315,7 @@ def process_one_nwb(
 
         # --- 3. Save features_dict to HDF5 using panda's hdf5 store ---
         os.makedirs(f"{save_dir}/features", exist_ok=True)
-        save_dict_to_hdf5(features_dict, f"{save_dir}/features/{ephys_roi_id}_efel_features.h5")
+        save_dict_to_hdf5(features_dict, f"{save_dir}/features/{ephys_roi_id}_efel.h5")
 
         return "Success"
     
@@ -337,7 +337,7 @@ if __name__ == "__main__":
 
     for _ephys_roi_id in ["1418561975"]: #tqdm.tqdm(df_meta["ephys_roi_id_tab_master"][:10]):
         logger.info(f"Processing {_ephys_roi_id}...")
-        process_one_nwb(
+        extract_efel_one(
             ephys_roi_id=str(int(_ephys_roi_id)),
             if_save_interpolated=False,
             save_dir=RESULTS_DIRECTORY
