@@ -217,7 +217,7 @@ def process_one_nwb(ephys_roi_id: str, if_save_interpolated: bool = False, save_
     save_dict_to_hdf5(features_dict, f"{save_dir}/{ephys_roi_id}_efel_features.h5")
     
     # --- 4. Generate sweep plots ---
-    plot_sweep_summary(raw_traces, features_dict)
+    plot_sweep_summary(raw_traces, features_dict, save_dir)
     return
 
 
