@@ -18,7 +18,7 @@ def extract_efel_features_in_parallel():
     """Extract eFEL features in parallel."""
     pool = mp.Pool(processes=mp.cpu_count())
     df_meta = load_ephys_metadata()
-    all_ephys_roi_ids = df_meta["ephys_roi_id_tab_master"][:10]
+    all_ephys_roi_ids = df_meta["ephys_roi_id_tab_master"]
     
     with pool:
         # Queue all tasks
