@@ -331,10 +331,10 @@ if __name__ == "__main__":
 
     df_meta = load_ephys_metadata()
 
-    for _ephys_roi_id in ["1366424417"]:  # tqdm.tqdm(df_meta["ephys_roi_id_tab_master"][:10]):
+    for _ephys_roi_id in ["1293780422"]:  # tqdm.tqdm(df_meta["ephys_roi_id_tab_master"][:10]):
         logger.info(f"Processing {_ephys_roi_id}...")
         extract_efel_one(
-            ephys_roi_id=str(int(_ephys_roi_id)),
+            ephys_roi_id=_ephys_roi_id,
             if_save_interpolated=False,
             save_dir=RESULTS_DIRECTORY,
         )

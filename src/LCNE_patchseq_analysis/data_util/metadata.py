@@ -87,6 +87,10 @@ def load_ephys_metadata():
         df["injection region"].astype(str).str.contains("Crus", na=False),
         "injection region",
     ] = "Crus 1"
+
+    # Change columns with roi_id to str(int())
+    for col in ["ephys_roi_id_tab_master", "ephys_roi_id_lims"]:
+        df[col] = df[col].apply(lambda x: str(int(x)) if pd.notna(x) else "")
     return df
 
 
@@ -97,3 +101,6 @@ if __name__ == "__main__":
     )
     df_merged = jsons_to_df(json_dicts)
     print(df_merged.head())
+
+    df_meta = load_ephys_metadata()
+    print(df_meta.head())
