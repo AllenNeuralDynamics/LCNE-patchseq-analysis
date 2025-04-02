@@ -180,9 +180,50 @@ def extract_spike_waveforms(
     )
 
 
+def extract_peri_stimulus_raw_traces(
+    raw_traces: List[Dict[str, Any]],
+    features_dict: Dict[str, Any],
+    before_ratio: float = 0.2,
+    after_ratio: float = 0.4,
+    min_before_ms: float = 10,
+    min_after_ms: float = 100,
+) -> pd.DataFrame:
+    """Extract peri-stimulus raw traces from raw data.
+    """
+    
+    vs = []
+    begin_ts = []
+    end_ts = []
+    
+    for raw_trace in raw_traces:
+        v = raw_trace["V"]
+        t = raw_trace["T"]
+        stim_start = raw_trace["stim_start"][0]
+        stim_end = raw_trace["stim_end"][0]
+        
+        before_ms = max(min_before_ms, before_ratio * (stim_end - stim_start))
+        after_ms = max(min_after_ms, after_ratio * (stim_end - stim_start))
+        
+        begin_t = stim_start - before_ms
+        end_t = stim_end + after_ms
+        idx_before = np.where(t >= begin_t)[0][0]
+        idx_after = np.where(t >= end_t)[0][0]
+        
+        vs.append([v[idx_before:idx_after]])
+        begin_ts.append(begin_t)
+        end_ts.append(end_t)
+    df_peri_stimulus_raw_traces = pd.DataFrame(
+        vs,
+        index=features_dict["df_features_per_sweep"].index,
+        columns=["peri_stimulus_voltage"]
+    )
+    df_peri_stimulus_raw_traces["begin_t"] = begin_ts
+    df_peri_stimulus_raw_traces["end_t"] = end_ts
+
+
 def extract_features_using_efel(
     raw: PatchSeqNWB,
-    if_save_interpolated: bool
+    if_save_interpolated: bool = False
 ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
     """Extract features using eFEL.
     
@@ -214,6 +255,9 @@ def extract_features_using_efel(
 
     # -- Extract spike waveforms --
     df_spike_waveforms = extract_spike_waveforms(raw_traces, features_dict)
+    
+    # -- Extract peri-stimulus raw traces --
+    df_peri_stimulus_raw_traces = extract_peri_stimulus_raw_traces(raw_traces, features_dict)
 
     # -- Enrich df_sweeps --
     df_sweeps = raw.df_sweeps.copy()
@@ -231,6 +275,7 @@ def extract_features_using_efel(
     # Add metadata to features_dict
     features_dict["df_sweeps"] = df_sweeps
     features_dict["df_spike_waveforms"] = df_spike_waveforms
+    features_dict["df_peri_stimulus_raw_traces"] = df_peri_stimulus_raw_traces
     features_dict["efel_settings"] = pd.DataFrame([efel.get_settings().__dict__])
 
     return features_dict, raw_traces
