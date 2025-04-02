@@ -1,7 +1,7 @@
 """Extracting features from a single cell."""
 
 import logging
-
+import os
 import efel
 import pandas as pd
 import numpy as np
@@ -33,13 +33,13 @@ def pack_traces_for_efel(raw):
         stim_start = meta_this["stimulus_start_time"].values[0]
         stim_end = stim_start + meta_this["stimulus_duration"].values[0]
 
-        # Use efel to get features
+        # Package raw trace)
         traces.append({
             "T": time,
             "V": trace,
             "stim_start": [stim_start],
             "stim_end": [stim_end],
-            "sweep_number": [sweep_number],
+            "sweep_number": [sweep_number],  # not for eFEL, but for future use
         })
 
     logger.info(f"Packed {len(traces)} traces for eFEL.")
@@ -206,7 +206,8 @@ def extract_features_using_efel(raw, if_save_interpolated):
     return features_dict, raw_traces
 
 
-def process_one_nwb(ephys_roi_id: str, if_save_interpolated: bool = False, save_dir: str = "data/efel_features"):
+def process_one_nwb(ephys_roi_id: str, if_save_interpolated: bool = False, save_dir: str = "results"):
+        
     # --- 1. Get raw data ---
     raw = PatchSeqNWB(ephys_roi_id=ephys_roi_id)
 
@@ -214,10 +215,14 @@ def process_one_nwb(ephys_roi_id: str, if_save_interpolated: bool = False, save_
     features_dict, raw_traces = extract_features_using_efel(raw, if_save_interpolated)
 
     # --- 3. Save features_dict to HDF5 using panda's hdf5 store ---
-    save_dict_to_hdf5(features_dict, f"{save_dir}/{ephys_roi_id}_efel_features.h5")
+    os.makedirs(f"{save_dir}/features", exist_ok=True)
+    save_dict_to_hdf5(features_dict, f"{save_dir}/features/{ephys_roi_id}_efel_features.h5")
     
     # --- 4. Generate sweep plots ---
-    plot_sweep_summary(raw_traces, features_dict, save_dir)
+    # Append stimulus to raw_traces
+    for raw_trace in raw_traces:
+        raw_trace["stimulus"] = raw.get_stimulus(raw_trace["sweep_number"][0])
+    plot_sweep_summary(raw_traces, features_dict, f"{save_dir}/plots")
     return
 
 
