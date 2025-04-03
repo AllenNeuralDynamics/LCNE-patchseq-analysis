@@ -1,8 +1,10 @@
 """Extracting features using eFEL."""
 
-import efel
 import json
 import os
+
+import efel
+
 from LCNE_patchseq_analysis import TIME_STEP
 
 EFEL_SETTINGS = {

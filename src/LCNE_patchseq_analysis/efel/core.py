@@ -84,11 +84,9 @@ def reformat_features(
         interpolated_data["interpolated_voltage"] = df_features["voltage"]
     df_features.drop(columns=["time", "voltage"], inplace=True)
 
-    spike_counts = [s[0] for s in df_features["spike_count"].to_list()]
-    
     # Extract per-spike and per-sweep (length == 1 and not in EFEL_PER_SPIKE_FEATURES)
     lengths = df_features.map(lambda x: 0 if x is None else len(x))
-    
+
     for col in df_features.columns:
         if col in EFEL_PER_SPIKE_FEATURES:
             # For multi-spike features
@@ -127,7 +125,7 @@ def reformat_features(
     result_dict = {
         "df_features_per_sweep": df_features_per_sweep,
         "df_features_per_spike": df_features_per_spike,
-        # Also save the original features because some columns 
+        # Also save the original features because some columns
         # are neither scalar nor per_spike (like ISI)
         "df_features_original": df_features,
     }
@@ -258,7 +256,7 @@ def extract_features_using_efel(
         raise_warnings=False,
     )
     logger.debug("Done!")
-    
+
     # Remove spikes before stimulus onset
     for feature, raw_trace in zip(features, raw_traces):
         stim_start = raw_trace["stim_start"][0]
@@ -268,7 +266,7 @@ def extract_features_using_efel(
         invalid_spike_idx = np.where(peak_times < stim_start)[0]
         if len(invalid_spike_idx) > 0:
             pass
-    
+
     # Reformat features
     df_features = pd.DataFrame(features, index=valid_sweep_numbers)
     df_features.index.name = "sweep_number"
@@ -305,8 +303,10 @@ def extract_features_using_efel(
 
 
 def extract_efel_one(
-    ephys_roi_id: str, if_save_interpolated: bool = False, save_dir: str = RESULTS_DIRECTORY, 
-    if_generate_sweep_plots: bool = False
+    ephys_roi_id: str,
+    if_save_interpolated: bool = False,
+    save_dir: str = RESULTS_DIRECTORY,
+    if_generate_sweep_plots: bool = False,
 ) -> None:
     """Process one NWB file.
 
@@ -330,7 +330,7 @@ def extract_efel_one(
         # --- 3. Save features_dict to HDF5 using panda's hdf5 store ---
         os.makedirs(f"{save_dir}/features", exist_ok=True)
         save_dict_to_hdf5(features_dict, f"{save_dir}/features/{ephys_roi_id}_efel.h5")
-        
+
         if if_generate_sweep_plots:
             plot_sweep_summary(features_dict, f"{save_dir}/plots")
 
