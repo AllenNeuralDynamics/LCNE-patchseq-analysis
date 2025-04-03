@@ -10,7 +10,7 @@ import pandas as pd
 
 from LCNE_patchseq_analysis import RESULTS_DIRECTORY, TIME_STEP
 from LCNE_patchseq_analysis.data_util.nwb import PatchSeqNWB
-from LCNE_patchseq_analysis.efel import EFEL_NON_SCALAR_FEATURES, REBOUND_ALLOWED_TIME
+from LCNE_patchseq_analysis.efel import EFEL_NON_SCALAR_FEATURES
 from LCNE_patchseq_analysis.efel.io import save_dict_to_hdf5
 from LCNE_patchseq_analysis.efel.plot import plot_sweep_summary
 
@@ -86,13 +86,6 @@ def reformat_features(
 
     # Reoganize features into per-sweep and per-spike DataFrames
     for col in df_features.columns:
-        lengths = df_features[col].map(lambda x: 0 if x is None else len(x))
-
-        # If all values are None, skip this column
-        if max(lengths) == 0:
-            continue
-
-        # Check if it's a scalar or array feature
         if col in EFEL_NON_SCALAR_FEATURES:
             # For multi-spike features
             # 1. Extract first spike value to per_sweep DataFrame
@@ -249,21 +242,22 @@ def extract_features_using_efel(
     # -- Package all valid sweeps for eFEL --
     raw_traces, valid_sweep_numbers = pack_traces_for_efel(raw)
 
-    # Put forward the stimulus offset by REBOUND_ALLOWED_TIME, together with
-    # strict_stiminterval=True, this ensures that all spikes are after the stimulus onset, while
-    # including possible rebound spikes.
-    raw_traces_for_efel = raw_traces.copy()
-    for raw_trace in raw_traces_for_efel:
-        raw_trace["stim_end"] = [raw_trace["stim_end"][0] + REBOUND_ALLOWED_TIME]
-
     # Get all features
     logger.debug(f"Getting features for {len(raw_traces)} traces...")
     features = efel.get_feature_values(
-        traces=raw_traces_for_efel,
+        traces=raw_traces,
         feature_names=efel.get_feature_names(),  # Get all features
         raise_warnings=False,
     )
     logger.debug("Done!")
+    
+    # Remove spikes before stimulus onset
+    for feature, raw_trace in zip(features, raw_traces):
+        stim_start = raw_trace["stim_start"][0]
+        peak_times = feature["peak_time"]
+        if peak_times is None:
+            continue
+        pass
     
     # Reformat features
     df_features = pd.DataFrame(features, index=valid_sweep_numbers)
