@@ -7,7 +7,7 @@ from LCNE_patchseq_analysis import TIME_STEP
 
 EFEL_SETTINGS = {
     "interp_step": TIME_STEP,
-    "Threshold": -20.0,
+    "Threshold": -10.0,
     "strict_stiminterval": False,
 }
 
@@ -18,5 +18,5 @@ for setting, value in EFEL_SETTINGS.items():
 # Load non-scalar features
 # Get the directory of the current file
 current_dir = os.path.dirname(os.path.abspath(__file__))
-with open(os.path.join(current_dir, "efel_non_scalar_features.json"), "r") as f:
-    EFEL_NON_SCALAR_FEATURES = json.load(f)
+with open(os.path.join(current_dir, "efel_per_spike_features.json"), "r") as f:
+    EFEL_PER_SPIKE_FEATURES = json.load(f)
