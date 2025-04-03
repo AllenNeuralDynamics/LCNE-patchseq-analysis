@@ -47,6 +47,11 @@ def jsons_to_df(json_dicts):
     """
 
     df_sweep_features = pd.DataFrame(json_dicts["stimulus_summary"]["sweep_features"])
+    
+    # If is empty, return None
+    if len(df_sweep_features) == 0:
+        return None
+    
     df_qc = pd.DataFrame(json_dicts["qc"]["sweep_states"])
 
     if "ephys_fx" not in json_dicts:

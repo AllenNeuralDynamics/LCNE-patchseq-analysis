@@ -44,6 +44,11 @@ class PatchSeqNWB:
         self.json_dicts = read_json_files(self.ephys_roi_id)
         self.df_sweeps = jsons_to_df(self.json_dicts)
 
+        if self.df_sweeps is None:
+            logger.warning(f"No sweep features found for {self.ephys_roi_id}!")
+            self.valid_sweeps = []
+            return
+
         # Turn start_time and duration into ms
         self.df_sweeps["stimulus_start_time"] = self.df_sweeps["stimulus_start_time"] * 1000
         self.df_sweeps["stimulus_duration"] = self.df_sweeps["stimulus_duration"] * 1000
