@@ -87,7 +87,7 @@ def load_ephys_metadata():
     https://www.notion.so/hanhou/LCNE-patch-seq-analysis-1ae3ef97e735808eb12ec452d2dc4369?pvs=4#1ba3ef97e73580ac9a5ee6e53e9b3dbe  # noqa: E501
     """
     df = pd.read_csv(RAW_DIRECTORY + "/df_metadata_merged.csv")
-    df = df.query("spreadsheet_or_lims in ('both', 'spreadsheet_only')")
+    df = df.query("spreadsheet_or_lims in ('both', 'spreadsheet_only')").copy()
 
     # Rename "Crus 1" to "Crus1"
     df.loc[
@@ -97,7 +97,7 @@ def load_ephys_metadata():
 
     # Change columns with roi_id to str(int())
     for col in ["ephys_roi_id_tab_master", "ephys_roi_id_lims"]:
-        df.loc[:, col] = df[col].apply(lambda x: str(int(x)) if pd.notna(x) else "")
+        df[col] = df[col].apply(lambda x: str(int(x)) if pd.notnull(x) else "")
     return df
 
 
