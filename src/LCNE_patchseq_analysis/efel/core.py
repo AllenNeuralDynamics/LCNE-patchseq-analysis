@@ -10,7 +10,7 @@ import pandas as pd
 
 from LCNE_patchseq_analysis import RESULTS_DIRECTORY, TIME_STEP
 from LCNE_patchseq_analysis.data_util.nwb import PatchSeqNWB
-from LCNE_patchseq_analysis.efel import EFEL_NON_SCALAR_FEATURES
+from LCNE_patchseq_analysis.efel import EFEL_PER_SPIKE_FEATURES
 from LCNE_patchseq_analysis.efel.io import save_dict_to_hdf5
 from LCNE_patchseq_analysis.efel.plot import plot_sweep_summary
 
@@ -84,9 +84,13 @@ def reformat_features(
         interpolated_data["interpolated_voltage"] = df_features["voltage"]
     df_features.drop(columns=["time", "voltage"], inplace=True)
 
-    # Reoganize features into per-sweep and per-spike DataFrames
+    spike_counts = [s[0] for s in df_features["spike_count"].to_list()]
+    
+    # Extract per-spike and per-sweep (length == 1 and not in EFEL_PER_SPIKE_FEATURES)
+    lengths = df_features.map(lambda x: 0 if x is None else len(x))
+    
     for col in df_features.columns:
-        if col in EFEL_NON_SCALAR_FEATURES:
+        if col in EFEL_PER_SPIKE_FEATURES:
             # For multi-spike features
             # 1. Extract first spike value to per_sweep DataFrame
             dict_features_per_sweep[f"first_spike_{col}"] = df_features[col].apply(
@@ -107,11 +111,12 @@ def reformat_features(
                             for i, val in enumerate(sweep_values)
                         ]
                     )
-        else:
-            # For single values, extract the scalar
+        elif lengths[col].max() <= 1:
+            # For single values (or all None), remove the scalar out of the list
             dict_features_per_sweep[col] = df_features[col].apply(
                 lambda x: x[0] if x is not None and len(x) > 0 else None
             )
+        # Otherwise, leave it as is in "df_features_original"
 
     # Pack dataframes
     df_features_per_sweep = pd.DataFrame(dict_features_per_sweep)
@@ -122,6 +127,9 @@ def reformat_features(
     result_dict = {
         "df_features_per_sweep": df_features_per_sweep,
         "df_features_per_spike": df_features_per_spike,
+        # Also save the original features because some columns 
+        # are neither scalar nor per_spike (like ISI)
+        "df_features_original": df_features,
     }
 
     if if_save_interpolated:
@@ -257,7 +265,9 @@ def extract_features_using_efel(
         peak_times = feature["peak_time"]
         if peak_times is None:
             continue
-        pass
+        invalid_spike_idx = np.where(peak_times < stim_start)[0]
+        if len(invalid_spike_idx) > 0:
+            pass
     
     # Reformat features
     df_features = pd.DataFrame(features, index=valid_sweep_numbers)
@@ -342,7 +352,7 @@ if __name__ == "__main__":
 
     df_meta = load_ephys_metadata()
 
-    for _ephys_roi_id in ["1401853581"]:  # tqdm.tqdm(df_meta["ephys_roi_id_tab_master"][:10]):
+    for _ephys_roi_id in ["1394143501", "1392370078", "1401853581"]:  # tqdm.tqdm(df_meta["ephys_roi_id_tab_master"][:10]):
         logger.info(f"Processing {_ephys_roi_id}...")
         extract_efel_one(
             ephys_roi_id=_ephys_roi_id,
