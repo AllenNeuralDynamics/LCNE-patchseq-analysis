@@ -165,4 +165,4 @@ if __name__ == "__main__":
 
     logger.info("-" * 80)
     logger.info("Generating sweep plots in parallel...")
-    generate_sweep_plots_in_parallel(skip_existing=True, skip_errors=True)
+    # generate_sweep_plots_in_parallel(skip_existing=True, skip_errors=True)

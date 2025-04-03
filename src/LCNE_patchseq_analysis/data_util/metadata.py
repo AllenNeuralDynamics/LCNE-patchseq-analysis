@@ -32,11 +32,11 @@ def read_json_files(ephys_roi_id="1410790193"):
                 continue
             raise FileNotFoundError(f"JSON file not found for {key} in {ephys_roi_id}")
         elif len(json_files) > 1:
-            raise ValueError(f"Multiple JSON files found for {key} in {ephys_roi_id}")
-        else:
-            with open(json_files[0], "r") as f:
-                json_dicts[key] = json.load(f)
-            logger.info(f"Loaded {key} from {json_files[0]}")
+            logger.warning(f"Multiple JSON files found for {key} in {ephys_roi_id}, using the first one")
+        
+        with open(json_files[0], "r") as f:
+            json_dicts[key] = json.load(f)
+        logger.info(f"Loaded {key} from {json_files[0]}")
     return json_dicts
 
 
