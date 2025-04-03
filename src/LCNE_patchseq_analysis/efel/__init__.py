@@ -8,7 +8,14 @@ from LCNE_patchseq_analysis import TIME_STEP
 EFEL_SETTINGS = {
     "interp_step": TIME_STEP,
     "Threshold": -20.0,
+    
+    # Note that we artificially put forward the stimulus offset by REBOUND_ALLOWED_TIME.
+    # Together with strict_stiminterval=True, this excludes all spikes
+    # that are before the stimulus onset, while including possible rebound spikes.
+    "strict_stiminterval": True,
 }
+
+REBOUND_ALLOWED_TIME = 1000  # ms
 
 # Set global eFEL settings
 for setting, value in EFEL_SETTINGS.items():
