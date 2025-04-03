@@ -2,7 +2,7 @@
 Panel-based visualization tool for navigating and visualizing patch-seq NWB files.
 
 To start the app, run:
-panel serve panel_nwb_viz.py --dev
+panel serve panel_nwb_viz.py --dev --allow-websocket-origin=codeocean.allenneuraldynamics.org
 """
 
 import matplotlib.pyplot as plt
