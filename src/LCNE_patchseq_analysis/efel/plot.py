@@ -3,6 +3,8 @@
 import os
 from typing import Any, Dict
 
+import matplotlib
+matplotlib.use('Agg')  # Set the non-interactive backend
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -53,8 +55,8 @@ def plot_sweep_raw(
 
     if df_sweep_feature["spike_count"] > 0:
         ax.plot(
-            df_spike_feature["AP_begin_time"],
-            df_spike_feature["AP_begin_voltage"],
+            df_spike_feature.get("AP_begin_time", []),
+            df_spike_feature.get("AP_begin_voltage", []),
             "go",
             label="AP_begin",
         )
@@ -214,9 +216,10 @@ def plot_overlaid_spikes(
         )
 
         # AP_begin
-        t_begin = df_spike_feature["AP_begin_time"].loc[i] - peak_time
-        v_begin = df_spike_feature["AP_begin_voltage"].loc[i]
-        ax_v.plot(t_begin, v_begin, "go", label="AP_begin", ms=10)
+        if "AP_begin_time" in df_spike_feature.columns:
+            t_begin = df_spike_feature["AP_begin_time"].loc[i] - peak_time
+            v_begin = df_spike_feature["AP_begin_voltage"].loc[i]
+            ax_v.plot(t_begin, v_begin, "go", label="AP_begin", ms=10)
 
         # AP_begin_width
         if "AP_begin_width" in df_spike_feature.columns:
@@ -250,24 +253,27 @@ def plot_overlaid_spikes(
         )
 
         # AP_duration_half_width
-        if df_spike_feature["AP_rise_indices"].notna().loc[i]:
-            half_rise_time = t[
-                int(df_spike_feature["AP_rise_indices"].loc[i])
+        if "AP_rise_indices" in df_spike_feature.columns and \
+            df_spike_feature["AP_rise_indices"].notna().loc[i]:
+            t_idx = (int(df_spike_feature["AP_rise_indices"].loc[i])
                 - peak_time_idx_in_raw
-                + peak_time_idx_in_t
-            ]
-            half_voltage = (
-                df_spike_feature["AP_begin_voltage"].loc[i]
-                + df_spike_feature["peak_voltage"].loc[i]
-            ) / 2
-            AP_duration_half_width = df_spike_feature["AP_duration_half_width"].loc[i]
-            ax_v.plot(half_rise_time, half_voltage, "mo", ms=10)
-            ax_v.plot(
-                [half_rise_time, half_rise_time + AP_duration_half_width],
-                [half_voltage, half_voltage],
-                "m-",
-                label=f"AP_duration_half_width = {AP_duration_half_width:.2f}",
-            )
+                + peak_time_idx_in_t)
+            if t_idx >= 0 and t_idx < len(t):
+                half_rise_time = t[t_idx]
+   
+                half_voltage = (
+                    df_spike_feature["AP_begin_voltage"].loc[i]
+                    + df_spike_feature["peak_voltage"].loc[i]
+                ) / 2
+                
+                AP_duration_half_width = df_spike_feature["AP_duration_half_width"].loc[i]
+                ax_v.plot(half_rise_time, half_voltage, "mo", ms=10)
+                ax_v.plot(
+                    [half_rise_time, half_rise_time + AP_duration_half_width],
+                    [half_voltage, half_voltage],
+                    "m-",
+                    label=f"AP_duration_half_width = {AP_duration_half_width:.2f}",
+                )
 
         peak_upstroke = df_spike_feature["AP_peak_upstroke"].loc[i]
         peak_downstroke = df_spike_feature["AP_peak_downstroke"].loc[i]
