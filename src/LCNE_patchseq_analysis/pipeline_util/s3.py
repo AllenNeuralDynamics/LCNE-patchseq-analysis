@@ -1,0 +1,42 @@
+"""
+Utility functions for S3.
+"""
+
+import s3fs
+import requests
+
+s3 = s3fs.S3FileSystem(anon=True)
+
+S3_PUBLIC_URL_BASE = (
+    f"https://aind-scratch-data.s3.us-west-2.amazonaws.com/"
+    f"aind-patchseq-data/efel/plots"
+)
+
+
+def check_s3_public_url_exists(s3_url: str) -> bool:
+    """Check if a given s3 url exists."""
+    response = requests.get(s3_url)
+    return response.status_code == 200
+
+
+def get_public_url_sweep(ephys_roi_id: str, sweep_number: int) -> str:
+    """Get the public URL for a sweep."""
+    
+    s3_sweep = (
+        f"{S3_PUBLIC_URL_BASE}/{ephys_roi_id}/{ephys_roi_id}_sweep_{sweep_number}.png"
+    )
+    s3_spikes = (
+        f"{S3_PUBLIC_URL_BASE}/{ephys_roi_id}/{ephys_roi_id}_sweep_{sweep_number}_spikes.png"
+    )
+
+    # Check if the file exists on s3 public
+    urls = {}
+    if check_s3_public_url_exists(s3_sweep):
+        urls["sweep"] = s3_sweep
+    if check_s3_public_url_exists(s3_spikes):
+        urls["spikes"] = s3_spikes
+    return urls
+    
+    
+if __name__ == "__main__":
+    print(get_public_url_sweep("1212546732", 46))
