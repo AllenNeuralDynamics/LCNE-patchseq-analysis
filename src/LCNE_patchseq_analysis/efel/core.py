@@ -352,7 +352,7 @@ if __name__ == "__main__":
 
     df_meta = load_ephys_metadata()
 
-    for _ephys_roi_id in ["1394143501", "1392370078", "1401853581"]:  # tqdm.tqdm(df_meta["ephys_roi_id_tab_master"][:10]):
+    for _ephys_roi_id in ["1408379728"]:
         logger.info(f"Processing {_ephys_roi_id}...")
         extract_efel_one(
             ephys_roi_id=_ephys_roi_id,
