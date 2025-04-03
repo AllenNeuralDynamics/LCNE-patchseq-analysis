@@ -95,7 +95,7 @@ def load_ephys_metadata():
 
     # Change columns with roi_id to str(int())
     for col in ["ephys_roi_id_tab_master", "ephys_roi_id_lims"]:
-        df[col] = df[col].apply(lambda x: str(int(x)) if pd.notna(x) else "")
+        df.loc[:, col] = df[col].apply(lambda x: str(int(x)) if pd.notna(x) else "")
     return df
 
 

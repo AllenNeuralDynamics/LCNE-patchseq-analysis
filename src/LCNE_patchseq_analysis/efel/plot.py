@@ -275,35 +275,36 @@ def plot_overlaid_spikes(
                     label=f"AP_duration_half_width = {AP_duration_half_width:.2f}",
                 )
 
-        peak_upstroke = df_spike_feature["AP_peak_upstroke"].loc[i]
-        peak_downstroke = df_spike_feature["AP_peak_downstroke"].loc[i]
+        if "AP_peak_upstroke" in df_spike_feature.columns and \
+                "AP_peak_downstroke" in df_spike_feature.columns:
+            peak_upstroke = df_spike_feature["AP_peak_upstroke"].loc[i]
+            peak_downstroke = df_spike_feature["AP_peak_downstroke"].loc[i]
 
-        # Phase plot: phaseslope
-        _t_after_begin = np.where(t >= t_begin)[0]
-        if len(_t_after_begin) > 0: # Sometimes t_begin is None
-            begin_ind = _t_after_begin[0]
-            ax_phase.plot(v[begin_ind], dvdt[begin_ind], "go", ms=10, label="AP_begin")
-            ax_phase.axhline(
-                efel_settings["DerivativeThreshold"],
-                color="g",
-                linestyle=":",
-                label="Derivative threshold",
-            )
-            
-            # Phase plot: AP_phaseslope
-            phaselope = df_spike_feature["AP_phaseslope"].loc[i]
-            dxx = min(-v[begin_ind], peak_upstroke / phaselope)
-            xx = np.linspace(v[begin_ind], v[begin_ind] + dxx, 100)
-            yy = dvdt[begin_ind] + (xx - v[begin_ind]) * phaselope
-            ax_phase.plot(xx, yy, "g--", label="AP_phaseslope")
+            # Phase plot: phaseslope
+            _t_after_begin = np.where(t >= t_begin)[0]
+            if len(_t_after_begin) > 0: # Sometimes t_begin is None
+                begin_ind = _t_after_begin[0]
+                ax_phase.plot(v[begin_ind], dvdt[begin_ind], "go", ms=10, label="AP_begin")
+                ax_phase.axhline(
+                    efel_settings["DerivativeThreshold"],
+                    color="g",
+                    linestyle=":",
+                    label="Derivative threshold",
+                )
+                
+                # Phase plot: AP_phaseslope
+                phaselope = df_spike_feature["AP_phaseslope"].loc[i]
+                dxx = min(-v[begin_ind], peak_upstroke / phaselope)
+                xx = np.linspace(v[begin_ind], v[begin_ind] + dxx, 100)
+                yy = dvdt[begin_ind] + (xx - v[begin_ind]) * phaselope
+                ax_phase.plot(xx, yy, "g--", label="AP_phaseslope")
 
+            # Phase plot: AP_peak_upstroke
+            ax_phase.axhline(peak_upstroke, color="c", linestyle="--", label="AP_peak_upstroke")
 
-        # Phase plot: AP_peak_upstroke
-        ax_phase.axhline(peak_upstroke, color="c", linestyle="--", label="AP_peak_upstroke")
-
-        # Phase plot: AP_peak_downstroke
-        ax_phase.axhline(peak_downstroke, color="darkblue",
-                         linestyle="--", label="AP_peak_downstroke")
+            # Phase plot: AP_peak_downstroke
+            ax_phase.axhline(peak_downstroke, color="darkblue",
+                             linestyle="--", label="AP_peak_downstroke")
 
 
     # Set labels and title

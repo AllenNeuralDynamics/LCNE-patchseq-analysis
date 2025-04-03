@@ -48,6 +48,11 @@ def extract_efel_features_in_parallel(skip_existing: bool = True, skip_errors: b
     with pool:
         # Queue all tasks
         jobs = []
+        
+        # # For debugging
+        # all_ephys_roi_ids = ["1408379728", '1239045986', '1298901226', '1408386647', '1393880949', 
+        #              '1321654119', '1401854370', '1314005711', '1246391218', '1406415579']
+
         for _ephys_roi_id in all_ephys_roi_ids:
             job = pool.apply_async(
                 extract_efel_one, args=(_ephys_roi_id, False, RESULTS_DIRECTORY)
@@ -75,9 +80,8 @@ def handle_errors(results, roi_ids, analysis_name: str):
     ]
 
     logger.info(f"{analysis_name}, Success: {len(results) - len(errors)}")
-    logger.error(f"{analysis_name}, Failed: {len(errors)}")
-    for error in errors:
-        logger.error(f"\nFailed ROI ID: {error['roi_id']}, Error: {error['error']}")
+    if len(errors) > 0:
+        logger.error(f"{analysis_name}, Failed: {len(errors)}")
 
     # Append erros to the list in json
     error_file = f"{RESULTS_DIRECTORY}/pipeline_error_{analysis_name}.json"
@@ -140,6 +144,9 @@ def generate_sweep_plots_in_parallel(skip_existing: bool = True, skip_errors: bo
             n_skipped_errors = len_before - len(ephys_roi_ids)
 
     # Queue all tasks
+    # For debugging
+    # ephys_roi_ids = ['1246391218', '1406415579', '1394153301', '1403961154', '1266606241', '1246071525']
+    
     jobs = []
     for ephys_roi_id in ephys_roi_ids:
         job = pool.apply_async(generate_sweep_plots_one, args=(ephys_roi_id,))
@@ -165,4 +172,7 @@ if __name__ == "__main__":
 
     logger.info("-" * 80)
     logger.info("Generating sweep plots in parallel...")
-    # generate_sweep_plots_in_parallel(skip_existing=True, skip_errors=True)
+    generate_sweep_plots_in_parallel(skip_existing=True, skip_errors=True)
+    
+    # For debugging
+    # enerate_sweep_plots_one("1246071525")
