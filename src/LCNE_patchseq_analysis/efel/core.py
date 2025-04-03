@@ -10,7 +10,9 @@ import pandas as pd
 
 from LCNE_patchseq_analysis import RESULTS_DIRECTORY, TIME_STEP
 from LCNE_patchseq_analysis.data_util.nwb import PatchSeqNWB
+from LCNE_patchseq_analysis.efel import EFEL_PER_SPIKE_FEATURES
 from LCNE_patchseq_analysis.efel.io import save_dict_to_hdf5
+from LCNE_patchseq_analysis.efel.plot import plot_sweep_summary
 
 logger = logging.getLogger(__name__)
 
@@ -82,21 +84,13 @@ def reformat_features(
         interpolated_data["interpolated_voltage"] = df_features["voltage"]
     df_features.drop(columns=["time", "voltage"], inplace=True)
 
-    # Process each column in the original DataFrame
+    spike_counts = [s[0] for s in df_features["spike_count"].to_list()]
+    
+    # Extract per-spike and per-sweep (length == 1 and not in EFEL_PER_SPIKE_FEATURES)
+    lengths = df_features.map(lambda x: 0 if x is None else len(x))
+    
     for col in df_features.columns:
-        lengths = df_features[col].map(lambda x: 0 if x is None else len(x))
-
-        # If all values are None, skip this column
-        if max(lengths) == 0:
-            continue
-
-        # Check if it's a scalar or array feature
-        if max(lengths) == 1:
-            # For single values, extract the scalar
-            dict_features_per_sweep[col] = df_features[col].apply(
-                lambda x: x[0] if x is not None and len(x) > 0 else None
-            )
-        else:
+        if col in EFEL_PER_SPIKE_FEATURES:
             # For multi-spike features
             # 1. Extract first spike value to per_sweep DataFrame
             dict_features_per_sweep[f"first_spike_{col}"] = df_features[col].apply(
@@ -117,6 +111,12 @@ def reformat_features(
                             for i, val in enumerate(sweep_values)
                         ]
                     )
+        elif lengths[col].max() <= 1:
+            # For single values (or all None), remove the scalar out of the list
+            dict_features_per_sweep[col] = df_features[col].apply(
+                lambda x: x[0] if x is not None and len(x) > 0 else None
+            )
+        # Otherwise, leave it as is in "df_features_original"
 
     # Pack dataframes
     df_features_per_sweep = pd.DataFrame(dict_features_per_sweep)
@@ -127,6 +127,9 @@ def reformat_features(
     result_dict = {
         "df_features_per_sweep": df_features_per_sweep,
         "df_features_per_spike": df_features_per_spike,
+        # Also save the original features because some columns 
+        # are neither scalar nor per_spike (like ISI)
+        "df_features_original": df_features,
     }
 
     if if_save_interpolated:
@@ -255,7 +258,17 @@ def extract_features_using_efel(
         raise_warnings=False,
     )
     logger.debug("Done!")
-
+    
+    # Remove spikes before stimulus onset
+    for feature, raw_trace in zip(features, raw_traces):
+        stim_start = raw_trace["stim_start"][0]
+        peak_times = feature["peak_time"]
+        if peak_times is None:
+            continue
+        invalid_spike_idx = np.where(peak_times < stim_start)[0]
+        if len(invalid_spike_idx) > 0:
+            pass
+    
     # Reformat features
     df_features = pd.DataFrame(features, index=valid_sweep_numbers)
     df_features.index.name = "sweep_number"
@@ -288,11 +301,12 @@ def extract_features_using_efel(
     features_dict["df_peri_stimulus_raw_traces"] = df_peri_stimulus_raw_traces
     features_dict["efel_settings"] = pd.DataFrame([efel.get_settings().__dict__])
 
-    return features_dict, raw_traces
+    return features_dict
 
 
 def extract_efel_one(
-    ephys_roi_id: str, if_save_interpolated: bool = False, save_dir: str = RESULTS_DIRECTORY
+    ephys_roi_id: str, if_save_interpolated: bool = False, save_dir: str = RESULTS_DIRECTORY, 
+    if_generate_sweep_plots: bool = False
 ) -> None:
     """Process one NWB file.
 
@@ -300,18 +314,27 @@ def extract_efel_one(
         ephys_roi_id: ID of the electrophysiology ROI
         if_save_interpolated: Whether to save interpolated data
         save_dir: Directory to save results
+        if_generate_sweep_plots: Whether to generate sweep plots (for debugging)
+              False by default, so that we can isolate plotting from eFEL extraction
     """
     try:
         # --- 1. Get raw data ---
         raw = PatchSeqNWB(ephys_roi_id=ephys_roi_id)
+        if len(raw.valid_sweeps) == 0:
+            logger.warning(f"No valid sweeps found for {ephys_roi_id}!")
+            return "No valid sweeps found"
 
         # --- 2. Extract features using eFEL ---
-        features_dict, raw_traces = extract_features_using_efel(raw, if_save_interpolated)
+        features_dict = extract_features_using_efel(raw, if_save_interpolated)
 
         # --- 3. Save features_dict to HDF5 using panda's hdf5 store ---
         os.makedirs(f"{save_dir}/features", exist_ok=True)
         save_dict_to_hdf5(features_dict, f"{save_dir}/features/{ephys_roi_id}_efel.h5")
+        
+        if if_generate_sweep_plots:
+            plot_sweep_summary(features_dict, f"{save_dir}/plots")
 
+        logger.info(f"Successfully extracted eFEL features for {ephys_roi_id}!")
         return "Success"
 
     except Exception as e:
@@ -329,10 +352,11 @@ if __name__ == "__main__":
 
     df_meta = load_ephys_metadata()
 
-    for _ephys_roi_id in ["1418561975"]:  # tqdm.tqdm(df_meta["ephys_roi_id_tab_master"][:10]):
+    for _ephys_roi_id in ["1408379728"]:
         logger.info(f"Processing {_ephys_roi_id}...")
         extract_efel_one(
-            ephys_roi_id=str(int(_ephys_roi_id)),
+            ephys_roi_id=_ephys_roi_id,
             if_save_interpolated=False,
             save_dir=RESULTS_DIRECTORY,
+            if_generate_sweep_plots=True,  # For debugging
         )

@@ -2,8 +2,8 @@
 	"version": 1,
 	"attached_datasets": [
 		{
-			"id": "64d1d93f-16ab-4ded-92c7-ed66c852cf78",
-			"mount": "LCNE-patchseq-ephys-raw"
+			"id": "68ef27d7-9d95-40ce-9e40-7de93dccf5f8",
+			"mount": "LCNE-patchseq-ephys"
 		}
 	]
 }
