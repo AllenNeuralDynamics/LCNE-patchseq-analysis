@@ -45,6 +45,8 @@ efel = [
 panel = [
     'panel',
     'watchfiles',
+    's3fs',
+    'bokeh',
 ]
 
 pipeline = [
@@ -72,9 +74,11 @@ all = [
     'openpyxl',
     'pg8000',
     'efel',
+    'bokeh',
     'h5py',
     'tqdm',
     'tables',
+    's3fs',
 ]
 
 [tool.setuptools.packages.find]

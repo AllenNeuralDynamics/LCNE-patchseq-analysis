@@ -2,16 +2,22 @@
 Panel-based visualization tool for navigating and visualizing patch-seq NWB files.
 
 To start the app, run:
-panel serve panel_nwb_viz.py --dev --allow-websocket-origin=codeocean.allenneuraldynamics.org
+panel serve panel_nwb_viz.py --dev --allow-websocket-origin=codeocean.allenneuraldynamics.org --title "LC-NE Patch-seq Data Explorer"  # noqa: E501
 """
 
-import matplotlib.pyplot as plt
-import numpy as np
 import panel as pn
 import param
+from bokeh.io import curdoc
+from bokeh.layouts import column as bokeh_column
+from bokeh.models import BoxZoomTool
+from bokeh.plotting import figure
 
 from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
 from LCNE_patchseq_analysis.data_util.nwb import PatchSeqNWB
+from LCNE_patchseq_analysis.pipeline_util.s3 import get_public_url_sweep
+
+pn.extension("tabulator")
+curdoc().title = "LC-NE Patch-seq Data Explorer"
 
 
 class PatchSeqNWBApp(param.Parameterized):
@@ -22,6 +28,7 @@ class PatchSeqNWBApp(param.Parameterized):
 
     class DataHolder(param.Parameterized):
         ephys_roi_id = param.String(default="")
+        sweep_number_selected = param.Integer(default=0)
 
     def __init__(self):
         # Holder for currently selected cell ID.
@@ -45,25 +52,42 @@ class PatchSeqNWBApp(param.Parameterized):
         self.cell_selector_panel = self.create_cell_selector_panel()
 
     @staticmethod
-    def update_plot(raw, sweep):
-        """
-        Extracts a slice of data from the NWB file and returns a matplotlib figure.
-        """
+    def update_bokeh(raw, sweep):
         trace = raw.get_raw_trace(sweep)
         stimulus = raw.get_stimulus(sweep)
-        time = np.arange(len(trace)) * raw.dt_ms
+        time = raw.get_time(sweep)
 
-        fig, ax = plt.subplots(2, 1, figsize=(6, 4), gridspec_kw={"height_ratios": [3, 1]})
-        ax[0].plot(time, trace)
-        ax[0].set_title(f"Sweep number {sweep}")
-        ax[0].set(ylabel="Vm (mV)")
+        box_zoom_x = BoxZoomTool(dimensions="width")
 
-        ax[1].plot(time, stimulus)
-        ax[1].set(xlabel="Time (ms)", ylabel="I (pA)")
-        ax[0].label_outer()
+        # Create the voltage trace plot
+        voltage_plot = figure(
+            title=f"Full raw traces - Sweep number {sweep}",
+            height=300,
+            tools=["hover", box_zoom_x, "box_zoom", "wheel_zoom", "reset", "pan"],
+            active_drag=box_zoom_x,
+            x_range=(0, time[-1]),
+            y_axis_label="Vm (mV)",
+            sizing_mode="stretch_width",
+        )
+        voltage_plot.line(time, trace, line_width=1.5, color="navy")
 
-        plt.close(fig)  # Prevent duplicate display in Panel.
-        return fig
+        # Create the stimulus plot
+        stim_plot = figure(
+            height=150,
+            tools=["hover", box_zoom_x, "box_zoom", "wheel_zoom", "reset", "pan"],
+            active_drag=box_zoom_x,
+            x_range=voltage_plot.x_range,  # Link x ranges
+            x_axis_label="Time (ms)",
+            y_axis_label="I (pA)",
+            sizing_mode="stretch_width",
+        )
+        stim_plot.line(time, stimulus, line_width=1.5, color="firebrick")
+
+        # Stack the plots vertically using bokeh's column layout
+        layout = bokeh_column(
+            voltage_plot, stim_plot, sizing_mode="stretch_width", margin=(50, 0, 0, 0)
+        )
+        return layout
 
     @staticmethod
     def highlight_selected_rows(row, highlight_subset, color, fields=None):
@@ -84,7 +108,7 @@ class PatchSeqNWBApp(param.Parameterized):
     def get_qc_message(sweep, df_sweeps):
         """Return a QC message based on sweep data."""
         if sweep not in df_sweeps["sweep_number"].values:
-            return "<span style='color:red;'>Sweep number not found in the jsons!</span>"
+            return "<span style='color:red;'>Invalid sweep!</span>"
         if sweep in df_sweeps.query("passed != passed")["sweep_number"].values:
             return "<span style='background:salmon;'>Sweep terminated by the experimenter!</span>"
         if sweep in df_sweeps.query("passed == False")["sweep_number"].values:
@@ -103,20 +127,41 @@ class PatchSeqNWBApp(param.Parameterized):
 
         # Load the NWB file for the selected cell.
         raw_this_cell = PatchSeqNWB(ephys_roi_id=ephys_roi_id)
+        df_sweeps_valid = raw_this_cell.df_sweeps.query("passed == passed")
 
-        # Create a slider widget to navigate sweeps.
-        slider = pn.widgets.IntSlider(
-            name="Sweep number", start=0, end=raw_this_cell.n_sweeps - 1, value=0
+        # Set initial sweep number to first valid sweep
+        if self.data_holder.sweep_number_selected == 0:
+            self.data_holder.sweep_number_selected = df_sweeps_valid.iloc[0]["sweep_number"]
+
+        # Bind the plotting function to the data holder's sweep number
+        bokeh_panel = pn.bind(
+            PatchSeqNWBApp.update_bokeh,
+            raw=raw_this_cell,
+            sweep=self.data_holder.param.sweep_number_selected,
         )
-        # Bind the slider to the plotting function.
-        plot_panel = pn.bind(
-            PatchSeqNWBApp.update_plot, raw=raw_this_cell, sweep=slider.param.value
+
+        # Bind the S3 URL retrieval to the data holder's sweep number
+        def get_s3_images(sweep_number):
+            s3_url = get_public_url_sweep(ephys_roi_id, sweep_number)
+            images = []
+            if "sweep" in s3_url:
+                images.append(pn.pane.PNG(s3_url["sweep"], width=800, height=400))
+            if "spikes" in s3_url:
+                images.append(pn.pane.PNG(s3_url["spikes"], width=800, height=400))
+            return pn.Column(*images) if images else pn.pane.Markdown("No S3 images available")
+
+        s3_image_panel = pn.bind(
+            get_s3_images, sweep_number=self.data_holder.param.sweep_number_selected
         )
-        mpl_pane = pn.pane.Matplotlib(plot_panel, dpi=400, width=600, height=400)
+        sweep_pane = pn.Column(
+            s3_image_panel,
+            bokeh_panel,
+            sizing_mode="stretch_width",
+        )
 
         # Build a Tabulator for sweep metadata.
         tab_sweeps = pn.widgets.Tabulator(
-            raw_this_cell.df_sweeps[
+            df_sweeps_valid[
                 [
                     "sweep_number",
                     "stimulus_code_ext",
@@ -130,7 +175,7 @@ class PatchSeqNWBApp(param.Parameterized):
                     "reasons",
                     "stimulus_code",
                 ]
-            ],
+            ],  # Only show valid sweeps (passed is not NaN)
             hidden_columns=["stimulus_code"],
             selectable=1,
             disabled=True,  # Not editable
@@ -178,31 +223,21 @@ class PatchSeqNWBApp(param.Parameterized):
             axis=1,
         )
 
-        # --- Two-Way Synchronization between Slider and Table ---
-        def update_slider_from_table(event):
-            """Update slider when table selection changes."""
+        # --- Synchronize table selection with sweep number ---
+        def update_sweep_from_table(event):
+            """Update sweep number when table selection changes."""
             if event.new:
                 selected_index = event.new[0]
-                new_sweep = raw_this_cell.df_sweeps.loc[selected_index, "sweep_number"]
-                slider.value = new_sweep
+                new_sweep = df_sweeps_valid.iloc[selected_index]["sweep_number"]
+                self.data_holder.sweep_number_selected = new_sweep
 
-        tab_sweeps.param.watch(update_slider_from_table, "selection")
-
-        def update_table_selection(event):
-            """Update table selection when slider value changes."""
-            new_val = event.new
-            row_index = raw_this_cell.df_sweeps.index[
-                raw_this_cell.df_sweeps["sweep_number"] == new_val
-            ].tolist()
-            tab_sweeps.selection = row_index
-
-        slider.param.watch(update_table_selection, "value")
+        tab_sweeps.param.watch(update_sweep_from_table, "selection")
         # --- End Synchronization ---
 
         # Build a reactive QC message panel.
         sweep_msg = pn.bind(
             PatchSeqNWBApp.get_qc_message,
-            sweep=slider.param.value,
+            sweep=self.data_holder.param.sweep_number_selected,
             df_sweeps=raw_this_cell.df_sweeps,
         )
         sweep_msg_panel = pn.pane.Markdown(sweep_msg, width=600, height=30)
@@ -210,11 +245,13 @@ class PatchSeqNWBApp(param.Parameterized):
         return pn.Row(
             pn.Column(
                 pn.pane.Markdown(f"# {ephys_roi_id}"),
-                pn.pane.Markdown("Use the slider to navigate through the sweeps in the NWB file."),
-                pn.Column(slider, sweep_msg_panel, mpl_pane),
+                pn.pane.Markdown("Select a sweep from the table to view its data."),
+                pn.Column(sweep_msg_panel, sweep_pane),
+                width=700,
+                margin=(0, 100, 0, 0),  # top, right, bottom, left margins
             ),
             pn.Column(
-                pn.pane.Markdown("## Metadata from jsons"),
+                pn.pane.Markdown("## Sweep metadata"),
                 tab_sweeps,
             ),
         )
