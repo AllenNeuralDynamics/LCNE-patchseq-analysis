@@ -41,7 +41,6 @@ def plot_sweep_raw(
 
     time = begin_t + np.arange(len(trace)) * TIME_STEP
     time_interpolated = time  # This only works for non-interpolated case
-    begin_idx_in_raw = int(begin_t / TIME_STEP)
 
     # Plot the trace
     fig = plt.figure(figsize=(12, 6))
@@ -62,29 +61,23 @@ def plot_sweep_raw(
         ax.plot(df_spike_feature["peak_time"], df_spike_feature["peak_voltage"], "ro", label="peak")
 
         # Plot min_AHP (if in the peri-stimulus period)
-        min_ahp_indices = df_spike_feature["min_AHP_indices"]
-        min_ahp_indices = min_ahp_indices[min_ahp_indices.notna()].astype(int)
-        min_ahp_indices -= begin_idx_in_raw
-        min_ahp_indices = min_ahp_indices[min_ahp_indices < len(time_interpolated)]
-        min_ahp_values = df_spike_feature["min_AHP_values"]
-
+        min_AHP_time = df_spike_feature["min_AHP_indices"] * TIME_STEP
+        min_AHP_values = df_spike_feature["min_AHP_values"]
+        
         ax.plot(
-            [time_interpolated[ind] for ind in min_ahp_indices],
-            min_ahp_values[min_ahp_indices.index],
+            min_AHP_time,
+            min_AHP_values,
             "ko",
             label="min_AHP",
         )
 
         # Plot min_between_peaks (if in the peri-stimulus period)
-        min_between_indices = df_spike_feature["min_between_peaks_indices"]
-        min_between_indices = min_between_indices[min_between_indices.notna()].astype(int)
-        min_between_indices -= begin_idx_in_raw
-        min_between_indices = min_between_indices[min_between_indices < len(time_interpolated)]
+        min_between_time = df_spike_feature["min_between_peaks_indices"] * TIME_STEP
         min_between_values = df_spike_feature["min_between_peaks_values"]
 
         ax.plot(
-            [time_interpolated[ind] for ind in min_between_indices],
-            min_between_values[min_between_indices.index],
+            min_between_time,
+            min_between_values,
             "bo",
             label="min_between_peaks",
         )
@@ -131,15 +124,17 @@ def plot_sweep_raw(
     ax_stimulus.plot(time, stimulus, "k-", lw=2)
 
     # Set labels and title
-    ax.set_xlabel("Time (ms)")
     ax.set_ylabel("V (mV)")
     title = (
-        f"{df_sweep_meta.ephys_roi_id.values[0]} sweep "
+        f"{df_sweep_meta.ephys_roi_id.values[0]} Sweep "
         f"#{df_sweep_meta.sweep_number.values[0]}, "
         f"{df_sweep_meta.stimulus_code.values[0]}"
     )
     ax.set_title(title)
 
+    ax_stimulus.set_xlabel("Time (ms)")
+    ax_stimulus.set_ylabel("I (pA)")
+    
     ax.legend(loc="best", fontsize=12)
     ax.label_outer()
     ax.grid(True)
@@ -224,13 +219,14 @@ def plot_overlaid_spikes(
         ax_v.plot(t_begin, v_begin, "go", label="AP_begin", ms=10)
 
         # AP_begin_width
-        AP_begin_width = df_spike_feature["AP_begin_width"].loc[i]
-        ax_v.plot(
-            [t_begin, t_begin + AP_begin_width],
-            [v_begin, v_begin],
-            "g-",
-            label=f"AP_begin_width = {AP_begin_width:.2f}",
-        )
+        if "AP_begin_width" in df_spike_feature.columns:
+            AP_begin_width = df_spike_feature["AP_begin_width"].loc[i]
+            ax_v.plot(
+                [t_begin, t_begin + AP_begin_width],
+                [v_begin, v_begin],
+                "g-",
+                label=f"AP_begin_width = {AP_begin_width:.2f}",
+            )
 
         # AP_width
         threshold = efel_settings["Threshold"]
@@ -273,34 +269,36 @@ def plot_overlaid_spikes(
                 label=f"AP_duration_half_width = {AP_duration_half_width:.2f}",
             )
 
+        peak_upstroke = df_spike_feature["AP_peak_upstroke"].loc[i]
+        peak_downstroke = df_spike_feature["AP_peak_downstroke"].loc[i]
+
         # Phase plot: phaseslope
-        begin_ind = np.where(t >= t_begin)[0][0]
-        ax_phase.plot(v[begin_ind], dvdt[begin_ind], "go", ms=10, label="AP_begin")
-        ax_phase.axhline(
-            efel_settings["DerivativeThreshold"],
-            color="g",
-            linestyle=":",
-            label="Derivative threshold",
-        )
+        _t_after_begin = np.where(t >= t_begin)[0]
+        if len(_t_after_begin) > 0: # Sometimes t_begin is None
+            begin_ind = _t_after_begin[0]
+            ax_phase.plot(v[begin_ind], dvdt[begin_ind], "go", ms=10, label="AP_begin")
+            ax_phase.axhline(
+                efel_settings["DerivativeThreshold"],
+                color="g",
+                linestyle=":",
+                label="Derivative threshold",
+            )
+            
+            # Phase plot: AP_phaseslope
+            phaselope = df_spike_feature["AP_phaseslope"].loc[i]
+            dxx = min(-v[begin_ind], peak_upstroke / phaselope)
+            xx = np.linspace(v[begin_ind], v[begin_ind] + dxx, 100)
+            yy = dvdt[begin_ind] + (xx - v[begin_ind]) * phaselope
+            ax_phase.plot(xx, yy, "g--", label="AP_phaseslope")
+
 
         # Phase plot: AP_peak_upstroke
-        peak_upstroke = df_spike_feature["AP_peak_upstroke"].loc[i]
         ax_phase.axhline(peak_upstroke, color="c", linestyle="--", label="AP_peak_upstroke")
 
         # Phase plot: AP_peak_downstroke
-        ax_phase.axhline(
-            df_spike_feature["AP_peak_downstroke"].loc[i],
-            color="darkblue",
-            linestyle="--",
-            label="AP_peak_downstroke",
-        )
+        ax_phase.axhline(peak_downstroke, color="darkblue",
+                         linestyle="--", label="AP_peak_downstroke")
 
-        # Phase plot: AP_phaseslope
-        phaselope = df_spike_feature["AP_phaseslope"].loc[i]
-        dxx = min(-v[begin_ind], peak_upstroke / phaselope)
-        xx = np.linspace(v[begin_ind], v[begin_ind] + dxx, 100)
-        yy = dvdt[begin_ind] + (xx - v[begin_ind]) * phaselope
-        ax_phase.plot(xx, yy, "g--", label="AP_phaseslope")
 
     # Set labels and title
     ax_v.set_xlim(-2, 6)
