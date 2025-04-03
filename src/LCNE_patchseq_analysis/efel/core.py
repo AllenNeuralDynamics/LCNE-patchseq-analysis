@@ -10,8 +10,9 @@ import pandas as pd
 
 from LCNE_patchseq_analysis import RESULTS_DIRECTORY, TIME_STEP
 from LCNE_patchseq_analysis.data_util.nwb import PatchSeqNWB
-from LCNE_patchseq_analysis.efel import EFEL_NON_SCALAR_FEATURES
+from LCNE_patchseq_analysis.efel import EFEL_NON_SCALAR_FEATURES, REBOUND_ALLOWED_TIME
 from LCNE_patchseq_analysis.efel.io import save_dict_to_hdf5
+from LCNE_patchseq_analysis.efel.plot import plot_sweep_summary
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +84,7 @@ def reformat_features(
         interpolated_data["interpolated_voltage"] = df_features["voltage"]
     df_features.drop(columns=["time", "voltage"], inplace=True)
 
-    # Process each column in the original DataFrame
+    # Reoganize features into per-sweep and per-spike DataFrames
     for col in df_features.columns:
         lengths = df_features[col].map(lambda x: 0 if x is None else len(x))
 
@@ -248,15 +249,22 @@ def extract_features_using_efel(
     # -- Package all valid sweeps for eFEL --
     raw_traces, valid_sweep_numbers = pack_traces_for_efel(raw)
 
+    # Put forward the stimulus offset by REBOUND_ALLOWED_TIME, together with
+    # strict_stiminterval=True, this ensures that all spikes are after the stimulus onset, while
+    # including possible rebound spikes.
+    raw_traces_for_efel = raw_traces.copy()
+    for raw_trace in raw_traces_for_efel:
+        raw_trace["stim_end"] = [raw_trace["stim_end"][0] + REBOUND_ALLOWED_TIME]
+
     # Get all features
     logger.debug(f"Getting features for {len(raw_traces)} traces...")
     features = efel.get_feature_values(
-        traces=raw_traces,
+        traces=raw_traces_for_efel,
         feature_names=efel.get_feature_names(),  # Get all features
         raise_warnings=False,
     )
     logger.debug("Done!")
-
+    
     # Reformat features
     df_features = pd.DataFrame(features, index=valid_sweep_numbers)
     df_features.index.name = "sweep_number"
@@ -289,11 +297,12 @@ def extract_features_using_efel(
     features_dict["df_peri_stimulus_raw_traces"] = df_peri_stimulus_raw_traces
     features_dict["efel_settings"] = pd.DataFrame([efel.get_settings().__dict__])
 
-    return features_dict, raw_traces
+    return features_dict
 
 
 def extract_efel_one(
-    ephys_roi_id: str, if_save_interpolated: bool = False, save_dir: str = RESULTS_DIRECTORY
+    ephys_roi_id: str, if_save_interpolated: bool = False, save_dir: str = RESULTS_DIRECTORY, 
+    if_generate_sweep_plots: bool = False
 ) -> None:
     """Process one NWB file.
 
@@ -301,6 +310,8 @@ def extract_efel_one(
         ephys_roi_id: ID of the electrophysiology ROI
         if_save_interpolated: Whether to save interpolated data
         save_dir: Directory to save results
+        if_generate_sweep_plots: Whether to generate sweep plots (for debugging)
+              False by default, so that we can isolate plotting from eFEL extraction
     """
     try:
         # --- 1. Get raw data ---
@@ -310,11 +321,14 @@ def extract_efel_one(
             return "No valid sweeps found"
 
         # --- 2. Extract features using eFEL ---
-        features_dict, raw_traces = extract_features_using_efel(raw, if_save_interpolated)
+        features_dict = extract_features_using_efel(raw, if_save_interpolated)
 
         # --- 3. Save features_dict to HDF5 using panda's hdf5 store ---
         os.makedirs(f"{save_dir}/features", exist_ok=True)
         save_dict_to_hdf5(features_dict, f"{save_dir}/features/{ephys_roi_id}_efel.h5")
+        
+        if if_generate_sweep_plots:
+            plot_sweep_summary(features_dict, f"{save_dir}/plots")
 
         logger.info(f"Successfully extracted eFEL features for {ephys_roi_id}!")
         return "Success"
@@ -334,10 +348,11 @@ if __name__ == "__main__":
 
     df_meta = load_ephys_metadata()
 
-    for _ephys_roi_id in ["1408379787"]:  # tqdm.tqdm(df_meta["ephys_roi_id_tab_master"][:10]):
+    for _ephys_roi_id in ["1401853581"]:  # tqdm.tqdm(df_meta["ephys_roi_id_tab_master"][:10]):
         logger.info(f"Processing {_ephys_roi_id}...")
         extract_efel_one(
             ephys_roi_id=_ephys_roi_id,
             if_save_interpolated=False,
             save_dir=RESULTS_DIRECTORY,
+            if_generate_sweep_plots=True,  # For debugging
         )

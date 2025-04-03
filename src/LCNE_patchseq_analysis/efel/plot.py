@@ -150,6 +150,7 @@ def plot_sweep_raw(
 
 def plot_overlaid_spikes(
     spike_this: pd.DataFrame,
+    sweep_this: pd.Series,
     df_spike_feature: pd.DataFrame,
     efel_settings: Dict[str, Any],
     width_scale: float = 3,
@@ -159,6 +160,7 @@ def plot_overlaid_spikes(
 
     Args:
         spike_this: DataFrame containing spike waveforms
+        sweep_this: Series containing sweep data
         df_spike_feature: DataFrame containing spike features
         efel_settings: Dictionary containing eFEL settings
         width_scale: Scale factor for line widths
@@ -176,7 +178,7 @@ def plot_overlaid_spikes(
 
     fig, axs = plt.subplots(1, 2, figsize=(13, 6))
     ax_v, ax_phase = axs
-
+    
     # Plot the features for the first spike
     for i in reversed(range(n_spikes)):
         v = spike_this.query("spike_idx == @i").values[0]
@@ -356,6 +358,7 @@ def plot_sweep_summary(features_dict: Dict[str, Any], save_dir: str) -> None:
             spike_this = features_dict["df_spike_waveforms"].query("sweep_number == @sweep_number")
             fig_spikes = plot_overlaid_spikes(
                 spike_this,
+                sweep_this,
                 df_spike_feature,
                 features_dict["efel_settings"].iloc[0].to_dict(),
                 width_scale=3,
