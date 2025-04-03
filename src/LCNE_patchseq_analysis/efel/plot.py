@@ -375,7 +375,7 @@ def plot_sweep_summary(features_dict: Dict[str, Any], save_dir: str) -> None:
                 beta=3,
             )
             fig_spikes.savefig(
-                f"{save_dir}/{ephys_roi_id}/{ephys_roi_id}_spikes_{sweep_number}_spikes.png",
+                f"{save_dir}/{ephys_roi_id}/{ephys_roi_id}_sweep_{sweep_number}_spikes.png",
                 dpi=400,
             )
             plt.close(fig_spikes)
