@@ -4,6 +4,7 @@ import pandas as pd
 
 from LCNE_patchseq_analysis import RESULTS_DIRECTORY
 
+
 def save_dict_to_hdf5(data_dict: dict, filename: str, compress: bool = False):
     """
     Save a dictionary of DataFrames to an HDF5 file using pandas.HDFStore.

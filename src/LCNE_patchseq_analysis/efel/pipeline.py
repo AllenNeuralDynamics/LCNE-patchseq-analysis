@@ -15,15 +15,14 @@ logger = logging.getLogger(__name__)
 
 def extract_efel_features_in_parallel(skip_existing: bool = True, skip_errors: bool = True):
     """Extract eFEL features in parallel."""
+
     def get_roi_ids():
         df_meta = load_ephys_metadata()
         return df_meta["ephys_roi_id_tab_master"]
-    
+
     def check_existing(ephys_roi_id):
-        return os.path.exists(
-            f"{RESULTS_DIRECTORY}/features/{int(ephys_roi_id)}_efel.h5"
-        )
-    
+        return os.path.exists(f"{RESULTS_DIRECTORY}/features/{int(ephys_roi_id)}_efel.h5")
+
     return run_parallel_processing(
         process_func=extract_efel_one,
         analysis_name="Extract eFEL features",
@@ -52,11 +51,10 @@ def generate_sweep_plots_one(ephys_roi_id: str):
 
 def generate_sweep_plots_in_parallel(skip_existing: bool = True, skip_errors: bool = True):
     """Generate sweep plots in parallel."""
+
     def check_existing(ephys_roi_id):
-        return os.path.exists(
-            f"{RESULTS_DIRECTORY}/plots/{int(ephys_roi_id)}/all_success"
-        )
-    
+        return os.path.exists(f"{RESULTS_DIRECTORY}/plots/{int(ephys_roi_id)}/all_success")
+
     return run_parallel_processing(
         process_func=generate_sweep_plots_one,
         analysis_name="Generate sweep plots",
@@ -72,7 +70,7 @@ def extract_cell_level_stats_one(ephys_roi_id: str):
         logger.info(f"Extracting cell-level stats for {ephys_roi_id}...")
         # Load features but don't use them yet (placeholder for implementation)
         load_efel_features_from_roi(ephys_roi_id)
-        
+
         # Extract cell-level statistics
         # This is a placeholder for the actual implementation
         # You will need to fill in the specific statistics you want to extract
@@ -84,7 +82,7 @@ def extract_cell_level_stats_one(ephys_roi_id: str):
             # "max_ap_width": features_dict["df_features_per_sweep"]["first_spike_AP_width"].max(),
             # etc.
         }
-        
+
         logger.info(f"Successfully extracted cell-level stats for {ephys_roi_id}!")
         return cell_stats
     except Exception as e:
@@ -97,25 +95,24 @@ def extract_cell_level_stats_one(ephys_roi_id: str):
 
 def extract_cell_level_stats_in_parallel(skip_errors: bool = True):
     """Extract cell-level statistics from all available eFEL features files in parallel."""
+
     def post_process(results):
         # Filter out None results (errors)
         valid_results = [result for result in results if result is not None]
-        
+
         # Create a summary table
         import pandas as pd
+
         df_cell_stats = pd.DataFrame(valid_results)
-        
+
         # Save the summary table to disk
         os.makedirs(f"{RESULTS_DIRECTORY}/cell_stats", exist_ok=True)
-        df_cell_stats.to_csv(
-            f"{RESULTS_DIRECTORY}/cell_stats/cell_level_stats.csv", 
-            index=False
-        )
-        
+        df_cell_stats.to_csv(f"{RESULTS_DIRECTORY}/cell_stats/cell_level_stats.csv", index=False)
+
         logger.info(f"Successfully extracted cell-level stats for {len(valid_results)} cells")
-        
+
         return df_cell_stats
-    
+
     return run_parallel_processing(
         process_func=extract_cell_level_stats_one,
         analysis_name="Extract cell level stats",
@@ -134,10 +131,10 @@ if __name__ == "__main__":
     logger.info("-" * 80)
     logger.info("Generating sweep plots in parallel...")
     generate_sweep_plots_in_parallel(skip_existing=True, skip_errors=True)
-    
+
     # logger.info("-" * 80)
     # logger.info("Extracting cell-level statistics...")
     # extract_cell_level_stats_in_parallel(skip_errors=True)
-    
+
     # For debugging
     # enerate_sweep_plots_one("1246071525")

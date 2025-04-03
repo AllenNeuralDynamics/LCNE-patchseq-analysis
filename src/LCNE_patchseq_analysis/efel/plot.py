@@ -4,7 +4,6 @@ import os
 from typing import Any, Dict
 
 import matplotlib
-matplotlib.use('Agg')  # Set the non-interactive backend
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -12,6 +11,7 @@ import seaborn as sns
 
 from LCNE_patchseq_analysis import TIME_STEP
 
+matplotlib.use("Agg")  # Set the non-interactive backend
 sns.set_style("white")
 sns.set_context("talk")
 
@@ -42,7 +42,6 @@ def plot_sweep_raw(
     )
 
     time = begin_t + np.arange(len(trace)) * TIME_STEP
-    time_interpolated = time  # This only works for non-interpolated case
 
     # Plot the trace
     fig = plt.figure(figsize=(12, 6))
@@ -65,7 +64,7 @@ def plot_sweep_raw(
         # Plot min_AHP (if in the peri-stimulus period)
         min_AHP_time = df_spike_feature["min_AHP_indices"] * TIME_STEP
         min_AHP_values = df_spike_feature["min_AHP_values"]
-        
+
         ax.plot(
             min_AHP_time,
             min_AHP_values,
@@ -136,7 +135,7 @@ def plot_sweep_raw(
 
     ax_stimulus.set_xlabel("Time (ms)")
     ax_stimulus.set_ylabel("I (pA)")
-    
+
     ax.legend(loc="best", fontsize=12)
     ax.label_outer()
     ax.grid(True)
@@ -175,7 +174,7 @@ def plot_overlaid_spikes(
 
     fig, axs = plt.subplots(1, 2, figsize=(13, 6))
     ax_v, ax_phase = axs
-    
+
     # Plot the features for the first spike
     for i in reversed(range(n_spikes)):
         v = spike_this.query("spike_idx == @i").values[0]
@@ -253,19 +252,23 @@ def plot_overlaid_spikes(
         )
 
         # AP_duration_half_width
-        if "AP_rise_indices" in df_spike_feature.columns and \
-            df_spike_feature["AP_rise_indices"].notna().loc[i]:
-            t_idx = (int(df_spike_feature["AP_rise_indices"].loc[i])
+        if (
+            "AP_rise_indices" in df_spike_feature.columns
+            and df_spike_feature["AP_rise_indices"].notna().loc[i]
+        ):
+            t_idx = (
+                int(df_spike_feature["AP_rise_indices"].loc[i])
                 - peak_time_idx_in_raw
-                + peak_time_idx_in_t)
+                + peak_time_idx_in_t
+            )
             if t_idx >= 0 and t_idx < len(t):
                 half_rise_time = t[t_idx]
-   
+
                 half_voltage = (
                     df_spike_feature["AP_begin_voltage"].loc[i]
                     + df_spike_feature["peak_voltage"].loc[i]
                 ) / 2
-                
+
                 AP_duration_half_width = df_spike_feature["AP_duration_half_width"].loc[i]
                 ax_v.plot(half_rise_time, half_voltage, "mo", ms=10)
                 ax_v.plot(
@@ -275,14 +278,16 @@ def plot_overlaid_spikes(
                     label=f"AP_duration_half_width = {AP_duration_half_width:.2f}",
                 )
 
-        if "AP_peak_upstroke" in df_spike_feature.columns and \
-                "AP_peak_downstroke" in df_spike_feature.columns:
+        if (
+            "AP_peak_upstroke" in df_spike_feature.columns
+            and "AP_peak_downstroke" in df_spike_feature.columns
+        ):
             peak_upstroke = df_spike_feature["AP_peak_upstroke"].loc[i]
             peak_downstroke = df_spike_feature["AP_peak_downstroke"].loc[i]
 
             # Phase plot: phaseslope
             _t_after_begin = np.where(t >= t_begin)[0]
-            if len(_t_after_begin) > 0: # Sometimes t_begin is None
+            if len(_t_after_begin) > 0:  # Sometimes t_begin is None
                 begin_ind = _t_after_begin[0]
                 ax_phase.plot(v[begin_ind], dvdt[begin_ind], "go", ms=10, label="AP_begin")
                 ax_phase.axhline(
@@ -291,7 +296,7 @@ def plot_overlaid_spikes(
                     linestyle=":",
                     label="Derivative threshold",
                 )
-                
+
                 # Phase plot: AP_phaseslope
                 phaselope = df_spike_feature["AP_phaseslope"].loc[i]
                 dxx = min(-v[begin_ind], peak_upstroke / phaselope)
@@ -303,9 +308,9 @@ def plot_overlaid_spikes(
             ax_phase.axhline(peak_upstroke, color="c", linestyle="--", label="AP_peak_upstroke")
 
             # Phase plot: AP_peak_downstroke
-            ax_phase.axhline(peak_downstroke, color="darkblue",
-                             linestyle="--", label="AP_peak_downstroke")
-
+            ax_phase.axhline(
+                peak_downstroke, color="darkblue", linestyle="--", label="AP_peak_downstroke"
+            )
 
     # Set labels and title
     ax_v.set_xlim(-2, 6)
@@ -377,4 +382,3 @@ def plot_sweep_summary(features_dict: Dict[str, Any], save_dir: str) -> None:
 
     # Indicate that all sweep plots have been successfully generated
     os.makedirs(f"{save_dir}/{ephys_roi_id}/all_success", exist_ok=True)
-
