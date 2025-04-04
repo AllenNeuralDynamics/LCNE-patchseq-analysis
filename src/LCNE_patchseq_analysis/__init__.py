@@ -14,6 +14,15 @@ RAW_DIRECTORY = os.path.join(PACKAGE_DIRECTORY, "../../data/LCNE-patchseq-ephys/
 RESULTS_DIRECTORY = os.path.join(PACKAGE_DIRECTORY, "../../results/")
 TIME_STEP = 0.02  # ms
 
+REGION_COLOR_MAPPER = {
+    "c5": "pink",
+    "pl": "green",
+    "pl, mos": "green",
+    "val": "red",
+    "crus 1": "gold",
+    "non-retro": "grey",
+}
+
 # Check if Raw data directory exists
 if not os.path.exists(RAW_DIRECTORY):
     logger.warning(f"Raw data directory does not exist: {RAW_DIRECTORY}")

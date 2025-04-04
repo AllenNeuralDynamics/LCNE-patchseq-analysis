@@ -67,7 +67,7 @@ def extract_cell_level_stats_in_parallel(skip_errors: bool = True, if_generate_p
     df_cell_stats = pd.concat(valid_results, axis=0)
 
     # ---- Merge into Brian's spreadsheet ----
-    df_ephys_metadata = load_ephys_metadata().rename(
+    df_ephys_metadata = load_ephys_metadata(if_with_efel=False).rename(
         columns={"ephys_roi_id_tab_master": "ephys_roi_id"}
     )
     df_merged = df_ephys_metadata.merge(df_cell_stats, on="ephys_roi_id", how="left")
@@ -96,7 +96,7 @@ if __name__ == "__main__":
 
     logger.info("-" * 80)
     logger.info("Extracting cell-level statistics...")
-    extract_cell_level_stats_in_parallel(skip_errors=False, if_generate_plots=False)
+    extract_cell_level_stats_in_parallel(skip_errors=False, if_generate_plots=True)
 
     # ================================
     # For debugging
