@@ -8,14 +8,13 @@ from typing import Literal
 
 import pandas as pd
 
-from LCNE_patchseq_analysis import RESULTS_DIRECTORY
 from LCNE_patchseq_analysis.efel import (
-    EXTRACT_SPIKE_FROMS,
+    CELL_SUMMARY_PLOT_SHOW_SPIKES,
+    CELL_SUMMARY_PLOT_SHOW_SWEEPS,
+    EXTRACT_SAG_FEATURES,
     EXTRACT_SAG_FROMS,
     EXTRACT_SPIKE_FEATURES,
-    EXTRACT_SAG_FEATURES,
-    CELL_SUMMARY_PLOT_SHOW_SWEEPS,
-    CELL_SUMMARY_PLOT_SHOW_SPIKES,
+    EXTRACT_SPIKE_FROMS,
 )
 from LCNE_patchseq_analysis.efel.io import load_efel_features_from_roi
 from LCNE_patchseq_analysis.efel.plot import plot_cell_summary
@@ -130,7 +129,7 @@ def extract_cell_level_stats_one(ephys_roi_id: str):
 
         # Select sweeps and spikes to show in the cell-level summary plots
         to_plot = {}
-        for plot_type, settings in [ 
+        for plot_type, settings in [
             ("sweeps", CELL_SUMMARY_PLOT_SHOW_SWEEPS),
             ("spikes", CELL_SUMMARY_PLOT_SHOW_SPIKES),
         ]:
@@ -141,13 +140,14 @@ def extract_cell_level_stats_one(ephys_roi_id: str):
                     df_features_per_sweep, stim_type=stim_type[0], aggregate_method=stim_type[1]
                 )
                 if selected_sweep is not None and not selected_sweep.empty:
-                    to_plot[plot_type][setting['label']] = {
+                    to_plot[plot_type][setting["label"]] = {
                         "sweep_number": selected_sweep.sweep_number.values[0],
                         "color": setting["color"],
                     }
 
         plot_cell_summary(
-            features_dict, sweeps_to_show=to_plot["sweeps"], spikes_to_show=to_plot["spikes"])
+            features_dict, sweeps_to_show=to_plot["sweeps"], spikes_to_show=to_plot["spikes"]
+        )
 
         logger.info(f"Successfully generated cell-level summary plots for {ephys_roi_id}!")
 

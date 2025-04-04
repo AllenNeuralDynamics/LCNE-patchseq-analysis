@@ -101,7 +101,19 @@ CELL_SUMMARY_PLOT_SHOW_SWEEPS = [
 
 # Control which spikes to overlay in the cell-level summary plots. (only the first spike)
 CELL_SUMMARY_PLOT_SHOW_SPIKES = [
-    {"label": "short_square_rheo, min", "stim_type": ["short_square_rheo", "min"], "color": "darkgreen"},
-    {"label": "long_square_supra, min", "stim_type": ["long_square_supra", "min"], "color": "salmon"},
-    {"label": "long_square_rheo, min", "stim_type": ["long_square_rheo", "min"], "color": "deepskyblue"},
+    {
+        "label": "short_square_rheo, min",
+        "stim_type": ["short_square_rheo", "min"],
+        "color": "darkgreen",
+    },
+    {
+        "label": "long_square_supra, min",
+        "stim_type": ["long_square_supra", "min"],
+        "color": "salmon",
+    },
+    {
+        "label": "long_square_rheo, min",
+        "stim_type": ["long_square_rheo", "min"],
+        "color": "deepskyblue",
+    },
 ]
