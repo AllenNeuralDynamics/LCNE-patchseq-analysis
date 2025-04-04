@@ -10,9 +10,8 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from LCNE_patchseq_analysis import TIME_STEP, RESULTS_DIRECTORY
+from LCNE_patchseq_analysis import RESULTS_DIRECTORY, TIME_STEP
 from LCNE_patchseq_analysis.efel.io import load_efel_features_from_roi
-
 
 logger = logging.getLogger(__name__)
 matplotlib.use("Agg")  # Set the non-interactive backend
@@ -402,3 +401,4 @@ def generate_sweep_plots_one(ephys_roi_id: str):
         error_message = f"Error processing {ephys_roi_id}: {str(e)}\n{traceback.format_exc()}"
         logger.error(error_message)
         return error_message
+

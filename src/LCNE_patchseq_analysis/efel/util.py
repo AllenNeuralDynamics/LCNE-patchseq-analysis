@@ -104,8 +104,7 @@ def handle_errors(results, roi_ids, analysis_name: str):
     errors = [
         {"roi_id": roi_ids[i], "error": result}
         for i, result in enumerate(results)
-        if result != "Success"
-        and result[0] != "Success"  # Result is a tuple
+        if result != "Success" and result[0] != "Success"  # Result is a tuple
     ]
 
     logger.info(f"{analysis_name}, Success: {len(results) - len(errors)}")

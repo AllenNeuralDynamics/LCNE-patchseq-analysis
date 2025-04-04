@@ -1,5 +1,6 @@
 """
-This module contains functions for extracting cell-level statistics from a single eFEL features file.
+This module contains functions for extracting cell-level statistics
+from a single eFEL features file.
 """
 
 import logging
@@ -30,7 +31,8 @@ def extract_cell_level_stats_one(ephys_roi_id: str):
         # Extract cell-level statistics
         cell_stats = {
             "ephys_roi_id": ephys_roi_id,
-            "first_spike_AP_duration_half_width @ short_square_rheo, aver": AP_width_short_square_rheo_aver,
+            "first_spike_AP_duration_half_width @ short_square_rheo, aver":
+                AP_width_short_square_rheo_aver,
             # Add your cell-level statistics here
             # For example:
             # "mean_firing_rate": features_dict["df_features_per_sweep"]["spike_count"].mean(),
@@ -46,5 +48,3 @@ def extract_cell_level_stats_one(ephys_roi_id: str):
         error_message = f"Error processing {ephys_roi_id}: {str(e)}\n{traceback.format_exc()}"
         logger.error(error_message)
         return None
-
-
