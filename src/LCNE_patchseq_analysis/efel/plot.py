@@ -407,6 +407,8 @@ def plot_cell_summary(
     features_dict: Dict[str, Any],
     sweeps_to_show: Dict[str, Any],
     spikes_to_show: Dict[str, Any],
+    info_text: str,
+    region_color: str,
     linewidth: float = 1.5,
 ) -> plt.Figure:
     """Generate and save cell summary plots.
@@ -420,9 +422,9 @@ def plot_cell_summary(
         Matplotlib figure object
     """
     ephys_roi_id = features_dict["df_sweeps"]["ephys_roi_id"][0]
-
+    
     # -- Set up figure --
-    fig = plt.figure(figsize=(15, 5))
+    fig = plt.figure(figsize=(17, 6))
     gs = fig.add_gridspec(1, 3, width_ratios=[1, 1, 1])
     gs_left = gs[0].subgridspec(2, 1, height_ratios=[4, 1], hspace=0)
     ax_sweep_v = fig.add_subplot(gs_left[0])
@@ -519,7 +521,12 @@ def plot_cell_summary(
 
     sns.despine(ax=ax_sweep_i, trim=True)
     sns.despine(ax=ax_sweep_v, bottom=True)
+    ax_sweep_v.yaxis.set_visible(True)
+    ax_sweep_v.tick_params(axis='y', which='both', left=True, labelleft=True)
+    fig.suptitle(info_text, fontsize=18, color=region_color)
+
     fig.tight_layout()
+    fig.savefig("./tmp.png")
 
     fig.savefig(f"{RESULTS_DIRECTORY}/cell_stats/{ephys_roi_id}_cell_summary.png", dpi=500)
     plt.close(fig)

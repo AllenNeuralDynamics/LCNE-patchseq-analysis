@@ -106,20 +106,29 @@ def load_ephys_metadata(if_with_efel=False):
     df = pd.read_csv(RAW_DIRECTORY + "/df_metadata_merged.csv")
     df = df.query("spreadsheet_or_lims in ('both', 'spreadsheet_only')").copy()
 
-    # Rename "Crus 1" to "Crus1"
+    # Format injection region
     df.loc[
         df["injection region"].astype(str).str.contains("Crus", na=False),
         "injection region",
     ] = "Crus 1"
+    df["injection region"] = df["injection region"].apply(format_injection_region)
 
     # Convert width columns to ms
     df.loc[:, df.columns.str.contains("width")] = df.loc[:, df.columns.str.contains("width")] * 1000
-
+    
     # Change columns with roi_id to str(int())
     for col in ["ephys_roi_id_tab_master", "ephys_roi_id_lims"]:
         df[col] = df[col].apply(lambda x: str(int(x)) if pd.notnull(x) else "")
     return df
 
+
+def format_injection_region(x):
+    if x != x:
+        return "Non-Retro"
+    if "pl" in x.lower():
+        return "Cortex"
+    return x
+    
 
 if __name__ == "__main__":
     json_dicts = read_json_files(
