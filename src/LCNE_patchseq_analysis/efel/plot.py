@@ -143,7 +143,7 @@ def plot_sweep_raw(
     ax.label_outer()
     ax.grid(True)
 
-    sns.despine()
+    sns.despine(bottom=True)
     return fig
 
 
@@ -403,12 +403,65 @@ def generate_sweep_plots_one(ephys_roi_id: str):
         return error_message
 
 
-def plot_cell_summary(features_dict: Dict[str, Any]) -> plt.Figure:
+def plot_cell_summary(features_dict: Dict[str, Any], sweeps_to_show: Dict[str, Any], spikes_to_show: Dict[str, Any]) -> plt.Figure:
     """Generate and save cell summary plots.
 
     Args:
         features_dict: Dictionary containing features
-        save_dir: Directory to save plots
+        sweeps_to_show: Dictionary containing sweeps to show
+        spikes_to_show: Dictionary containing spikes to show
 
+    Returns:
+        Matplotlib figure object
     """
-    pass
+    
+    # -- Set up figure --
+    fig = plt.figure(figsize=(15, 5))
+    gs = fig.add_gridspec(1, 3, width_ratios=[1, 1, 1])
+    gs_left = gs[0].subgridspec(2, 1, height_ratios=[4, 1], hspace=0)
+    ax_sweep_v = fig.add_subplot(gs_left[0])      
+    ax_sweep_i = fig.add_subplot(gs_left[1])     
+    ax_spike = fig.add_subplot(gs[1])   
+    ax_phase = fig.add_subplot(gs[2])  
+    
+    # -- Prepare sweeps --
+    df_sweeps_raw = features_dict["df_peri_stimulus_raw_traces"].query("sweep_number in @sweeps_to_show.values()")
+    if len(df_sweeps_raw) > 0:
+        v_sweeps = df_sweeps_raw["V"]
+        i_sweeps = df_sweeps_raw["I"]
+        t_sweeps = np.arange(len(v_sweeps.iloc[0])) * TIME_STEP
+        
+        for v, i in zip(v_sweeps, i_sweeps):
+            ax_sweep_v.plot(t_sweeps, v, "k-", lw=2)
+            ax_sweep_i.plot(t_sweeps, i, "k-", lw=2)
+         
+        ax_sweep_v.xaxis.set_visible(False)
+        ax_sweep_v.set_ylabel("V (mV)")
+        ax_sweep_i.set_ylabel("I (pA)")
+        ax_sweep_i.set_xlabel("Time (ms)")
+
+    # -- Prepare spikes --
+    df_spikes_raw = features_dict["df_spike_waveforms"].query(
+        "sweep_number in @spikes_to_show.values() and spike_idx == 0"
+        )  # First spike of each condition
+    if len(df_spikes_raw) > 0:
+        v_spikes = df_spikes_raw.values
+        t_spikes = df_spikes_raw.columns.values
+        dvdt_spikes = np.array([np.gradient(v_spike, t_spikes) for v_spike in v_spikes])
+
+        for v, dvdt in zip(v_spikes, dvdt_spikes):
+            ax_spike.plot(t_spikes, v, "k-", lw=2)
+            ax_phase.plot(v, dvdt, "k-", lw=2)
+            
+        ax_spike.set(xlim=(-2, 5))
+        ax_spike.set_xlabel("Time (ms)")
+        ax_spike.set_ylabel("V (mV)")
+        ax_phase.set_xlabel("V (mV)")
+        ax_phase.set_ylabel("dV/dt (mV/ms)")
+            
+    sns.despine(trim=True)
+    sns.despine(ax=ax_sweep_v, bottom=True)
+    fig.tight_layout()
+    
+    fig.savefig("./tmp.png")
+    plt.close(fig)
