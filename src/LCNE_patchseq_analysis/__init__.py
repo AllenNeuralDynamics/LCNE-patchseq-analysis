@@ -15,14 +15,25 @@ RESULTS_DIRECTORY = os.path.join(PACKAGE_DIRECTORY, "../../results/")
 TIME_STEP = 0.02  # ms
 
 REGION_COLOR_MAPPER = {
-    "c5": "pink",
-    "pl": "green",
-    "pl, mos": "green",
-    "cortex": "green",
-    "val": "red",
-    "crus 1": "gold",
-    "non-retro": "grey",
+    "C5": "pink",
+    "PL": "green",
+    "PL, MOs": "green",
+    "Cortex": "green",
+    "VAL": "red",
+    "Crus 1": "gold",
+    "Non-retro": "grey",
 }
+
+# Add lowercase versions of all region keys to the color mapper
+lowercase_regions = {}
+for region, color in list(REGION_COLOR_MAPPER.items()):
+    lowercase_region = region.lower()
+    if lowercase_region not in REGION_COLOR_MAPPER:
+        lowercase_regions[lowercase_region] = color
+
+# Update the color mapper with lowercase versions
+REGION_COLOR_MAPPER.update(lowercase_regions)
+
 
 # Check if Raw data directory exists
 if not os.path.exists(RAW_DIRECTORY):
