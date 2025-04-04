@@ -62,13 +62,15 @@ def extract_cell_level_stats_in_parallel(skip_errors: bool = True):
     # Filter out None results (errors)
     valid_results = [result[1] for result in results if result is not None]
 
-    df_cell_stats = pd.DataFrame(valid_results)
+    df_cell_stats = pd.concat(valid_results, axis=0)
 
     # Save the summary table to disk
     os.makedirs(f"{RESULTS_DIRECTORY}/cell_stats", exist_ok=True)
-    df_cell_stats.to_csv(f"{RESULTS_DIRECTORY}/cell_stats/cell_level_stats.csv", index=False)
+    save_path = f"{RESULTS_DIRECTORY}/cell_stats/cell_level_stats.csv"
+    df_cell_stats.to_csv(save_path, index=False)
 
-    logger.info(f"Successfully extracted cell-level stats for {len(valid_results)} cells")
+    logger.info(f"Successfully extracted cell-level stats for {len(valid_results)} cells!")
+    logger.info(f"Summary table saved to {save_path}")
 
     return df_cell_stats
 
