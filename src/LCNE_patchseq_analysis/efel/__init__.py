@@ -35,11 +35,11 @@ with open(os.path.join(current_dir, "efel_per_spike_features.json"), "r") as f:
 #
 # For the "Froms":
 #     - The first element is the stimulus type.
-#         - rheo means rheobase in either short or long square
-#         - supra means supra-threshold (in long square only)
+#         - "rheo" means rheobase in either short or long square
+#         - "supra" means supra-threshold (in long square only)
 #     - The second element is the aggregation method.
-#         - min means the minimum amplitude that evokes at least one spike
-#         - aver means the average amplitude of all sweeps in one "from"
+#         - "min" means the minimum amplitude that evokes at least one spike
+#         - "aver" means the average amplitude of all sweeps in one "from"
 
 EXTRACT_SPIKE_FEATURES = [
     "first_spike_ADP_peak_amplitude",
@@ -89,3 +89,19 @@ EXTRACT_SAG_FROMS = {
     "subthreshold, 90": ["subthreshold", 90],
     "subthreshold, aver": ["subthreshold", "aver"],
 }
+
+# ---- Cell-level summary plots ----
+# Control which sweeps to show in the cell-level summary plots.
+CELL_SUMMARY_PLOT_SHOW_SWEEPS = [
+    ["subthreshold", 50],
+    ["subthreshold", 90],
+    ["long_square_rheo", "min"],
+    ["long_square_supra", "min"],
+]
+
+# Control which spikes to overlay in the cell-level summary plots. (only the first spike)
+CELL_SUMMARY_PLOT_SHOW_SPIKES = [
+    ["long_square_rheo", "min"],
+    ["long_square_supra", "min"],
+    ["short_square_rheo", "min"],
+]
