@@ -1,5 +1,6 @@
 """Plotting functions for electrophysiology data."""
 
+import logging
 import os
 from typing import Any, Dict
 
@@ -9,8 +10,11 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from LCNE_patchseq_analysis import TIME_STEP
+from LCNE_patchseq_analysis import TIME_STEP, RESULTS_DIRECTORY
+from LCNE_patchseq_analysis.efel.io import load_efel_features_from_roi
 
+
+logger = logging.getLogger(__name__)
 matplotlib.use("Agg")  # Set the non-interactive backend
 sns.set_style("white")
 sns.set_context("talk")
@@ -382,3 +386,19 @@ def plot_sweep_summary(features_dict: Dict[str, Any], save_dir: str) -> None:
 
     # Indicate that all sweep plots have been successfully generated
     os.makedirs(f"{save_dir}/{ephys_roi_id}/all_success", exist_ok=True)
+
+
+def generate_sweep_plots_one(ephys_roi_id: str):
+    """Load from HDF5 file and generate sweep plots in parallel."""
+    try:
+        logger.info(f"Generating sweep plots for {ephys_roi_id}...")
+        features_dict = load_efel_features_from_roi(ephys_roi_id)
+        plot_sweep_summary(features_dict, f"{RESULTS_DIRECTORY}/plots")
+        logger.info(f"Successfully generated sweep plots for {ephys_roi_id}!")
+        return "Success"
+    except Exception as e:
+        import traceback
+
+        error_message = f"Error processing {ephys_roi_id}: {str(e)}\n{traceback.format_exc()}"
+        logger.error(error_message)
+        return error_message
