@@ -127,7 +127,7 @@ def extract_cell_level_stats_one(ephys_roi_id: str, if_generate_plots: bool = Tr
         # --- Generate cell-level summary plots ---
         if not if_generate_plots:
             return "Success", cell_stats
-        
+
         logger.info(f"Generating cell-level summary plots for {ephys_roi_id}...")
 
         # Select sweeps and spikes to show in the cell-level summary plots

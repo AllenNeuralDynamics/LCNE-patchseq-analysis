@@ -8,8 +8,8 @@ import pandas as pd
 from LCNE_patchseq_analysis import RESULTS_DIRECTORY
 from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
 from LCNE_patchseq_analysis.efel.core import extract_efel_one
-from LCNE_patchseq_analysis.efel.population import extract_cell_level_stats_one
 from LCNE_patchseq_analysis.efel.plot import generate_sweep_plots_one
+from LCNE_patchseq_analysis.efel.population import extract_cell_level_stats_one
 from LCNE_patchseq_analysis.efel.util import run_parallel_processing
 
 logger = logging.getLogger(__name__)

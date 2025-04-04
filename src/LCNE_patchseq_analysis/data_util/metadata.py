@@ -86,21 +86,22 @@ def load_ephys_metadata(if_with_efel=False):
 
     Per discussion with Brian, we should only look at those in the spreadsheet.
     https://www.notion.so/hanhou/LCNE-patch-seq-analysis-1ae3ef97e735808eb12ec452d2dc4369?pvs=4#1ba3ef97e73580ac9a5ee6e53e9b3dbe  # noqa: E501
-    
+
     Args:
-        if_with_efel: If True, load the cell level stats from eFEL output 
+        if_with_efel: If True, load the cell level stats from eFEL output
                             (Brian's spreadsheet + eFEL stats).
                       else, load the downloaded Brian's spreadsheet only.
     """
     # -- Load the cell level stats from eFEL output --
     if if_with_efel:
-        df = get_public_efel_cell_level_stats() 
-        
+        df = get_public_efel_cell_level_stats()
+
         # Convert ephys_roi_id to str(int())
         df["ephys_roi_id"] = df["ephys_roi_id"].apply(
-            lambda x: str(int(x)) if pd.notnull(x) else "")
+            lambda x: str(int(x)) if pd.notnull(x) else ""
+        )
         return df
-    
+
     # -- Load the downloaded Brian's spreadsheet only --
     df = pd.read_csv(RAW_DIRECTORY + "/df_metadata_merged.csv")
     df = df.query("spreadsheet_or_lims in ('both', 'spreadsheet_only')").copy()
@@ -110,10 +111,9 @@ def load_ephys_metadata(if_with_efel=False):
         df["injection region"].astype(str).str.contains("Crus", na=False),
         "injection region",
     ] = "Crus 1"
-    
+
     # Convert width columns to ms
-    df.loc[:, df.columns.str.contains("width")] = df.loc[
-        :, df.columns.str.contains("width")] * 1000
+    df.loc[:, df.columns.str.contains("width")] = df.loc[:, df.columns.str.contains("width")] * 1000
 
     # Change columns with roi_id to str(int())
     for col in ["ephys_roi_id_tab_master", "ephys_roi_id_lims"]:
