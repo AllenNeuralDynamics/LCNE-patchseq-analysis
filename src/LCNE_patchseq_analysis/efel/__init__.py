@@ -25,25 +25,21 @@ with open(os.path.join(current_dir, "efel_per_spike_features.json"), "r") as f:
 
 # ---- Cell-level eFEL features ---
 # To be explicit so that we can see the available options clearly.
+# Feature columns will be all combinations of the "Features" and "Froms" below,
+# for "spike" and "sag" respectively.
+#
+# For the "Features":
+#     - See eFEL documentation for details. (https://efel.readthedocs.io/en/latest/eFeatures.html)
+#     - "first_spike_" prefix means all features are extracted from the first spike.
+#     - "sag_" prefix means all features are extracted from the sag.
+#
 # For the "Froms":
 #     - The first element is the stimulus type.
 #         - rheo means rheobase in either short or long square
 #         - supra means supra-threshold (in long square only)
 #     - The second element is the aggregation method.
 #         - min means the minimum amplitude that evokes at least one spike
-#         - aver means the average amplitude of all sweeps
-# For the "Features":
-#     - See eFEL documentation for details. (https://efel.readthedocs.io/en/latest/eFeatures.html)
-#     - "first_spike_" prefix means all features are extracted from the first spike.
-
-EXTRACT_SPIKE_FROMS = {
-    "short_square_rheo, min": ["short_square_rheo", "min"],
-    "short_square_rheo, aver": ["short_square_rheo", "aver"],
-    "long_square_rheo, min": ["long_square_rheo", "min"],
-    "long_square_rheo, aver": ["long_square_rheo", "aver"],
-    "long_square_supra, min": ["long_square_supra", "min"],
-    "long_square_supra, aver": ["long_square_supra", "aver"],
-}
+#         - aver means the average amplitude of all sweeps in one "from"
 
 EXTRACT_SPIKE_FEATURES = [
     "first_spike_ADP_peak_amplitude",
@@ -75,11 +71,21 @@ EXTRACT_SPIKE_FEATURES = [
     "efel_first_spike_AP_width",
 ]
 
+EXTRACT_SPIKE_FROMS = {
+    # name: [stimulus_type, aggregation_method]
+    "short_square_rheo, min": ["short_square_rheo", "min"],
+    "short_square_rheo, aver": ["short_square_rheo", "aver"],
+    "long_square_rheo, min": ["long_square_rheo", "min"],
+    "long_square_rheo, aver": ["long_square_rheo", "aver"],
+    "long_square_supra, min": ["long_square_supra", "min"],
+    "long_square_supra, aver": ["long_square_supra", "aver"],
+}
+
+EXTRACT_SAG_FEATURES = ["sag_amplitude", "sag_ratio1", "sag_ratio2", "sag_time_constant"]
 
 EXTRACT_SAG_FROMS = {
+    # name: [stimulus_type, threshold_amplitude]
     "subthreshold, 50": ["subthreshold", 50],
     "subthreshold, 90": ["subthreshold", 90],
     "subthreshold, aver": ["subthreshold", "aver"],
 }
-
-EXTRACT_SAG_FEATURES = ["sag_amplitude", "sag_ratio1", "sag_ratio2", "sag_time_constant"]
