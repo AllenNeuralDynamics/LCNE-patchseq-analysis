@@ -403,10 +403,12 @@ def generate_sweep_plots_one(ephys_roi_id: str):
         return error_message
 
 
-def plot_cell_summary(features_dict: Dict[str, Any], 
-                      sweeps_to_show: Dict[str, Any], 
-                      spikes_to_show: Dict[str, Any],
-                      linewidth: float = 1.5) -> plt.Figure:
+def plot_cell_summary(
+    features_dict: Dict[str, Any],
+    sweeps_to_show: Dict[str, Any],
+    spikes_to_show: Dict[str, Any],
+    linewidth: float = 1.5,
+) -> plt.Figure:
     """Generate and save cell summary plots.
 
     Args:
@@ -418,45 +420,47 @@ def plot_cell_summary(features_dict: Dict[str, Any],
         Matplotlib figure object
     """
     ephys_roi_id = features_dict["df_sweeps"]["ephys_roi_id"][0]
-    
+
     # -- Set up figure --
     fig = plt.figure(figsize=(15, 5))
     gs = fig.add_gridspec(1, 3, width_ratios=[1, 1, 1])
     gs_left = gs[0].subgridspec(2, 1, height_ratios=[4, 1], hspace=0)
-    ax_sweep_v = fig.add_subplot(gs_left[0])      
-    ax_sweep_i = fig.add_subplot(gs_left[1])     
-    ax_spike = fig.add_subplot(gs[1])   
-    ax_phase = fig.add_subplot(gs[2])  
-    
+    ax_sweep_v = fig.add_subplot(gs_left[0])
+    ax_sweep_i = fig.add_subplot(gs_left[1])
+    ax_spike = fig.add_subplot(gs[1])
+    ax_phase = fig.add_subplot(gs[2])
+
     # -- Sweeps --
     color_used = []
     for label, settings in sweeps_to_show.items():
         sweep_number = settings["sweep_number"]
         color = settings["color"]
-        
+
         df_sweeps_raw = features_dict["df_peri_stimulus_raw_traces"].query(
-            "sweep_number == @sweep_number")
-        
+            "sweep_number == @sweep_number"
+        )
+
         if len(df_sweeps_raw) > 0:
             v_sweeps = df_sweeps_raw["V"].iloc[0]
             i_sweeps = df_sweeps_raw["I"].iloc[0]
             t_sweeps = np.arange(len(v_sweeps)) * TIME_STEP
-        
+
             if "min" in label:
                 # Get the actual current amplitude
-                i_amp = features_dict["df_sweeps"].query(
-                    "sweep_number == @sweep_number")["stimulus_amplitude"].values[0]
-                label = f"{i_amp:.0f} pA" + (
-                    " (rheo)" if "rheo" in label else ""
+                i_amp = (
+                    features_dict["df_sweeps"]
+                    .query("sweep_number == @sweep_number")["stimulus_amplitude"]
+                    .values[0]
                 )
-            
+                label = f"{i_amp:.0f} pA" + (" (rheo)" if "rheo" in label else "")
+
             color_used.append(color)
             ax_sweep_v.plot(t_sweeps, v_sweeps, color, label=label, lw=linewidth)
             ax_sweep_i.plot(t_sweeps, i_sweeps, color, label=label, lw=linewidth)
-         
+
     ax_sweep_v.xaxis.set_visible(False)
     ax_sweep_v.set_ylabel("V (mV)")
-    legend = ax_sweep_i.legend(fontsize=10, loc='center right', handlelength=0)
+    legend = ax_sweep_i.legend(fontsize=10, loc="center right", handlelength=0)
     for text, color in zip(legend.get_texts(), color_used):
         text.set_color(color)
     ax_sweep_i.set_ylabel("I (pA)")
@@ -465,50 +469,59 @@ def plot_cell_summary(features_dict: Dict[str, Any],
     # -- Spikes --
     color_used = []
     for label, settings in spikes_to_show.items():
-        sweep_number = settings["sweep_number"]
+        sweep_number = settings["sweep_number"]  # noqa: F841
         color = settings["color"]
-        
+
         df_spikes_raw = features_dict["df_spike_waveforms"].query(
-            "sweep_number == @sweep_number and spike_idx == 0")  # First spike
+            "sweep_number == @sweep_number and spike_idx == 0"
+        )  # First spike
         df_spike_feature = features_dict["df_features_per_spike"].query(
-            "sweep_number == @sweep_number and spike_idx == 0")  # First spike
-        
+            "sweep_number == @sweep_number and spike_idx == 0"
+        )  # First spike
+
         if len(df_spikes_raw) > 0:
             v_spike = df_spikes_raw.values[0]
             t_spike = df_spikes_raw.columns.values
             dvdt_spike = np.gradient(v_spike, t_spike)
-            
+
             if "min" in label:
                 # Get the actual current amplitude
-                i_amp = features_dict["df_sweeps"].query(
-                    "sweep_number == @sweep_number")["stimulus_amplitude"].values[0]
-                label = f"{label.split(',')[0]} ({i_amp:.0f} pA)"\
-                f"\n   half width = {df_spike_feature['AP_duration_half_width'].values[0]:.2f} ms"
-            
+                i_amp = (
+                    features_dict["df_sweeps"]
+                    .query("sweep_number == @sweep_number")["stimulus_amplitude"]
+                    .values[0]
+                )
+                label = (
+                    f"{label.split(',')[0]} ({i_amp:.0f} pA)\n    half width = "
+                    f"{df_spike_feature['AP_duration_half_width'].values[0]:.2f} ms"
+                )
+
             color_used.append(color)
             ax_spike.plot(t_spike, v_spike, color, lw=linewidth * 1.5, label=label)
             ax_phase.plot(v_spike, dvdt_spike, color, lw=linewidth * 1.5)
-    
+
     ax_spike.set(xlim=(-2.5, 5.5))
     ax_spike.set_xlabel("Time (ms)")
     ax_spike.set_ylabel("V (mV)")
     ax_spike.minorticks_on
-    ax_spike.grid(which='major', linestyle='-', alpha=0.5)
-    ax_spike.grid(which='minor', linestyle=':', alpha=0.5)
+    ax_spike.grid(which="major", linestyle="-", alpha=0.5)
+    ax_spike.grid(which="minor", linestyle=":", alpha=0.5)
     ax_phase.set_xlabel("V (mV)")
     ax_phase.set_ylabel("dV/dt (mV/ms)")
     ax_phase.grid(True)
-    
+
     if color_used:
-        legend = ax_spike.legend(loc="best", fontsize=10, title="1st spike", title_fontsize=11, handlelength=0)
+        legend = ax_spike.legend(
+            loc="best", fontsize=10, title="1st spike", title_fontsize=11, handlelength=0
+        )
         for text, color in zip(legend.get_texts(), color_used):
             text.set_color(color)
-        
+
     sns.despine(ax=ax_sweep_i, trim=True)
     sns.despine(ax=ax_sweep_v, bottom=True)
     fig.tight_layout()
-    
-    fig.savefig(f"{RESULTS_DIRECTORY}/cell_stats/{ephys_roi_id}_cell_summary.png")
+
+    fig.savefig(f"{RESULTS_DIRECTORY}/cell_stats/{ephys_roi_id}_cell_summary.png", dpi=500)
     plt.close(fig)
-    
+
     return fig
