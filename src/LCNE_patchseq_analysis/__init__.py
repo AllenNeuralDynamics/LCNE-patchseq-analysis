@@ -18,6 +18,7 @@ REGION_COLOR_MAPPER = {
     "c5": "pink",
     "pl": "green",
     "pl, mos": "green",
+    "cortex": "green",
     "val": "red",
     "crus 1": "gold",
     "non-retro": "grey",
