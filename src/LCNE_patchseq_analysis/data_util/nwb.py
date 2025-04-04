@@ -18,7 +18,7 @@ class PatchSeqNWB:
     SAMPLING_RATE = 50000  # Hard-coded sampling rate for patch-seq data
     dt_ms = 1 / SAMPLING_RATE * 1000
 
-    def __init__(self, ephys_roi_id):
+    def __init__(self, ephys_roi_id, if_load_metadata=True):
         """Initialization using the ephys_roi_id"""
         self.ephys_roi_id = ephys_roi_id
         self.raw_path_this = f"{RAW_DIRECTORY}/Ephys_Roi_Result_{ephys_roi_id}"
@@ -37,7 +37,8 @@ class PatchSeqNWB:
         self.n_sweeps = len(self.hdf["acquisition"])
 
         # Load metadata
-        self.load_metadata()
+        if if_load_metadata:
+            self.load_metadata()
 
     def load_metadata(self):
         """Load metadata from jsons"""
