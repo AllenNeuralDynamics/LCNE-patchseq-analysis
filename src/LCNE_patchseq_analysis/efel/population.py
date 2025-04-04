@@ -4,10 +4,68 @@ from a single eFEL features file.
 """
 
 import logging
+from typing import Literal
+
+import pandas as pd
 
 from LCNE_patchseq_analysis.efel.io import load_efel_features_from_roi
 
 logger = logging.getLogger(__name__)
+
+
+def df_sweep_selector(df: pd.DataFrame,
+                   stim_type: Literal["subthreshold", "short_square_rheo",
+                                      "long_square_rheo", "long_square_supra"],
+                   aggregate_method: Literal["min", "aver"] | int) -> pd.DataFrame:
+    """Select sweeps based on stimulus type and aggregation method."""
+    
+    def _get_min_or_aver(df_this, aggregate_method):
+        if aggregate_method == "aver":
+            return df_this
+        elif aggregate_method == "min":
+            # Find the sweep with the minimum stimulus amplitude that has at least 1 spike
+            return df_this.loc[
+                df_this[df_this["spike_count"] > 0]["stimulus_amplitude"].abs().idxmin()
+                ]
+        else:
+            raise ValueError("aggregate_method must be 'aver' or 'min'")
+    
+    if stim_type == "subthreshold":
+        if aggregate_method == "aver":
+            # All SubThreshold sweeps
+            return df.query(
+                "stimulus_code.str.contains('SubThresh')"
+                "and stimulus_name == 'Long Square'"
+            )
+        elif isinstance(aggregate_method, int):
+            return df.query(
+                "stimulus_code.str.contains('SubThresh')"
+                " and stimulus_name == 'Long Square'"
+                # Allow for 1 mV tolerance
+                " and abs(abs(stimulus_amplitude) - abs(@aggregate_method)) < 1"
+            )
+        else:
+            raise ValueError("aggregate_method must be 'aver' or an integer (the abs(amplitude)"
+                             "of the stimulus) for subthreshold sweeps")
+    elif stim_type == "short_square_rheo":
+        df_this = df.query(
+            "stimulus_code.str.contains('Rheo')"
+            "and stimulus_name == 'Short Square'"
+        )
+    elif stim_type == "long_square_rheo":
+        df_this = df.query(
+            "stimulus_code.str.contains('Rheo')"
+            "and stimulus_name == 'Long Square'"
+        )
+    elif stim_type == "long_square_supra":
+        df_this = df.query(
+            "stimulus_code.str.contains('SupraThresh')"
+            "and stimulus_name == 'Long Square'"
+        )
+    else:
+        raise ValueError(f"Invalid stimulus type: {stim_type}")
+
+    return _get_min_or_aver(df_this, aggregate_method)
 
 
 def extract_cell_level_stats_one(ephys_roi_id: str):
