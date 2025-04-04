@@ -21,7 +21,6 @@ def run_parallel_processing(
     skip_existing: bool = True,
     skip_errors: bool = True,
     existing_check_func: Optional[Callable] = None,
-    post_process_func: Optional[Callable] = None,
 ) -> List[Any]:
     """
     Generic function to run parallel processing tasks.
@@ -33,7 +32,6 @@ def run_parallel_processing(
         skip_existing: Whether to skip existing results
         skip_errors: Whether to skip ROIs with previous errors
         existing_check_func: Function to check if results already exist
-        post_process_func: Function to process results after parallel execution
 
     Returns:
         List of results from the parallel processing
@@ -79,7 +77,7 @@ def run_parallel_processing(
         jobs.append(job)
 
     # Wait for all processes to complete
-    results = [job.get() for job in tqdm(jobs)]
+    results = [job.get() for job in tqdm(jobs, desc=f"Processing {analysis_name}")]
 
     # Handle errors
     handle_errors(results, ephys_roi_ids, analysis_name)
@@ -89,10 +87,6 @@ def run_parallel_processing(
         logger.info(f"Skipped {n_skipped_existing} ROI IDs that already have results")
     if skip_errors:
         logger.info(f"Skipped {n_skipped_errors} ROI IDs that had errors before")
-
-    # Post-process results if needed
-    if post_process_func:
-        return post_process_func(results)
 
     return results
 
@@ -111,6 +105,7 @@ def handle_errors(results, roi_ids, analysis_name: str):
         {"roi_id": roi_ids[i], "error": result}
         for i, result in enumerate(results)
         if result != "Success"
+        and result[0] != "Success"  # Result is a tuple
     ]
 
     logger.info(f"{analysis_name}, Success: {len(results) - len(errors)}")
