@@ -13,6 +13,22 @@ from LCNE_patchseq_analysis.efel.io import load_efel_features_from_roi
 logger = logging.getLogger(__name__)
 
 
+EXTRACTED_SPIKE_FROMS = {
+    "short_square_rheo, min": ["short_square_rheo", "min"],
+    "short_square_rheo, aver": ["short_square_rheo", "aver"],
+    "long_square_rheo, min": ["long_square_rheo", "min"],
+    "long_square_rheo, aver": ["long_square_rheo", "aver"],
+    "long_square_supra, min": ["long_square_supra", "min"],
+    "long_square_supra, aver": ["long_square_supra", "aver"],
+}
+
+EXTRACTED_SAG_FROMS = {
+    "subthreshold, 50": ["subthreshold", 50],
+    "subthreshold, 90": ["subthreshold", 90],
+    "subthreshold, aver": ["subthreshold", "aver"],
+}
+
+
 def df_sweep_selector(df: pd.DataFrame,
                    stim_type: Literal["subthreshold", "short_square_rheo",
                                       "long_square_rheo", "long_square_supra"],
@@ -24,9 +40,8 @@ def df_sweep_selector(df: pd.DataFrame,
             return df_this
         elif aggregate_method == "min":
             # Find the sweep with the minimum stimulus amplitude that has at least 1 spike
-            return df_this.loc[
-                df_this[df_this["spike_count"] > 0]["stimulus_amplitude"].abs().idxmin()
-                ]
+            min_idx = df_this["stimulus_amplitude"].abs().idxmin()
+            return df_this.loc[[min_idx]]
         else:
             raise ValueError("aggregate_method must be 'aver' or 'min'")
     
@@ -51,20 +66,25 @@ def df_sweep_selector(df: pd.DataFrame,
         df_this = df.query(
             "stimulus_code.str.contains('Rheo')"
             "and stimulus_name == 'Short Square'"
+            "and spike_count > 0"
         )
     elif stim_type == "long_square_rheo":
         df_this = df.query(
             "stimulus_code.str.contains('Rheo')"
             "and stimulus_name == 'Long Square'"
+            "and spike_count > 0"
         )
     elif stim_type == "long_square_supra":
         df_this = df.query(
             "stimulus_code.str.contains('SupraThresh')"
             "and stimulus_name == 'Long Square'"
+            "and spike_count > 0"
         )
     else:
         raise ValueError(f"Invalid stimulus type: {stim_type}")
 
+    if df_this.empty:
+        return None
     return _get_min_or_aver(df_this, aggregate_method)
 
 
@@ -79,24 +99,35 @@ def extract_cell_level_stats_one(ephys_roi_id: str):
             features_dict["df_sweeps"], on="sweep_number"
         )
 
-        # Calculate AP width average for short square rheo stimulus, explicitly excluding NaN values
-        AP_width_short_square_rheo_aver = df_features_per_sweep.query(
-            "stimulus_code == 'X3LP_Rheo'"
-        )["first_spike_AP_duration_half_width"].mean(
-            skipna=True
-        )  # Explicitly skip NaN values
+        cell_stats_dict = {}
+        spike_features_to_extract = [col for col in df_features_per_sweep.columns
+                                     if "first_spike_" in col
+                                     and not any(
+                                         k in col
+                                         for k in ["indices", "AP_begin_time", "peak_time"]
+                                     )
+                                     ]
+        sag_features_to_extract = [col for col in df_features_per_sweep.columns
+                                   if "sag_" in col
+                                   ]
 
-        # Extract cell-level statistics
-        cell_stats = {
-            "ephys_roi_id": ephys_roi_id,
-            "first_spike_AP_duration_half_width @ short_square_rheo, aver":
-                AP_width_short_square_rheo_aver,
-            # Add your cell-level statistics here
-            # For example:
-            # "mean_firing_rate": features_dict["df_features_per_sweep"]["spike_count"].mean(),
-            # "max_ap_width": features_dict["df_features_per_sweep"]["first_spike_AP_width"].max(),
-            # etc.
-        }
+
+        # Loop over spike and sag features
+        for feature_type, features_to_extract in [
+            (EXTRACTED_SPIKE_FROMS, spike_features_to_extract),
+            (EXTRACTED_SAG_FROMS, sag_features_to_extract),
+        ]:
+            for key, value in feature_type.items():
+                df_sweep = df_sweep_selector(
+                    df_features_per_sweep, stim_type=value[0], aggregate_method=value[1])
+                if df_sweep is not None:
+                    # Calculate mean over rows for each feature
+                    mean_values = df_sweep[features_to_extract].mean()
+                    # Create a dictionary with feature names and their mean values
+                    feature_dict = {f"{feature} @ {key}": value for feature, value in mean_values.items()}
+                    cell_stats_dict.update(feature_dict)
+
+        cell_stats = pd.DataFrame(cell_stats_dict, index=pd.Index([ephys_roi_id], name="ephys_roi_id"))
 
         logger.info(f"Successfully extracted cell-level stats for {ephys_roi_id}!")
         return "Success", cell_stats
@@ -106,3 +137,9 @@ def extract_cell_level_stats_one(ephys_roi_id: str):
         error_message = f"Error processing {ephys_roi_id}: {str(e)}\n{traceback.format_exc()}"
         logger.error(error_message)
         return None
+
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    cell_stats = extract_cell_level_stats_one("1212557784")
