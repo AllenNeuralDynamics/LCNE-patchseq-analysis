@@ -93,15 +93,15 @@ EXTRACT_SAG_FROMS = {
 # ---- Cell-level summary plots ----
 # Control which sweeps to show in the cell-level summary plots.
 CELL_SUMMARY_PLOT_SHOW_SWEEPS = [
-    ["subthreshold", 50],
-    ["subthreshold", 90],
-    ["long_square_rheo", "min"],
-    ["long_square_supra", "min"],
+    {"label": "supra, min", "stim_type": ["long_square_supra", "min"], "color": "salmon"},
+    {"label": "rheo, min", "stim_type": ["long_square_rheo", "min"], "color": "deepskyblue"},
+    {"label": "-50 pA", "stim_type": ["subthreshold", 50], "color": "gray"},
+    {"label": "-90 pA", "stim_type": ["subthreshold", 90], "color": "black"},
 ]
 
 # Control which spikes to overlay in the cell-level summary plots. (only the first spike)
 CELL_SUMMARY_PLOT_SHOW_SPIKES = [
-    ["long_square_rheo", "min"],
-    ["long_square_supra", "min"],
-    ["short_square_rheo", "min"],
+    {"label": "short_square_rheo, min", "stim_type": ["short_square_rheo", "min"], "color": "darkgreen"},
+    {"label": "long_square_supra, min", "stim_type": ["long_square_supra", "min"], "color": "salmon"},
+    {"label": "long_square_rheo, min", "stim_type": ["long_square_rheo", "min"], "color": "deepskyblue"},
 ]

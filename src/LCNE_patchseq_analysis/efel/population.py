@@ -130,21 +130,24 @@ def extract_cell_level_stats_one(ephys_roi_id: str):
 
         # Select sweeps and spikes to show in the cell-level summary plots
         to_plot = {}
-        for plot_type, sources in [ 
+        for plot_type, settings in [ 
             ("sweeps", CELL_SUMMARY_PLOT_SHOW_SWEEPS),
             ("spikes", CELL_SUMMARY_PLOT_SHOW_SPIKES),
         ]:
             to_plot[plot_type] = {}
-            for source in sources:
+            for setting in settings:
+                stim_type = setting["stim_type"]
                 selected_sweep = df_sweep_selector(
-                    df_features_per_sweep, stim_type=source[0], aggregate_method=source[1]
+                    df_features_per_sweep, stim_type=stim_type[0], aggregate_method=stim_type[1]
                 )
                 if selected_sweep is not None and not selected_sweep.empty:
-                    to_plot[plot_type][f"{source[0]}, {source[1]}"] = selected_sweep.sweep_number.values[0]
+                    to_plot[plot_type][setting['label']] = {
+                        "sweep_number": selected_sweep.sweep_number.values[0],
+                        "color": setting["color"],
+                    }
 
-        fig = plot_cell_summary(
+        plot_cell_summary(
             features_dict, sweeps_to_show=to_plot["sweeps"], spikes_to_show=to_plot["spikes"])
-        fig.savefig(f"{RESULTS_DIRECTORY}/cell_stats/{ephys_roi_id}_cell_summary.png")
 
         logger.info(f"Successfully generated cell-level summary plots for {ephys_roi_id}!")
 
