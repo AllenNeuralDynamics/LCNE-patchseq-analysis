@@ -53,6 +53,7 @@ def generate_sweep_plots_in_parallel(skip_existing: bool = True, skip_errors: bo
 def extract_cell_level_stats_in_parallel(skip_errors: bool = True):
     """Extract cell-level statistics from all available eFEL features files in parallel."""
 
+    # ---- Extract cell-level stats ----
     results = run_parallel_processing(
         process_func=extract_cell_level_stats_one,
         analysis_name="Extract cell level stats",
@@ -64,15 +65,21 @@ def extract_cell_level_stats_in_parallel(skip_errors: bool = True):
 
     df_cell_stats = pd.concat(valid_results, axis=0)
 
-    # Save the summary table to disk
+    # ---- Merge into Brian's spreadsheet ----
+    df_ephys_metadata = load_ephys_metadata().rename(
+        columns={"ephys_roi_id_tab_master": "ephys_roi_id"}
+    )
+    df_merged = df_ephys_metadata.merge(df_cell_stats, on="ephys_roi_id", how="left")
+
+    # ---- Save the summary table to disk ----
     os.makedirs(f"{RESULTS_DIRECTORY}/cell_stats", exist_ok=True)
     save_path = f"{RESULTS_DIRECTORY}/cell_stats/cell_level_stats.csv"
-    df_cell_stats.to_csv(save_path, index=False)
+    df_merged.to_csv(save_path, index=False)
 
     logger.info(f"Successfully extracted cell-level stats for {len(valid_results)} cells!")
     logger.info(f"Summary table saved to {save_path}")
 
-    return df_cell_stats
+    return df_merged
 
 
 if __name__ == "__main__":
