@@ -8,25 +8,14 @@ from typing import Literal
 
 import pandas as pd
 
+from LCNE_patchseq_analysis.efel import (
+    EXTRACT_SPIKE_FROMS, EXTRACT_SAG_FROMS,
+    EXTRACT_SPIKE_FEATURES, EXTRACT_SAG_FEATURES
+)
 from LCNE_patchseq_analysis.efel.io import load_efel_features_from_roi
 
 logger = logging.getLogger(__name__)
 
-
-EXTRACTED_SPIKE_FROMS = {
-    "short_square_rheo, min": ["short_square_rheo", "min"],
-    "short_square_rheo, aver": ["short_square_rheo", "aver"],
-    "long_square_rheo, min": ["long_square_rheo", "min"],
-    "long_square_rheo, aver": ["long_square_rheo", "aver"],
-    "long_square_supra, min": ["long_square_supra", "min"],
-    "long_square_supra, aver": ["long_square_supra", "aver"],
-}
-
-EXTRACTED_SAG_FROMS = {
-    "subthreshold, 50": ["subthreshold", 50],
-    "subthreshold, 90": ["subthreshold", 90],
-    "subthreshold, aver": ["subthreshold", "aver"],
-}
 
 
 def df_sweep_selector(df: pd.DataFrame,
@@ -100,22 +89,11 @@ def extract_cell_level_stats_one(ephys_roi_id: str):
         )
 
         cell_stats_dict = {}
-        spike_features_to_extract = [col for col in df_features_per_sweep.columns
-                                     if "first_spike_" in col
-                                     and not any(
-                                         k in col
-                                         for k in ["indices", "AP_begin_time", "peak_time"]
-                                     )
-                                     ]
-        sag_features_to_extract = [col for col in df_features_per_sweep.columns
-                                   if "sag_" in col
-                                   ]
-
 
         # Loop over spike and sag features
         for feature_type, features_to_extract in [
-            (EXTRACTED_SPIKE_FROMS, spike_features_to_extract),
-            (EXTRACTED_SAG_FROMS, sag_features_to_extract),
+            (EXTRACT_SPIKE_FROMS, EXTRACT_SPIKE_FEATURES),
+            (EXTRACT_SAG_FROMS, EXTRACT_SAG_FEATURES),
         ]:
             for key, value in feature_type.items():
                 df_sweep = df_sweep_selector(
@@ -142,4 +120,5 @@ def extract_cell_level_stats_one(ephys_roi_id: str):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    cell_stats = extract_cell_level_stats_one("1212557784")
+    status, cell_stats = extract_cell_level_stats_one("1212557784")
+    cell_stats.to_csv("./cell_stats.csv")
