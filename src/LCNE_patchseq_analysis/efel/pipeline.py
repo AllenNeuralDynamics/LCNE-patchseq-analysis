@@ -8,8 +8,8 @@ import pandas as pd
 from LCNE_patchseq_analysis import RESULTS_DIRECTORY
 from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
 from LCNE_patchseq_analysis.efel.core import extract_efel_one
-from LCNE_patchseq_analysis.efel.plot import generate_sweep_plots_one
 from LCNE_patchseq_analysis.efel.population import extract_cell_level_stats_one
+from LCNE_patchseq_analysis.efel.plot import generate_sweep_plots_one
 from LCNE_patchseq_analysis.efel.util import run_parallel_processing
 
 logger = logging.getLogger(__name__)
@@ -50,12 +50,13 @@ def generate_sweep_plots_in_parallel(skip_existing: bool = True, skip_errors: bo
     )
 
 
-def extract_cell_level_stats_in_parallel(skip_errors: bool = True):
+def extract_cell_level_stats_in_parallel(skip_errors: bool = True, if_generate_plots: bool = True):
     """Extract cell-level statistics from all available eFEL features files in parallel."""
 
     # ---- Extract cell-level stats ----
     results = run_parallel_processing(
         process_func=extract_cell_level_stats_one,
+        process_func_kwargs={"if_generate_plots": if_generate_plots},
         analysis_name="Extract cell level stats",
         skip_errors=skip_errors,
     )
@@ -95,7 +96,7 @@ if __name__ == "__main__":
 
     logger.info("-" * 80)
     logger.info("Extracting cell-level statistics...")
-    extract_cell_level_stats_in_parallel(skip_errors=False)
+    extract_cell_level_stats_in_parallel(skip_errors=False, if_generate_plots=False)
 
     # ================================
     # For debugging

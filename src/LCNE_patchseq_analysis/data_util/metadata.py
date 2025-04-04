@@ -95,7 +95,10 @@ def load_ephys_metadata(if_with_efel=False):
     # -- Load the cell level stats from eFEL output --
     if if_with_efel:
         df = get_public_efel_cell_level_stats() 
-        df["ephys_roi_id"] = df["ephys_roi_id"].apply(lambda x: str(int(x)) if pd.notnull(x) else "")
+        
+        # Convert ephys_roi_id to str(int())
+        df["ephys_roi_id"] = df["ephys_roi_id"].apply(
+            lambda x: str(int(x)) if pd.notnull(x) else "")
         return df
     
     # -- Load the downloaded Brian's spreadsheet only --
@@ -107,6 +110,10 @@ def load_ephys_metadata(if_with_efel=False):
         df["injection region"].astype(str).str.contains("Crus", na=False),
         "injection region",
     ] = "Crus 1"
+    
+    # Convert width columns to ms
+    df.loc[:, df.columns.str.contains("width")] = df.loc[
+        :, df.columns.str.contains("width")] * 1000
 
     # Change columns with roi_id to str(int())
     for col in ["ephys_roi_id_tab_master", "ephys_roi_id_lims"]:

@@ -85,7 +85,7 @@ def df_sweep_selector(  # noqa: C901
     return _get_min_or_aver(df_this, aggregate_method)
 
 
-def extract_cell_level_stats_one(ephys_roi_id: str):
+def extract_cell_level_stats_one(ephys_roi_id: str, if_generate_plots: bool = True):
     """Extract cell-level statistics from a single eFEL features file."""
     try:
 
@@ -125,6 +125,9 @@ def extract_cell_level_stats_one(ephys_roi_id: str):
         logger.info(f"Successfully extracted cell-level stats for {ephys_roi_id}!")
 
         # --- Generate cell-level summary plots ---
+        if not if_generate_plots:
+            return "Success", cell_stats
+        
         logger.info(f"Generating cell-level summary plots for {ephys_roi_id}...")
 
         # Select sweeps and spikes to show in the cell-level summary plots
