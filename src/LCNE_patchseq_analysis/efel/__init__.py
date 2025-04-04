@@ -26,7 +26,7 @@ with open(os.path.join(current_dir, "efel_per_spike_features.json"), "r") as f:
 # ---- Cell-level eFEL features ---
 # To be explicit so that we can see the available options clearly.
 # For the "Froms":
-#     - The first element is the stimulus type. 
+#     - The first element is the stimulus type.
 #         - rheo means rheobase in either short or long square
 #         - supra means supra-threshold (in long square only)
 #     - The second element is the aggregation method.
@@ -72,7 +72,7 @@ EXTRACT_SPIKE_FEATURES = [
     "first_spike_min_between_peaks_values",
     "first_spike_peak_voltage",
     "first_spike_spike_half_width",
-    "efel_first_spike_AP_width"
+    "efel_first_spike_AP_width",
 ]
 
 
@@ -82,9 +82,4 @@ EXTRACT_SAG_FROMS = {
     "subthreshold, aver": ["subthreshold", "aver"],
 }
 
-EXTRACT_SAG_FEATURES = [
-    'sag_amplitude', 
-    'sag_ratio1', 
-    'sag_ratio2', 
-    'sag_time_constant'
-]
+EXTRACT_SAG_FEATURES = ["sag_amplitude", "sag_ratio1", "sag_ratio2", "sag_time_constant"]

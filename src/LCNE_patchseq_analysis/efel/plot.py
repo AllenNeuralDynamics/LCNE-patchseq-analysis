@@ -401,4 +401,3 @@ def generate_sweep_plots_one(ephys_roi_id: str):
         error_message = f"Error processing {ephys_roi_id}: {str(e)}\n{traceback.format_exc()}"
         logger.error(error_message)
         return error_message
-
