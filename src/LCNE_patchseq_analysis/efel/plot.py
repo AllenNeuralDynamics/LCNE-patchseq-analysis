@@ -401,3 +401,14 @@ def generate_sweep_plots_one(ephys_roi_id: str):
         error_message = f"Error processing {ephys_roi_id}: {str(e)}\n{traceback.format_exc()}"
         logger.error(error_message)
         return error_message
+
+
+def plot_cell_summary(features_dict: Dict[str, Any]) -> plt.Figure:
+    """Generate and save cell summary plots.
+
+    Args:
+        features_dict: Dictionary containing features
+        save_dir: Directory to save plots
+
+    """
+    pass

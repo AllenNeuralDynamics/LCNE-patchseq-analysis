@@ -8,13 +8,17 @@ from typing import Literal
 
 import pandas as pd
 
+from LCNE_patchseq_analysis import RESULTS_DIRECTORY
 from LCNE_patchseq_analysis.efel import (
     EXTRACT_SPIKE_FROMS,
     EXTRACT_SAG_FROMS,
     EXTRACT_SPIKE_FEATURES,
     EXTRACT_SAG_FEATURES,
+    CELL_SUMMARY_PLOT_SHOW_SWEEPS,
+    CELL_SUMMARY_PLOT_SHOW_SPIKES,
 )
 from LCNE_patchseq_analysis.efel.io import load_efel_features_from_roi
+from LCNE_patchseq_analysis.efel.plot import plot_cell_summary
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +89,8 @@ def df_sweep_selector(  # noqa: C901
 def extract_cell_level_stats_one(ephys_roi_id: str):
     """Extract cell-level statistics from a single eFEL features file."""
     try:
+
+        # ---- Extract cell-level stats ----
         logger.info(f"Extracting cell-level stats for {ephys_roi_id}...")
         # Load features but don't use them yet (placeholder for implementation)
         features_dict = load_efel_features_from_roi(ephys_roi_id)
@@ -108,16 +114,40 @@ def extract_cell_level_stats_one(ephys_roi_id: str):
                     # Calculate mean over rows for each feature
                     mean_values = df_sweep[features_to_extract].mean()
                     # Create a dictionary with feature names and their mean values
-                    feature_dict = {
+                    feature_this = {
                         f"{feature} @ {key}": value for feature, value in mean_values.items()
                     }
-                    cell_stats_dict.update(feature_dict)
+                    cell_stats_dict.update(feature_this)
 
         cell_stats = pd.DataFrame(
             cell_stats_dict, index=pd.Index([ephys_roi_id], name="ephys_roi_id")
         )
 
         logger.info(f"Successfully extracted cell-level stats for {ephys_roi_id}!")
+
+        # --- Generate cell-level summary plots ---
+        logger.info(f"Generating cell-level summary plots for {ephys_roi_id}...")
+
+        # Select sweeps and spikes to show in the cell-level summary plots
+        sweeps_to_show = {
+            f"{source[0]}, {source[1]}": df_sweep_selector(
+                df_features_per_sweep, stim_type=source[0], aggregate_method=source[1]
+            ).sweep_number.values[0]
+            for source in CELL_SUMMARY_PLOT_SHOW_SWEEPS
+        }
+
+        spikes_to_show = {
+            f"{source[0]}, {source[1]}": df_sweep_selector(
+                df_features_per_sweep, stim_type=source[0], aggregate_method=source[1]
+            ).sweep_number.values[0]
+            for source in CELL_SUMMARY_PLOT_SHOW_SPIKES
+        }
+
+        fig = plot_cell_summary(features_dict, sweeps_to_show, spikes_to_show)
+        fig.savefig(f"{RESULTS_DIRECTORY}/cell_stats/{ephys_roi_id}_cell_summary.png")
+
+        logger.info(f"Successfully generated cell-level summary plots for {ephys_roi_id}!")
+
         return "Success", cell_stats
     except Exception as e:
         import traceback
