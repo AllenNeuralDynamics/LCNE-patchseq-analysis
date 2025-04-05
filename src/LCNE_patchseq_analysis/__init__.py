@@ -21,7 +21,7 @@ REGION_COLOR_MAPPER = {
     "Cortex": "green",
     "VAL": "red",
     "Crus 1": "gold",
-    "Non-retro": "grey",
+    "Non-Retro": "grey",
 }
 
 # Add lowercase versions of all region keys to the color mapper
