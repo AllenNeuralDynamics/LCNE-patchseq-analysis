@@ -47,13 +47,16 @@ def get_public_efel_cell_level_stats():
         raise FileNotFoundError(f"Cell level stats CSV file not found at {csv_url}")
 
 
-def get_public_url_cell_summary(ephys_roi_id: str) -> str:
+def get_public_url_cell_summary(ephys_roi_id: str, if_check_exists: bool = True) -> str:
     """Get the public URL for a cell summary plot."""
     s3_url = f"{S3_PUBLIC_URL_BASE}/efel/cell_stats/{ephys_roi_id}_cell_summary.png"
-    if check_s3_public_url_exists(s3_url):
-        return s3_url
+    if if_check_exists:
+        if check_s3_public_url_exists(s3_url):
+            return s3_url
+        else:
+            return None
     else:
-        return None
+        return s3_url
 
 
 if __name__ == "__main__":
