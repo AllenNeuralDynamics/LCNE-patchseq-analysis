@@ -5,7 +5,7 @@ import json
 import logging
 import multiprocessing as mp
 import os
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from tqdm import tqdm
 
@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 def run_parallel_processing(
     process_func: Callable,
     analysis_name: str,
+    process_func_kwargs: Optional[Dict[str, Any]] = {},
     get_roi_ids_func: Optional[Callable] = None,
     skip_existing: bool = True,
     skip_errors: bool = True,
@@ -27,6 +28,7 @@ def run_parallel_processing(
 
     Args:
         process_func: Function to process a single ROI ID
+        process_func_kwargs: Keyword arguments for the process function
         analysis_name: Name of the analysis for error handling
         get_roi_ids_func: Function to get ROI IDs (if None, will use all .h5 files)
         skip_existing: Whether to skip existing results
@@ -73,7 +75,7 @@ def run_parallel_processing(
     # Queue all tasks
     jobs = []
     for ephys_roi_id in ephys_roi_ids:
-        job = pool.apply_async(process_func, args=(ephys_roi_id,))
+        job = pool.apply_async(process_func, args=(ephys_roi_id,), kwds=process_func_kwargs)
         jobs.append(job)
 
     # Wait for all processes to complete

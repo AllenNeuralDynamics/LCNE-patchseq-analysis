@@ -8,6 +8,7 @@ from typing import Literal
 
 import pandas as pd
 
+from LCNE_patchseq_analysis import REGION_COLOR_MAPPER
 from LCNE_patchseq_analysis.efel import (
     CELL_SUMMARY_PLOT_SHOW_SPIKES,
     CELL_SUMMARY_PLOT_SHOW_SWEEPS,
@@ -18,6 +19,7 @@ from LCNE_patchseq_analysis.efel import (
 )
 from LCNE_patchseq_analysis.efel.io import load_efel_features_from_roi
 from LCNE_patchseq_analysis.efel.plot import plot_cell_summary
+from LCNE_patchseq_analysis.pipeline_util.s3 import get_public_efel_cell_level_stats
 
 logger = logging.getLogger(__name__)
 
@@ -85,13 +87,14 @@ def df_sweep_selector(  # noqa: C901
     return _get_min_or_aver(df_this, aggregate_method)
 
 
-def extract_cell_level_stats_one(ephys_roi_id: str):
+def extract_cell_level_stats_one(ephys_roi_id: str, if_generate_plots: bool = True):
     """Extract cell-level statistics from a single eFEL features file."""
     try:
 
         # ---- Extract cell-level stats ----
         logger.info(f"Extracting cell-level stats for {ephys_roi_id}...")
-        # Load features but don't use them yet (placeholder for implementation)
+
+        # Load extracted eFEL features
         features_dict = load_efel_features_from_roi(ephys_roi_id)
 
         df_features_per_sweep = features_dict["df_features_per_sweep"].merge(
@@ -125,6 +128,20 @@ def extract_cell_level_stats_one(ephys_roi_id: str):
         logger.info(f"Successfully extracted cell-level stats for {ephys_roi_id}!")
 
         # --- Generate cell-level summary plots ---
+        if not if_generate_plots:
+            return "Success", cell_stats
+
+        # Get info string for cell summary plot
+        df_meta = get_public_efel_cell_level_stats()
+        df_meta["ephys_roi_id"] = df_meta["ephys_roi_id"].astype(str)
+        df_this = df_meta.query("ephys_roi_id == @ephys_roi_id").iloc[0]
+        info_text = (
+            f"{df_this['Date']}, {df_this['ephys_roi_id']}, {df_this['jem-id_cell_specimen']}\n"
+            f"LC_targeting: {df_this['LC_targeting']}, "
+            f"Injection region: {df_this['injection region']}"
+            f", Depth = {df_this['y_tab_master']:.0f}"
+        )
+
         logger.info(f"Generating cell-level summary plots for {ephys_roi_id}...")
 
         # Select sweeps and spikes to show in the cell-level summary plots
@@ -146,7 +163,11 @@ def extract_cell_level_stats_one(ephys_roi_id: str):
                     }
 
         plot_cell_summary(
-            features_dict, sweeps_to_show=to_plot["sweeps"], spikes_to_show=to_plot["spikes"]
+            features_dict,
+            sweeps_to_show=to_plot["sweeps"],
+            spikes_to_show=to_plot["spikes"],
+            info_text=info_text,
+            region_color=REGION_COLOR_MAPPER.get(df_this["injection region"].lower(), "black"),
         )
 
         logger.info(f"Successfully generated cell-level summary plots for {ephys_roi_id}!")
@@ -157,10 +178,9 @@ def extract_cell_level_stats_one(ephys_roi_id: str):
 
         error_message = f"Error processing {ephys_roi_id}: {str(e)}\n{traceback.format_exc()}"
         logger.error(error_message)
-        return None
+        return error_message
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    status, cell_stats = extract_cell_level_stats_one("1212557784")
-    cell_stats.to_csv("./cell_stats.csv")
+    status, cell_stats = extract_cell_level_stats_one("1212557784", if_generate_plots=True)
