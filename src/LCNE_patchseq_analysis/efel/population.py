@@ -93,7 +93,7 @@ def extract_cell_level_stats_one(ephys_roi_id: str, if_generate_plots: bool = Tr
 
         # ---- Extract cell-level stats ----
         logger.info(f"Extracting cell-level stats for {ephys_roi_id}...")
-        
+
         # Load extracted eFEL features
         features_dict = load_efel_features_from_roi(ephys_roi_id)
 
@@ -130,7 +130,7 @@ def extract_cell_level_stats_one(ephys_roi_id: str, if_generate_plots: bool = Tr
         # --- Generate cell-level summary plots ---
         if not if_generate_plots:
             return "Success", cell_stats
-                
+
         # Get info string for cell summary plot
         df_meta = get_public_efel_cell_level_stats()
         df_meta["ephys_roi_id"] = df_meta["ephys_roi_id"].astype(str)
@@ -161,10 +161,10 @@ def extract_cell_level_stats_one(ephys_roi_id: str, if_generate_plots: bool = Tr
                         "sweep_number": selected_sweep.sweep_number.values[0],
                         "color": setting["color"],
                     }
-        
+
         plot_cell_summary(
             features_dict,
-            sweeps_to_show=to_plot["sweeps"], 
+            sweeps_to_show=to_plot["sweeps"],
             spikes_to_show=to_plot["spikes"],
             info_text=info_text,
             region_color=REGION_COLOR_MAPPER.get(df_this["injection region"].lower(), "black"),
