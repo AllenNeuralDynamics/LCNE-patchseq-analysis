@@ -50,12 +50,13 @@ def generate_sweep_plots_in_parallel(skip_existing: bool = True, skip_errors: bo
     )
 
 
-def extract_cell_level_stats_in_parallel(skip_errors: bool = True):
+def extract_cell_level_stats_in_parallel(skip_errors: bool = True, if_generate_plots: bool = True):
     """Extract cell-level statistics from all available eFEL features files in parallel."""
 
     # ---- Extract cell-level stats ----
     results = run_parallel_processing(
         process_func=extract_cell_level_stats_one,
+        process_func_kwargs={"if_generate_plots": if_generate_plots},
         analysis_name="Extract cell level stats",
         skip_errors=skip_errors,
     )
@@ -66,7 +67,7 @@ def extract_cell_level_stats_in_parallel(skip_errors: bool = True):
     df_cell_stats = pd.concat(valid_results, axis=0)
 
     # ---- Merge into Brian's spreadsheet ----
-    df_ephys_metadata = load_ephys_metadata().rename(
+    df_ephys_metadata = load_ephys_metadata(if_with_efel=False).rename(
         columns={"ephys_roi_id_tab_master": "ephys_roi_id"}
     )
     df_merged = df_ephys_metadata.merge(df_cell_stats, on="ephys_roi_id", how="left")
@@ -95,7 +96,7 @@ if __name__ == "__main__":
 
     logger.info("-" * 80)
     logger.info("Extracting cell-level statistics...")
-    extract_cell_level_stats_in_parallel(skip_errors=False)
+    extract_cell_level_stats_in_parallel(skip_errors=False, if_generate_plots=True)
 
     # ================================
     # For debugging
