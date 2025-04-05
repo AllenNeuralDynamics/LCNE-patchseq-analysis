@@ -115,7 +115,7 @@ def load_ephys_metadata(if_with_efel=False):
 
     # Convert width columns to ms
     df.loc[:, df.columns.str.contains("width")] = df.loc[:, df.columns.str.contains("width")] * 1000
-    
+
     # Change columns with roi_id to str(int())
     for col in ["ephys_roi_id_tab_master", "ephys_roi_id_lims"]:
         df[col] = df[col].apply(lambda x: str(int(x)) if pd.notnull(x) else "")
@@ -128,7 +128,7 @@ def format_injection_region(x):
     if "pl" in x.lower():
         return "Cortex"
     return x
-    
+
 
 if __name__ == "__main__":
     json_dicts = read_json_files(

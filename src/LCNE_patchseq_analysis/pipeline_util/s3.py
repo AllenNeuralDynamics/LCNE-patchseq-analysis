@@ -55,6 +55,7 @@ def get_public_url_cell_summary(ephys_roi_id: str) -> str:
     else:
         return None
 
+
 if __name__ == "__main__":
     # print(get_public_url_sweep("1212546732", 46))
     print(get_public_efel_cell_level_stats())

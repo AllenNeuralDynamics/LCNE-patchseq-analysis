@@ -422,7 +422,7 @@ def plot_cell_summary(
         Matplotlib figure object
     """
     ephys_roi_id = features_dict["df_sweeps"]["ephys_roi_id"][0]
-    
+
     # -- Set up figure --
     fig = plt.figure(figsize=(17, 6))
     gs = fig.add_gridspec(1, 3, width_ratios=[1, 1, 1])
@@ -522,7 +522,7 @@ def plot_cell_summary(
     sns.despine(ax=ax_sweep_i, trim=True)
     sns.despine(ax=ax_sweep_v, bottom=True)
     ax_sweep_v.yaxis.set_visible(True)
-    ax_sweep_v.tick_params(axis='y', which='both', left=True, labelleft=True)
+    ax_sweep_v.tick_params(axis="y", which="both", left=True, labelleft=True)
     fig.suptitle(info_text, fontsize=18, color=region_color)
 
     fig.tight_layout()
