@@ -1,0 +1,24 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Panel App",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "panel",
+            "args": [
+                "serve",
+                "src/LCNE_patchseq_analysis/panel_app/panel_nwb_viz.py",
+                "--dev",
+                "--allow-websocket-origin=localhost:5006",
+                "--allow-websocket-origin=codeocean.allenneuraldynamics.org"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+    ]
+}
