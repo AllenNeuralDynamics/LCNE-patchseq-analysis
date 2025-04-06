@@ -8,7 +8,7 @@
             "module": "panel",
             "args": [
                 "serve",
-                "src/LCNE_patchseq_analysis/panel_app/panel_nwb_viz.py",
+                "src/LCNE_patchseq_analysis/panel_app/patchseq_panel_viz.py",
                 "--dev",
                 "--allow-websocket-origin=localhost:5006",
                 "--allow-websocket-origin=codeocean.allenneuraldynamics.org"
