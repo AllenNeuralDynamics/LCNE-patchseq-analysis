@@ -128,16 +128,19 @@ def extract_cell_level_stats_one(ephys_roi_id: str, if_generate_plots: bool = Tr
                     # --- Extract cell-representative spike waveforms ---
                     # Get the spike waveforms
                     df_spikes = df_raw_spikes.query("sweep_number in @df_sweep.sweep_number.values")
-                    averaged_spike_waveforms = pd.DataFrame(df_spikes.mean()).T
-                    averaged_spike_waveforms.index = pd.MultiIndex.from_tuples([(ephys_roi_id, key)], 
-                                                                         names=["ephys_roi_id", "extract_from"])
-                    if not averaged_spike_waveforms.empty:
+                    if not df_spikes.empty:
+                        averaged_spike_waveforms = pd.DataFrame(df_spikes.mean()).T
+                        averaged_spike_waveforms.index = pd.MultiIndex.from_tuples([(ephys_roi_id, key)], 
+                                                                            names=["ephys_roi_id", "extract_from"])
                         cell_representative_spike_waveforms.append(averaged_spike_waveforms)
                     
         df_cell_stats = pd.DataFrame(
             cell_stats_dict, index=pd.Index([ephys_roi_id], name="ephys_roi_id")
         )
-        df_cell_representative_spike_waveforms = pd.concat(cell_representative_spike_waveforms)
+        if cell_representative_spike_waveforms:
+            df_cell_representative_spike_waveforms = pd.concat(cell_representative_spike_waveforms)
+        else:
+            df_cell_representative_spike_waveforms = pd.DataFrame()
 
         logger.info(f"Successfully extracted cell-level stats for {ephys_roi_id}!")
         
