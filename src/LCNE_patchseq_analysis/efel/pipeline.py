@@ -71,6 +71,23 @@ def extract_cell_level_stats_in_parallel(skip_errors: bool = True, if_generate_p
         columns={"ephys_roi_id_tab_master": "ephys_roi_id"}
     )
     df_merged = df_ephys_metadata.merge(df_cell_stats, on="ephys_roi_id", how="left")
+    
+    # ---- Post-processing ----
+    df_merged = (
+        df_merged.rename(
+            columns={col: col.replace("_tab_master", "") for col in df_merged.columns},
+        )
+    )
+    df_merged.loc[:, "LC_targeting"] = df_merged["LC_targeting"].fillna("unknown")
+    
+    # Remove columns start with efel_
+    df_merged = df_merged.loc[:, ~df_merged.columns.str.startswith("efel_")]
+    # Remove "first_spike_" in all column names
+    df_merged.columns = [col.replace("first_spike_", "") for col in df_merged.columns]
+    # Add EFEL_prefix to all columns that has @ in its name
+    df_merged.columns = [
+        f"efel_{col}" if "@" in col else col for col in df_merged.columns
+    ]
 
     # ---- Save the summary table to disk ----
     os.makedirs(f"{RESULTS_DIRECTORY}/cell_stats", exist_ok=True)
@@ -96,7 +113,7 @@ if __name__ == "__main__":
 
     logger.info("-" * 80)
     logger.info("Extracting cell-level statistics...")
-    extract_cell_level_stats_in_parallel(skip_errors=False, if_generate_plots=True)
+    extract_cell_level_stats_in_parallel(skip_errors=False, if_generate_plots=False)
 
     # ================================
     # For debugging

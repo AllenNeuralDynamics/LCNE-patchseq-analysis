@@ -68,7 +68,6 @@ EXTRACT_SPIKE_FEATURES = [
     "first_spike_min_between_peaks_values",
     "first_spike_peak_voltage",
     "first_spike_spike_half_width",
-    "efel_first_spike_AP_width",
 ]
 
 EXTRACT_SPIKE_FROMS = {
