@@ -9,41 +9,11 @@ import pandas as pd
 from tqdm import tqdm
 
 from LCNE_patchseq_analysis.pipeline_util.metadata import read_brian_spreadsheet
+from LCNE_patchseq_analysis.pipeline_util.s3 import sync_directory
 
 logger = logging.getLogger(__name__)
 
 s3_bucket = "s3://aind-scratch-data/aind-patchseq-data/raw"
-
-
-def sync_directory(local_dir, destination, if_copy=False):
-    """
-    Sync the local directory with the given S3 destination using aws s3 sync.
-    Returns a status string based on the command output.
-    """
-    try:
-        if if_copy:
-            # Run aws s3 cp command and capture the output
-            result = subprocess.run(
-                ["aws", "s3", "cp", local_dir, destination], capture_output=True, text=True
-            )
-        else:
-            # Run aws s3 sync command and capture the output
-            result = subprocess.run(
-                ["aws", "s3", "sync", local_dir, destination], capture_output=True, text=True
-            )
-        output = result.stdout + result.stderr
-
-        # Check output: if "upload:" appears, files were sent;
-        # otherwise, assume that nothing needed uploading.
-        if "upload:" in output:
-            logger.info(f"Uploaded {local_dir} to {destination}!")
-            return "successfully uploaded"
-        else:
-            logger.info(output)
-            logger.info(f"Already exists, skip {local_dir}.")
-            return "already exists, skip"
-    except Exception as e:
-        return f"error during sync: {e}"
 
 
 def upload_one(row, s3_bucket):

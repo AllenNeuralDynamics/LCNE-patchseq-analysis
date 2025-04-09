@@ -2,14 +2,51 @@
 Utility functions for S3.
 """
 
+import logging
+import os
+import subprocess
+
 import pandas as pd
 import requests
 import s3fs
+
+logger = logging.getLogger(__name__)
 
 s3 = s3fs.S3FileSystem(anon=True)  # All on public bucket
 
 S3_PUBLIC_URL_BASE = "https://aind-scratch-data.s3.us-west-2.amazonaws.com/aind-patchseq-data"
 S3_PATH_BASE = "aind-scratch-data/aind-patchseq-data"
+
+
+def sync_directory(local_dir, destination, if_copy=False):
+    """
+    Sync the local directory with the given S3 destination using aws s3 sync.
+    Returns a status string based on the command output.
+    """
+    try:
+        if if_copy:
+            # Run aws s3 cp command and capture the output
+            result = subprocess.run(
+                ["aws", "s3", "cp", local_dir, destination], capture_output=True, text=True
+            )
+        else:
+            # Run aws s3 sync command and capture the output
+            result = subprocess.run(
+                ["aws", "s3", "sync", local_dir, destination], capture_output=True, text=True
+            )
+        output = result.stdout + result.stderr
+
+        # Check output: if "upload:" appears, files were sent;
+        # otherwise, assume that nothing needed uploading.
+        if "upload:" in output:
+            logger.info(f"Uploaded {local_dir} to {destination}!")
+            return "successfully uploaded"
+        else:
+            logger.info(output)
+            logger.info(f"Already exists, skip {local_dir}.")
+            return "already exists, skip"
+    except Exception as e:
+        return f"error during sync: {e}"
 
 
 def check_s3_public_url_exists(s3_url: str) -> bool:
