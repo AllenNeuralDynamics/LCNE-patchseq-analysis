@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
-    """Read metadata, cell xyz coordinates, and ephys features from Brian's spreadsheet
+    """Read metadata and ephys features from Brian's spreadsheet
 
     Assuming IVSCC_LC_summary.xlsx is downloaded at file_path
 
@@ -28,12 +28,9 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
     tab_names = pd.ExcelFile(file_path).sheet_names
 
     # Get the master table
-    tab_master = [name for name in tab_names if "updated" in name.lower()][0]
+    tab_master = [name for name in tab_names if "master" in name.lower()][0]
     df_tab_master = pd.read_excel(file_path, sheet_name=tab_master)
 
-    # Get xyz coordinates
-    tab_xyz = [name for name in tab_names if "xyz" in name.lower()][0]
-    df_tab_xyz = pd.read_excel(file_path, sheet_name=tab_xyz)
 
     # Get ephys features
     tab_ephys_fx = [name for name in tab_names if "ephys_fx" in name.lower()][0]
@@ -42,17 +39,6 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
     # Merge the tables
     df_merged = (
         df_tab_master.merge(
-            df_tab_xyz.rename(
-                columns={
-                    "specimen_name": "jem-id_cell_specimen",
-                    "structure_acronym": "Annotated structure",
-                }
-            ),
-            on="jem-id_cell_specimen",
-            how="outer",
-            suffixes=("_tab_master", "_tab_xyz"),
-        )
-        .merge(
             df_tab_ephys_fx.rename(
                 columns={
                     "failed_seal": "failed_no_seal",
@@ -103,7 +89,6 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
     return {
         "df_merged": df_merged,
         "df_tab_master": df_tab_master,
-        "df_tab_xyz": df_tab_xyz,
         "df_tab_ephys_fx": df_tab_ephys_fx,
         **({"df_lims": df_lims} if add_lims else {}),
     }
@@ -112,7 +97,7 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
 def cross_check_metadata(df, source, check_separately=True):
     """Cross-check metadata between source and master tables
 
-    source in ["tab_xyz", "tab_ephys_fx", "lims"]
+    source in ["tab_ephys_fx", "lims"]
 
     Args:
         df (pd.DataFrame): The merged dataframe
@@ -179,5 +164,5 @@ if __name__ == "__main__":
 
     dfs = read_brian_spreadsheet()
 
-    for source in ["tab_xyz", "tab_ephys_fx", "lims"]:
+    for source in ["tab_ephys_fx", "lims"]:
         df_inconsistencies = cross_check_metadata(dfs["df_merged"], source, check_separately=True)
