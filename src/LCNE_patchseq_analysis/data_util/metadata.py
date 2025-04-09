@@ -81,7 +81,7 @@ def jsons_to_df(json_dicts):
     return df_merged
 
 
-def load_ephys_metadata(if_with_efel=False):
+def load_ephys_metadata(if_with_efel=False, combine_roi_ids=False):
     """Load ephys metadata
 
     Per discussion with Brian, we should only look at those in the spreadsheet.
@@ -116,9 +116,22 @@ def load_ephys_metadata(if_with_efel=False):
     # Convert width columns to ms
     df.loc[:, df.columns.str.contains("width")] = df.loc[:, df.columns.str.contains("width")] * 1000
 
+    # Combine roi_ids (when ephys_roi_id already exists on LIMS but not updated on spreadsheet)
+    if combine_roi_ids:
+        # Combine "ephys_roi_id_lims" into "ephys_roi_id_tab_master"
+        df["ephys_roi_id_tab_master"] = df["ephys_roi_id_tab_master"].combine_first(df["ephys_roi_id_lims"])
+        
+    # --- Temporary fix @ 2025-04-09 ---
+    # The xyz are removed from the spreadsheet and for now I still don't know how to get from LIMS
+    # So I'm merging [x_tab_master, y_tab_master, z_tab_master] from the df_metadata_merged_20250409.csv
+    df_temp = pd.read_csv(RAW_DIRECTORY + "/df_metadata_merged_20250409.csv").copy()
+    df = df.merge(df_temp[["ephys_roi_id_tab_master", "x_tab_master", "y_tab_master", "z_tab_master"]], 
+                  on="ephys_roi_id_tab_master", how="left")
+
     # Change columns with roi_id to str(int())
     for col in ["ephys_roi_id_tab_master", "ephys_roi_id_lims"]:
         df[col] = df[col].apply(lambda x: str(int(x)) if pd.notnull(x) else "")
+        
     return df
 
 
