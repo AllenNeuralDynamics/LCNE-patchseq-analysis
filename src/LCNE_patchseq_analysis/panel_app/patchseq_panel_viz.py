@@ -21,6 +21,7 @@ from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
 from LCNE_patchseq_analysis.data_util.nwb import PatchSeqNWB
 from LCNE_patchseq_analysis.efel.io import load_efel_features_from_roi
 from LCNE_patchseq_analysis.panel_app.components.scatter_plot import ScatterPlot
+from LCNE_patchseq_analysis.panel_app.components.spike_analysis import RawSpikeAnalysis
 from LCNE_patchseq_analysis.pipeline_util.s3 import (
     get_public_url_cell_summary,
     get_public_url_sweep,
@@ -44,7 +45,7 @@ class PatchSeqNWBApp(param.Parameterized):
         Holder for currently selected cell ID and sweep number.
         """
 
-        ephys_roi_id = param.String(default="")
+        ephys_roi_id_selected = param.String(default="")
         sweep_number_selected = param.Integer(default=0)
 
     def __init__(self):
@@ -74,13 +75,15 @@ class PatchSeqNWBApp(param.Parameterized):
             "injection region",
             "Y (D --> V)",
         ]
-
         # Turn Date to datetime
         self.df_meta.loc[:, "Date_str"] = self.df_meta["Date"]  # Keep the original Date as string
         self.df_meta.loc[:, "Date"] = pd.to_datetime(self.df_meta["Date"], errors="coerce")
 
         # Initialize scatter plot component
         self.scatter_plot = ScatterPlot(self.df_meta, self.data_holder)
+        
+        # Initialize spike analysis component
+        self.raw_spike_analysis = RawSpikeAnalysis(self.df_meta, main_app=self)
 
         # Create the cell selector panel once.
         self.cell_selector_panel = self.create_cell_selector_panel()
@@ -94,14 +97,14 @@ class PatchSeqNWBApp(param.Parameterized):
         stimulus = raw.get_stimulus(sweep)[::downsample_factor]
         time = raw.get_time(sweep)[::downsample_factor]
 
-        box_zoom_x = BoxZoomTool(dimensions="width")
+        box_zoom_auto = BoxZoomTool(dimensions="auto")
 
         # Create the voltage trace plot
         voltage_plot = figure(
             title=f"Full traces - Sweep number {sweep} (downsampled {downsample_factor}x)",
             height=300,
-            tools=["hover", box_zoom_x, "box_zoom", "wheel_zoom", "reset", "pan"],
-            active_drag=box_zoom_x,
+            tools=["hover", box_zoom_auto, "box_zoom", "wheel_zoom", "reset", "pan"],
+            active_drag=box_zoom_auto,
             x_range=(0, time[-1]),
             y_axis_label="Vm (mV)",
             sizing_mode="stretch_width",
@@ -111,8 +114,8 @@ class PatchSeqNWBApp(param.Parameterized):
         # Create the stimulus plot
         stim_plot = figure(
             height=150,
-            tools=["hover", box_zoom_x, "box_zoom", "wheel_zoom", "reset", "pan"],
-            active_drag=box_zoom_x,
+            tools=["hover", box_zoom_auto, "box_zoom", "wheel_zoom", "reset", "pan"],
+            active_drag=box_zoom_auto,
             x_range=voltage_plot.x_range,  # Link x ranges
             x_axis_label="Time (ms)",
             y_axis_label="I (pA)",
@@ -267,7 +270,7 @@ class PatchSeqNWBApp(param.Parameterized):
         def update_sweep_view_from_table(event):
             if event.new:
                 selected_index = event.new[0]
-                self.data_holder.ephys_roi_id = str(
+                self.data_holder.ephys_roi_id_selected = str(
                     int(self.df_meta.iloc[selected_index]["ephys_roi_id"])
                 )
 
@@ -290,9 +293,9 @@ class PatchSeqNWBApp(param.Parameterized):
                 lambda ephys_roi_id: pn.pane.Markdown(
                     "## Cell summary plot" + (f" for {ephys_roi_id}" if ephys_roi_id else "")
                 ),
-                ephys_roi_id=self.data_holder.param.ephys_roi_id,
+                ephys_roi_id=self.data_holder.param.ephys_roi_id_selected,
             ),
-            pn.bind(get_s3_cell_summary_plot, ephys_roi_id=self.data_holder.param.ephys_roi_id),
+            pn.bind(get_s3_cell_summary_plot, ephys_roi_id=self.data_holder.param.ephys_roi_id_selected),
             sizing_mode="stretch_width",
         )
 
@@ -347,9 +350,9 @@ class PatchSeqNWBApp(param.Parameterized):
         def get_s3_sweep_images(sweep_number):
             s3_url = get_public_url_sweep(ephys_roi_id, sweep_number)
             images = []
-            if "sweep" in s3_url:
+            if isinstance(s3_url, dict) and "sweep" in s3_url:
                 images.append(pn.pane.PNG(s3_url["sweep"], width=800, height=400))
-            if "spikes" in s3_url:
+            if isinstance(s3_url, dict) and "spikes" in s3_url:
                 images.append(pn.pane.PNG(s3_url["spikes"], width=800, height=400))
             return pn.Column(*images) if images else pn.pane.Markdown("No S3 images available")
 
@@ -394,31 +397,32 @@ class PatchSeqNWBApp(param.Parameterized):
         )
 
         # Apply conditional row highlighting.
-        tab_sweeps.style.apply(
-            PatchSeqNWBApp.highlight_selected_rows,
-            highlight_subset=df_sweeps_valid.query("passed == True")["sweep_number"].tolist(),
-            color="lightgreen",
-            fields=["passed"],
-            axis=1,
-        ).apply(
-            PatchSeqNWBApp.highlight_selected_rows,
-            highlight_subset=df_sweeps_valid.query("passed != passed")["sweep_number"].tolist(),
-            color="salmon",
-            fields=["passed"],
-            axis=1,
-        ).apply(
-            PatchSeqNWBApp.highlight_selected_rows,
-            highlight_subset=df_sweeps_valid.query("passed == False")["sweep_number"].tolist(),
-            color="yellow",
-            fields=["passed"],
-            axis=1,
-        ).apply(
-            PatchSeqNWBApp.highlight_selected_rows,
-            highlight_subset=df_sweeps_valid.query("num_spikes > 0")["sweep_number"].tolist(),
-            color="lightgreen",
-            fields=["num_spikes"],
-            axis=1,
-        )
+        if hasattr(tab_sweeps, "style"):
+            tab_sweeps.style.apply(
+                PatchSeqNWBApp.highlight_selected_rows,
+                highlight_subset=df_sweeps_valid.query("passed == True")["sweep_number"].tolist(),
+                color="lightgreen",
+                fields=["passed"],
+                axis=1,
+            ).apply(
+                PatchSeqNWBApp.highlight_selected_rows,
+                highlight_subset=df_sweeps_valid.query("passed != passed")["sweep_number"].tolist(),
+                color="salmon",
+                fields=["passed"],
+                axis=1,
+            ).apply(
+                PatchSeqNWBApp.highlight_selected_rows,
+                highlight_subset=df_sweeps_valid.query("passed == False")["sweep_number"].tolist(),
+                color="yellow",
+                fields=["passed"],
+                axis=1,
+            ).apply(
+                PatchSeqNWBApp.highlight_selected_rows,
+                highlight_subset=df_sweeps_valid.query("num_spikes > 0")["sweep_number"].tolist(),
+                color="lightgreen",
+                fields=["num_spikes"],
+                axis=1,
+            )
 
         # --- Synchronize table selection with sweep number ---
         def update_sweep_from_table(event):
@@ -460,9 +464,68 @@ class PatchSeqNWBApp(param.Parameterized):
         pn.config.throttled = False
         pane_cell_selector = self.cell_selector_panel
 
+        # Create spike analysis controls and plots
+        spike_controls = self.raw_spike_analysis.create_plot_controls()
+
+        def update_spike_plots(extract_from, n_clusters, alpha, width, height, 
+                               marker_size, normalize_window_v, normalize_window_dvdt, 
+                               if_show_cluster_on_retro, spike_range, dim_reduction_method):
+            # Extract representative spikes
+            df_v_norm, df_dvdt_norm = self.raw_spike_analysis.extract_representative_spikes(
+                extract_from=extract_from,
+                if_normalize_v=True,
+                normalize_window_v=normalize_window_v,
+                if_normalize_dvdt=True,
+                normalize_window_dvdt=normalize_window_dvdt,
+                if_smooth_dvdt=False,
+            )
+            
+            # Create spike analysis plots
+            return self.raw_spike_analysis.create_raw_PCA_plots(
+                df_v_norm=df_v_norm,
+                df_dvdt_norm=df_dvdt_norm,
+                n_clusters=n_clusters,
+                alpha=alpha,
+                width=width,
+                height=height,
+                marker_size=marker_size,
+                if_show_cluster_on_retro=if_show_cluster_on_retro,
+                spike_range=spike_range,
+                dim_reduction_method=dim_reduction_method,
+            )
+        
+        # Create spike analysis plots
+        controls = spike_controls  # shorter name for readability
+        param_keys = [
+            "n_clusters", "alpha_slider", "plot_width", "if_show_cluster_on_retro",
+            "plot_height", "marker_size", "normalize_window_v", "normalize_window_dvdt",
+            "spike_range", "dim_reduction_method"
+        ]
+        params = {
+            k: controls[k].param.value_throttled
+            if k not in ["if_show_cluster_on_retro", "dim_reduction_method"]
+            else controls[k].param.value
+            for k in param_keys
+        }
+        
+        spike_plots = pn.bind(
+            update_spike_plots,
+            extract_from=controls["extract_from"].param.value,
+            n_clusters=params["n_clusters"],
+            alpha=params["alpha_slider"],
+            width=params["plot_width"],
+            height=params["plot_height"],
+            marker_size=params["marker_size"],
+            if_show_cluster_on_retro=params["if_show_cluster_on_retro"],
+            normalize_window_v=params["normalize_window_v"],
+            normalize_window_dvdt=params["normalize_window_dvdt"],
+            spike_range=params["spike_range"],
+            dim_reduction_method=params["dim_reduction_method"],
+        )
+
         # Bind the sweep panel to the current cell selection.
         pane_one_cell = pn.bind(
-            self.create_sweep_panel, ephys_roi_id=self.data_holder.param.ephys_roi_id
+            self.create_sweep_panel, ephys_roi_id=self.data_holder.param.ephys_roi_id_selected
         )
 
         # Create a toggle button for showing/hiding raw sweeps
@@ -483,10 +546,19 @@ class PatchSeqNWBApp(param.Parameterized):
 
         layout = pn.Column(
             pn.pane.Markdown("# Patch-seq Ephys Data Explorer\n"),
+
             pn.Column(
-                pn.pane.Markdown(f"## Cell selector (N = {len(self.df_meta)})"),
+                pn.pane.Markdown(f"## Extracted Features (N = {len(self.df_meta)})"),
             ),
             pane_cell_selector,
+            pn.layout.Divider(),            
+            pn.Column(
+                pn.pane.Markdown("## Raw Spikes"),
+                pn.Row(
+                    pn.Column(*spike_controls.values(), width=250),
+                    spike_plots,
+                ),
+            ),
             pn.layout.Divider(),
             show_sweeps_button,
             dynamic_content,

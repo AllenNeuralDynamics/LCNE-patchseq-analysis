@@ -57,6 +57,15 @@ def get_public_url_cell_summary(ephys_roi_id: str, if_check_exists: bool = True)
             return None
     else:
         return s3_url
+    
+    
+def get_public_representative_spikes() -> pd.DataFrame:
+    """Get the representative spikes for a cell."""
+    s3_url = f"{S3_PUBLIC_URL_BASE}/efel/cell_stats/cell_level_spike_waveforms.pkl"
+    if check_s3_public_url_exists(s3_url):
+        return pd.read_pickle(s3_url)
+    else:
+        raise FileNotFoundError(f"Pickle file not found at {s3_url}")
 
 
 if __name__ == "__main__":
