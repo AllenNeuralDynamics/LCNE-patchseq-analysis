@@ -54,6 +54,7 @@ def extract_cell_level_stats_in_parallel(skip_errors: bool = True, if_generate_p
     """Extract cell-level statistics from all available eFEL features files in parallel."""
 
     # ---- Extract cell-level stats ----
+    os.makedirs(f"{RESULTS_DIRECTORY}/cell_stats", exist_ok=True)
     results = run_parallel_processing(
         process_func=extract_cell_level_stats_one,
         process_func_kwargs={"if_generate_plots": if_generate_plots},
@@ -92,7 +93,6 @@ def extract_cell_level_stats_in_parallel(skip_errors: bool = True, if_generate_p
     ]
 
     # ---- Save the summary table to disk ----
-    os.makedirs(f"{RESULTS_DIRECTORY}/cell_stats", exist_ok=True)
     save_path = f"{RESULTS_DIRECTORY}/cell_stats/cell_level_stats.csv"
     df_merged.to_csv(save_path, index=False)
 
