@@ -127,6 +127,9 @@ def load_ephys_metadata(if_with_efel=False, combine_roi_ids=False):
     df_temp = pd.read_csv(RAW_DIRECTORY + "/df_metadata_merged_20250409.csv").copy()
     df = df.merge(df_temp[["ephys_roi_id_tab_master", "x_tab_master", "y_tab_master", "z_tab_master"]], 
                   on="ephys_roi_id_tab_master", how="left")
+    
+    # Fix missing LC_targeting (set to "retro" if "injection region" is not "Non-Retro")
+    df.loc[df["injection region"] != "Non-Retro", "LC_targeting"] = "retro"
 
     # Change columns with roi_id to str(int())
     for col in ["ephys_roi_id_tab_master", "ephys_roi_id_lims"]:
