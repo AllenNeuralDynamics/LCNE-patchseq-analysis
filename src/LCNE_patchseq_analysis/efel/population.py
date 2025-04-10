@@ -20,7 +20,7 @@ from LCNE_patchseq_analysis.efel import (
 from LCNE_patchseq_analysis.efel.io import load_efel_features_from_roi
 from LCNE_patchseq_analysis.efel.plot import plot_cell_summary
 from LCNE_patchseq_analysis.pipeline_util.s3 import get_public_efel_cell_level_stats
-
+from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
 logger = logging.getLogger(__name__)
 
 
@@ -153,14 +153,13 @@ def extract_cell_level_stats_one(ephys_roi_id: str, if_generate_plots: bool = Tr
             }
 
         # Get info string for cell summary plot
-        df_meta = get_public_efel_cell_level_stats()
-        df_meta["ephys_roi_id"] = df_meta["ephys_roi_id"].astype(str)
-        df_this = df_meta.query("ephys_roi_id == @ephys_roi_id").iloc[0]
+        df_meta = load_ephys_metadata(if_with_efel=False, combine_roi_ids=True)
+        df_this = df_meta.query("ephys_roi_id_tab_master == @ephys_roi_id").iloc[0]
         info_text = (
-            f"{df_this['Date']}, {df_this['ephys_roi_id']}, {df_this['jem-id_cell_specimen']}\n"
+            f"{df_this['Date']}, {df_this['ephys_roi_id_tab_master']}, {df_this['jem-id_cell_specimen']}\n"
             f"LC_targeting: {df_this['LC_targeting']}, "
             f"Injection region: {df_this['injection region']}"
-            f", Depth = {df_this['y']:.0f}"
+            f", Depth = {df_this['y_tab_master']:.0f}"
         )
 
         logger.info(f"Generating cell-level summary plots for {ephys_roi_id}...")
@@ -207,4 +206,4 @@ def extract_cell_level_stats_one(ephys_roi_id: str, if_generate_plots: bool = Tr
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    status, cell_stats = extract_cell_level_stats_one("1212557784", if_generate_plots=True)
+    status, cell_stats = extract_cell_level_stats_one("1428138882", if_generate_plots=True)

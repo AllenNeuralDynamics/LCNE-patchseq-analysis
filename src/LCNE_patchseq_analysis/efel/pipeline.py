@@ -11,7 +11,7 @@ from LCNE_patchseq_analysis.efel.core import extract_efel_one
 from LCNE_patchseq_analysis.efel.plot import generate_sweep_plots_one
 from LCNE_patchseq_analysis.efel.population import extract_cell_level_stats_one
 from LCNE_patchseq_analysis.efel.util import run_parallel_processing
-
+from LCNE_patchseq_analysis.pipeline_util.s3 import sync_directory, S3_PATH_BASE
 logger = logging.getLogger(__name__)
 
 
@@ -19,7 +19,7 @@ def extract_efel_features_in_parallel(skip_existing: bool = True, skip_errors: b
     """Extract eFEL features in parallel."""
 
     def get_roi_ids():
-        df_meta = load_ephys_metadata()
+        df_meta = load_ephys_metadata(combine_roi_ids=True)
         return df_meta["ephys_roi_id_tab_master"]
 
     def check_existing(ephys_roi_id):
@@ -65,15 +65,15 @@ def extract_cell_level_stats_in_parallel(skip_errors: bool = True, if_generate_p
     df_cell_stats = pd.concat([result[1]["df_cell_stats"]
                               for result in results if result[0] == "Success"], axis=0)
     df_cell_representative_spike_waveforms = pd.concat(
-        [result[1]["df_cell_representative_spike_waveforms"] 
+        [result[1]["df_cell_representative_spike_waveforms"]
          for result in results if result[0] == "Success"], axis=0)
-    
+
     # ---- Merge into Brian's spreadsheet ----
-    df_ephys_metadata = load_ephys_metadata(if_with_efel=False).rename(
+    df_ephys_metadata = load_ephys_metadata(if_with_efel=False, combine_roi_ids=True).rename(
         columns={"ephys_roi_id_tab_master": "ephys_roi_id"}
     )
     df_merged = df_ephys_metadata.merge(df_cell_stats, on="ephys_roi_id", how="left")
-    
+
     # ---- Post-processing ----
     df_merged = (
         df_merged.rename(
@@ -81,7 +81,7 @@ def extract_cell_level_stats_in_parallel(skip_errors: bool = True, if_generate_p
         )
     )
     df_merged.loc[:, "LC_targeting"] = df_merged["LC_targeting"].fillna("unknown")
-    
+
     # Remove columns start with efel_
     df_merged = df_merged.loc[:, ~df_merged.columns.str.startswith("efel_")]
     # Remove "first_spike_" in all column names
@@ -95,7 +95,7 @@ def extract_cell_level_stats_in_parallel(skip_errors: bool = True, if_generate_p
     os.makedirs(f"{RESULTS_DIRECTORY}/cell_stats", exist_ok=True)
     save_path = f"{RESULTS_DIRECTORY}/cell_stats/cell_level_stats.csv"
     df_merged.to_csv(save_path, index=False)
-    
+
     # ---- Save the representative spike waveforms to disk ----
     save_path = f"{RESULTS_DIRECTORY}/cell_stats/cell_level_spike_waveforms.pkl"
     df_cell_representative_spike_waveforms.to_pickle(save_path)
@@ -109,17 +109,20 @@ def extract_cell_level_stats_in_parallel(skip_errors: bool = True, if_generate_p
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
-    # logger.info("-" * 80)
-    # logger.info("Extracting features in parallel...")
-    # extract_efel_features_in_parallel(skip_existing=True, skip_errors=True)
+    logger.info("-" * 80)
+    logger.info("Extracting features in parallel...")
+    extract_efel_features_in_parallel(skip_existing=True, skip_errors=True)
 
-    # logger.info("-" * 80)
-    # logger.info("Generating sweep plots in parallel...")
-    # generate_sweep_plots_in_parallel(skip_existing=True, skip_errors=True)
+    logger.info("-" * 80)
+    logger.info("Generating sweep plots in parallel...")
+    generate_sweep_plots_in_parallel(skip_existing=True, skip_errors=True)
 
     logger.info("-" * 80)
     logger.info("Extracting cell-level statistics...")
-    extract_cell_level_stats_in_parallel(skip_errors=False, if_generate_plots=False)
+    extract_cell_level_stats_in_parallel(skip_errors=False, if_generate_plots=True)
+
+    # Sync the whole results directory to S3
+    sync_directory(RESULTS_DIRECTORY, S3_PATH_BASE + "/efel", if_copy=False)  # sync only
 
     # ================================
     # For debugging
