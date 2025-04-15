@@ -21,10 +21,10 @@ dependencies = [
     'numpy',
     'pandas',
     'matplotlib',
-    'umap-learn',
     'seaborn',
     'h5py',
-    's3fs'
+    's3fs',
+    'requests'
 ]
 
 [project.optional-dependencies]
@@ -48,6 +48,7 @@ panel = [
     'watchfiles',
     's3fs',
     'bokeh',
+    'umap-learn',
 ]
 
 pipeline = [
