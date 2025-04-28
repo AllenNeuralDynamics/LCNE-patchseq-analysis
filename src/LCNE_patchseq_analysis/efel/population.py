@@ -153,7 +153,7 @@ def extract_cell_level_stats_one(ephys_roi_id: str, if_generate_plots: bool = Tr
             }
 
         # Get info string for cell summary plot
-        df_meta = load_ephys_metadata(if_with_efel=False, combine_roi_ids=True)
+        df_meta = load_ephys_metadata(if_from_s3=False, combine_roi_ids=True)
         df_this = df_meta.query("ephys_roi_id_tab_master == @ephys_roi_id").iloc[0]
         info_text = (
             f"{df_this['Date']}, {df_this['ephys_roi_id_tab_master']}, {df_this['jem-id_cell_specimen']}\n"
