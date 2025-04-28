@@ -3,11 +3,12 @@
 import glob
 import json
 import logging
+import os
 
 import pandas as pd
 
 from LCNE_patchseq_analysis import RAW_DIRECTORY
-from LCNE_patchseq_analysis.pipeline_util.s3 import get_public_efel_cell_level_stats
+from LCNE_patchseq_analysis.pipeline_util.s3 import get_public_efel_cell_level_stats, get_public_seq_preselected
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +82,7 @@ def jsons_to_df(json_dicts):
     return df_merged
 
 
-def load_ephys_metadata(if_with_efel=False, combine_roi_ids=False):
+def load_ephys_metadata(if_with_efel=False, if_with_seq=False, combine_roi_ids=False):
     """Load ephys metadata
 
     Per discussion with Brian, we should only look at those in the spreadsheet.
@@ -91,6 +92,9 @@ def load_ephys_metadata(if_with_efel=False, combine_roi_ids=False):
         if_with_efel: If True, load the cell level stats from eFEL output
                             (Brian's spreadsheet + eFEL stats).
                       else, load the downloaded Brian's spreadsheet only.
+        if_with_seq: If True, merge in sequencing data from seq_preselected.csv,
+                     matching on the exp_component_name column.
+        combine_roi_ids: If True, combine "ephys_roi_id_lims" into "ephys_roi_id_tab_master".
     """
     # -- Load the cell level stats from eFEL output --
     if if_with_efel:
@@ -100,6 +104,30 @@ def load_ephys_metadata(if_with_efel=False, combine_roi_ids=False):
         df["ephys_roi_id"] = df["ephys_roi_id"].apply(
             lambda x: str(int(x)) if pd.notnull(x) else ""
         )
+        
+        # Merge sequencing data if requested
+        if if_with_seq:
+            try:
+                logger.info("Loading sequencing data from S3...")
+                # Get sequencing data from S3
+                df_seq = get_public_seq_preselected()
+                
+                # Perform the merge on exp_component_name
+                df = df.merge(
+                    df_seq,
+                    left_on="exp_component_name",  # This should match the exp_component_name in sequencing data
+                    right_on="exp_component_name", 
+                    how="left"
+                )
+                
+                # Log the merge results
+                merged_count = df["exp_component_name"].notna().sum()
+                logger.info(f"Successfully merged sequencing data for {merged_count} out of {len(df)} cells")
+            except FileNotFoundError as e:
+                logger.warning(f"Could not load sequencing data: {e}")
+            except Exception as e:
+                logger.error(f"Error merging sequencing data: {e}")
+        
         return df
 
     # -- Load the downloaded Brian's spreadsheet only --
@@ -134,7 +162,7 @@ def load_ephys_metadata(if_with_efel=False, combine_roi_ids=False):
     # Change columns with roi_id to str(int())
     for col in ["ephys_roi_id_tab_master", "ephys_roi_id_lims"]:
         df[col] = df[col].apply(lambda x: str(int(x)) if pd.notnull(x) else "")
-        
+            
     return df
 
 
