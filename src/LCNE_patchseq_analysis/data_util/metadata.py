@@ -82,14 +82,14 @@ def jsons_to_df(json_dicts):
     return df_merged
 
 
-def load_ephys_metadata(if_with_efel=False, if_with_seq=False, combine_roi_ids=False):
+def load_ephys_metadata(if_from_s3=False, if_with_seq=False, combine_roi_ids=False):
     """Load ephys metadata
 
     Per discussion with Brian, we should only look at those in the spreadsheet.
     https://www.notion.so/hanhou/LCNE-patch-seq-analysis-1ae3ef97e735808eb12ec452d2dc4369?pvs=4#1ba3ef97e73580ac9a5ee6e53e9b3dbe  # noqa: E501
 
     Args:
-        if_with_efel: If True, load the cell level stats from eFEL output
+        if_from_s3: If True, load the cell level stats from eFEL output
                             (Brian's spreadsheet + eFEL stats).
                       else, load the downloaded Brian's spreadsheet only.
         if_with_seq: If True, merge in sequencing data from seq_preselected.csv,
@@ -97,7 +97,7 @@ def load_ephys_metadata(if_with_efel=False, if_with_seq=False, combine_roi_ids=F
         combine_roi_ids: If True, combine "ephys_roi_id_lims" into "ephys_roi_id_tab_master".
     """
     # -- Load the cell level stats from eFEL output --
-    if if_with_efel:
+    if if_from_s3:
         df = get_public_efel_cell_level_stats()
 
         # Convert ephys_roi_id to str(int())

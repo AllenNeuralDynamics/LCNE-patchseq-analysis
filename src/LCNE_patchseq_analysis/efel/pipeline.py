@@ -70,7 +70,7 @@ def extract_cell_level_stats_in_parallel(skip_errors: bool = True, if_generate_p
          for result in results if result[0] == "Success"], axis=0)
 
     # ---- Merge into Brian's spreadsheet ----
-    df_ephys_metadata = load_ephys_metadata(if_with_efel=False, combine_roi_ids=True).rename(
+    df_ephys_metadata = load_ephys_metadata(if_from_s3=False, combine_roi_ids=True).rename(
         columns={"ephys_roi_id_tab_master": "ephys_roi_id"}
     )
     df_merged = df_ephys_metadata.merge(df_cell_stats, on="ephys_roi_id", how="left")
