@@ -10,12 +10,13 @@
                 "serve",
                 "src/LCNE_patchseq_analysis/panel_app/patchseq_panel_viz.py",
                 "--dev",
+                "--show",
                 "--allow-websocket-origin=localhost:5006",
                 "--allow-websocket-origin=codeocean.allenneuraldynamics.org"
             ],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
-            "justMyCode": true,
+            "justMyCode": false,
             "env": {
                 "PYTHONPATH": "${workspaceFolder}"
             }
