@@ -11,7 +11,8 @@ from LCNE_patchseq_analysis.efel.core import extract_efel_one
 from LCNE_patchseq_analysis.efel.plot import generate_sweep_plots_one
 from LCNE_patchseq_analysis.efel.population import extract_cell_level_stats_one
 from LCNE_patchseq_analysis.efel.util import run_parallel_processing
-from LCNE_patchseq_analysis.pipeline_util.s3 import sync_directory, S3_PATH_BASE
+from LCNE_patchseq_analysis.pipeline_util.s3 import S3_PATH_BASE, sync_directory
+
 logger = logging.getLogger(__name__)
 
 
@@ -63,11 +64,17 @@ def extract_cell_level_stats_in_parallel(skip_errors: bool = True, if_generate_p
     )
 
     # Filter out None results (errors)
-    df_cell_stats = pd.concat([result[1]["df_cell_stats"]
-                              for result in results if result[0] == "Success"], axis=0)
+    df_cell_stats = pd.concat(
+        [result[1]["df_cell_stats"] for result in results if result[0] == "Success"], axis=0
+    )
     df_cell_representative_spike_waveforms = pd.concat(
-        [result[1]["df_cell_representative_spike_waveforms"]
-         for result in results if result[0] == "Success"], axis=0)
+        [
+            result[1]["df_cell_representative_spike_waveforms"]
+            for result in results
+            if result[0] == "Success"
+        ],
+        axis=0,
+    )
 
     # ---- Merge into Brian's spreadsheet ----
     df_ephys_metadata = load_ephys_metadata(if_from_s3=False, combine_roi_ids=True).rename(
@@ -76,10 +83,8 @@ def extract_cell_level_stats_in_parallel(skip_errors: bool = True, if_generate_p
     df_merged = df_ephys_metadata.merge(df_cell_stats, on="ephys_roi_id", how="left")
 
     # ---- Post-processing ----
-    df_merged = (
-        df_merged.rename(
-            columns={col: col.replace("_tab_master", "") for col in df_merged.columns},
-        )
+    df_merged = df_merged.rename(
+        columns={col: col.replace("_tab_master", "") for col in df_merged.columns},
     )
     df_merged.loc[:, "LC_targeting"] = df_merged["LC_targeting"].fillna("unknown")
 
@@ -88,9 +93,7 @@ def extract_cell_level_stats_in_parallel(skip_errors: bool = True, if_generate_p
     # Remove "first_spike_" in all column names
     df_merged.columns = [col.replace("first_spike_", "") for col in df_merged.columns]
     # Add EFEL_prefix to all columns that has @ in its name
-    df_merged.columns = [
-        f"efel_{col}" if "@" in col else col for col in df_merged.columns
-    ]
+    df_merged.columns = [f"efel_{col}" if "@" in col else col for col in df_merged.columns]
 
     # ---- Save the summary table to disk ----
     save_path = f"{RESULTS_DIRECTORY}/cell_stats/cell_level_stats.csv"

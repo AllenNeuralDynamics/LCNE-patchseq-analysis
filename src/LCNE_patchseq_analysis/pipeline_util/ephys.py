@@ -79,7 +79,7 @@ def trigger_patchseq_upload(metadata_path=os.path.expanduser(R"~\Downloads\IVSCC
 
     # Also save df_merged as csv and upload to s3
     df_merged.to_csv("df_metadata_merged.csv", index=False)
-    
+
     # Upload raw data
     upload_raw_from_isilon_to_s3_batch(df_merged, s3_bucket=s3_bucket, max_workers=10)
 
