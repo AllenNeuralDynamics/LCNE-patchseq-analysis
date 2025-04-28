@@ -116,19 +116,18 @@ def load_ephys_metadata(if_from_s3=False, if_with_seq=False, combine_roi_ids=Fal
 
                 # Add "gene_" columns names in df_seq to the dataframe
                 df_seq = df_seq.rename(
-                    columns=lambda x: f"gene_{x}" if x != "exp_component_name" else x
+                    columns=lambda x: f"gene_{x}" if x != "cell_specimen_id" else x
                 )
 
-                # Perform the merge on exp_component_name
+                # Perform the merge on cell_specimen_id
                 df = df.merge(
                     df_seq,
-                    left_on="exp_component_name",
-                    right_on="exp_component_name",
+                    on="cell_specimen_id",
                     how="left",
                 )
 
                 # Log the merge results
-                merged_count = df["exp_component_name"].notna().sum()
+                merged_count = df["cell_specimen_id"].notna().sum()
                 logger.info(
                     f"Successfully merged sequencing data for {merged_count} out of {len(df)} cells"
                 )
