@@ -75,9 +75,13 @@ def extract_preselected_columns():
     Returns:
         pd.DataFrame: The extracted dataframe with preselected columns
     """
-    # Define the source and destination paths
-    src_dir = Path(PACKAGE_DIRECTORY) / "../../data/LCNE-patchseq-ephys/seq"
-    dst_dir = src_dir
+    # Define the source and destination paths using absolute paths
+    src_dir = Path(PACKAGE_DIRECTORY).resolve() / "../../data/LCNE-patchseq-ephys/seq"
+    dst_dir = Path(PACKAGE_DIRECTORY).resolve() / "../../results/seq"
+    
+    # Ensure these paths are resolved to absolute paths
+    src_dir = src_dir.resolve()
+    dst_dir = dst_dir.resolve()
     
     src_file = src_dir / "log_normed_df.csv"
     dst_file = dst_dir / "seq_preselected.csv"
@@ -109,9 +113,9 @@ def extract_preselected_columns():
     os.makedirs(dst_dir, exist_ok=True)
     
     # Save the extracted data
-    logger.info(f"Saving extracted data (with {len(available_columns)} columns) to {dst_file}")
+    logger.info(f"Saving extracted data (with {len(available_columns)} columns and {len(df_extracted)} rows) to {dst_file}")
     df_extracted.to_csv(dst_file, index=False)
-    
+
     return df_extracted
 
 if __name__ == "__main__":
