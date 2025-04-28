@@ -116,7 +116,7 @@ def load_ephys_metadata(if_from_s3=False, if_with_seq=False, combine_roi_ids=Fal
 
                 # Add "gene_" columns names in df_seq to the dataframe
                 df_seq = df_seq.rename(
-                    columns=lambda x: f"gene_{x}" if x != "cell_specimen_id" else x
+                    columns=lambda x: f"gene_{x} (log_normed)" if x != "cell_specimen_id" else x
                 )
 
                 # Perform the merge on cell_specimen_id
