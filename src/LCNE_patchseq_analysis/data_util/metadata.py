@@ -3,7 +3,6 @@
 import glob
 import json
 import logging
-import os
 
 import pandas as pd
 
@@ -123,7 +122,7 @@ def load_ephys_metadata(if_from_s3=False, if_with_seq=False, combine_roi_ids=Fal
                 # Perform the merge on exp_component_name
                 df = df.merge(
                     df_seq,
-                    left_on="exp_component_name",  # This should match the exp_component_name in sequencing data
+                    left_on="exp_component_name",
                     right_on="exp_component_name",
                     how="left",
                 )
@@ -163,7 +162,8 @@ def load_ephys_metadata(if_from_s3=False, if_with_seq=False, combine_roi_ids=Fal
 
     # --- Temporary fix @ 2025-04-09 ---
     # The xyz are removed from the spreadsheet and for now I still don't know how to get from LIMS
-    # So I'm merging [x_tab_master, y_tab_master, z_tab_master] from the df_metadata_merged_20250409.csv
+    # So I'm merging [x_tab_master, y_tab_master, z_tab_master] from the
+    # df_metadata_merged_20250409.csv
     df_temp = pd.read_csv(RAW_DIRECTORY + "/df_metadata_merged_20250409.csv").copy()
     df = df.merge(
         df_temp[["ephys_roi_id_tab_master", "x_tab_master", "y_tab_master", "z_tab_master"]],

@@ -3,7 +3,6 @@
 import concurrent.futures
 import logging
 import os
-import subprocess
 
 import pandas as pd
 from tqdm import tqdm

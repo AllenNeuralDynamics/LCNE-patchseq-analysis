@@ -66,7 +66,8 @@ SEQ_COLUMNS = [
 def extract_preselected_columns():
     """
     Read the log_normed_df.csv file from the data/LCNE-patchseq-ephys/seq directory,
-    extract the preselected columns defined by SEQ_COLUMNS, and save it back to the data/seq directory.
+    extract the preselected columns defined by SEQ_COLUMNS, and save it back to
+    the data/seq directory.
 
     Returns:
         pd.DataFrame: The extracted dataframe with preselected columns
@@ -110,7 +111,8 @@ def extract_preselected_columns():
 
     # Save the extracted data
     logger.info(
-        f"Saving extracted data (with {len(available_columns)} columns and {len(df_extracted)} rows) to {dst_file}"
+        f"Saving extracted data (with {len(available_columns)} columns "
+        f"and {len(df_extracted)} rows) to {dst_file}"
     )
     df_extracted.to_csv(dst_file, index=False)
 
