@@ -9,6 +9,7 @@ from typing import Literal
 import pandas as pd
 
 from LCNE_patchseq_analysis import REGION_COLOR_MAPPER
+from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
 from LCNE_patchseq_analysis.efel import (
     CELL_SUMMARY_PLOT_SHOW_SPIKES,
     CELL_SUMMARY_PLOT_SHOW_SWEEPS,
@@ -19,8 +20,7 @@ from LCNE_patchseq_analysis.efel import (
 )
 from LCNE_patchseq_analysis.efel.io import load_efel_features_from_roi
 from LCNE_patchseq_analysis.efel.plot import plot_cell_summary
-from LCNE_patchseq_analysis.pipeline_util.s3 import get_public_efel_cell_level_stats
-from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
+
 logger = logging.getLogger(__name__)
 
 
@@ -87,7 +87,7 @@ def df_sweep_selector(  # noqa: C901
     return _get_min_or_aver(df_this, aggregate_method)
 
 
-def extract_cell_level_stats_one(ephys_roi_id: str, if_generate_plots: bool = True):
+def extract_cell_level_stats_one(ephys_roi_id: str, if_generate_plots: bool = True):  # noqa: C901
     """Extract cell-level statistics from a single eFEL features file."""
     try:
 
@@ -100,7 +100,7 @@ def extract_cell_level_stats_one(ephys_roi_id: str, if_generate_plots: bool = Tr
         df_features_per_sweep = features_dict["df_features_per_sweep"].merge(
             features_dict["df_sweeps"], on="sweep_number"
         )
-        
+
         df_raw_spikes = features_dict["df_spike_waveforms"]
 
         cell_stats_dict = {}
@@ -124,16 +124,17 @@ def extract_cell_level_stats_one(ephys_roi_id: str, if_generate_plots: bool = Tr
                         f"{feature} @ {key}": value for feature, value in mean_values.items()
                     }
                     cell_stats_dict.update(feature_this)
-                    
+
                     # --- Extract cell-representative spike waveforms ---
                     # Get the spike waveforms
                     df_spikes = df_raw_spikes.query("sweep_number in @df_sweep.sweep_number.values")
                     if not df_spikes.empty:
                         averaged_spike_waveforms = pd.DataFrame(df_spikes.mean()).T
-                        averaged_spike_waveforms.index = pd.MultiIndex.from_tuples([(ephys_roi_id, key)], 
-                                                                            names=["ephys_roi_id", "extract_from"])
+                        averaged_spike_waveforms.index = pd.MultiIndex.from_tuples(
+                            [(ephys_roi_id, key)], names=["ephys_roi_id", "extract_from"]
+                        )
                         cell_representative_spike_waveforms.append(averaged_spike_waveforms)
-                    
+
         df_cell_stats = pd.DataFrame(
             cell_stats_dict, index=pd.Index([ephys_roi_id], name="ephys_roi_id")
         )
@@ -143,20 +144,20 @@ def extract_cell_level_stats_one(ephys_roi_id: str, if_generate_plots: bool = Tr
             df_cell_representative_spike_waveforms = pd.DataFrame()
 
         logger.info(f"Successfully extracted cell-level stats for {ephys_roi_id}!")
-        
 
         # --- Generate cell-level summary plots ---
         if not if_generate_plots:
             return "Success", {
                 "df_cell_stats": df_cell_stats,
-                "df_cell_representative_spike_waveforms": df_cell_representative_spike_waveforms
+                "df_cell_representative_spike_waveforms": df_cell_representative_spike_waveforms,
             }
 
         # Get info string for cell summary plot
-        df_meta = load_ephys_metadata(if_with_efel=False, combine_roi_ids=True)
+        df_meta = load_ephys_metadata(if_from_s3=False, combine_roi_ids=True)
         df_this = df_meta.query("ephys_roi_id_tab_master == @ephys_roi_id").iloc[0]
         info_text = (
-            f"{df_this['Date']}, {df_this['ephys_roi_id_tab_master']}, {df_this['jem-id_cell_specimen']}\n"
+            f"{df_this['Date']}, {df_this['ephys_roi_id_tab_master']}, "
+            f"{df_this['jem-id_cell_specimen']}\n"
             f"LC_targeting: {df_this['LC_targeting']}, "
             f"Injection region: {df_this['injection region']}"
             f", Depth = {df_this['y_tab_master']:.0f}"
@@ -194,7 +195,7 @@ def extract_cell_level_stats_one(ephys_roi_id: str, if_generate_plots: bool = Tr
 
         return "Success", {
             "df_cell_stats": df_cell_stats,
-            "df_cell_representative_spike_waveforms": df_cell_representative_spike_waveforms
+            "df_cell_representative_spike_waveforms": df_cell_representative_spike_waveforms,
         }
     except Exception as e:
         import traceback
