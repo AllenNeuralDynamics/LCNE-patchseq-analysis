@@ -3,7 +3,6 @@ Utility functions for S3.
 """
 
 import logging
-import os
 import subprocess
 
 import pandas as pd
