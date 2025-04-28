@@ -96,15 +96,12 @@ def extract_preselected_columns():
     df_ids = pd.read_csv(id_mapping_file, index_col=0).rename(
         columns={"cell_id": "cell_specimen_id"}
     )
-    
+
     # Reset the index to make it a regular column and rename it to 'exp_component_name'
     df = df.reset_index().rename(columns={"index": "exp_component_name"})
-    
+
     # Merge in "cell_specimen_id"
-    df = df.merge(df_ids, 
-                  left_on="exp_component_name", 
-                  right_on="exp_component_name.x", 
-                  how="left")
+    df = df.merge(df_ids, left_on="exp_component_name", right_on="exp_component_name.x", how="left")
 
     # Check which preselected columns exist in the dataframe
     available_columns = ["cell_specimen_id"] + [col for col in SEQ_COLUMNS if col in df.columns]
