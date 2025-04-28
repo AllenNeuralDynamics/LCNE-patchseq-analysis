@@ -3,7 +3,6 @@ Utility functions for S3.
 """
 
 import logging
-import os
 import subprocess
 
 import pandas as pd
@@ -94,8 +93,8 @@ def get_public_url_cell_summary(ephys_roi_id: str, if_check_exists: bool = True)
             return None
     else:
         return s3_url
-    
-    
+
+
 def get_public_representative_spikes() -> pd.DataFrame:
     """Get the representative spikes for a cell."""
     s3_url = f"{S3_PUBLIC_URL_BASE}/efel/cell_stats/cell_level_spike_waveforms.pkl"
@@ -103,6 +102,23 @@ def get_public_representative_spikes() -> pd.DataFrame:
         return pd.read_pickle(s3_url)
     else:
         raise FileNotFoundError(f"Pickle file not found at {s3_url}")
+
+
+def get_public_seq_preselected() -> pd.DataFrame:
+    """Get the preselected sequencing data from S3.
+
+    Returns:
+        pd.DataFrame: DataFrame containing the preselected sequencing data.
+
+    Raises:
+        FileNotFoundError: If the CSV file is not found at the expected S3 URL.
+    """
+    s3_url = f"{S3_PUBLIC_URL_BASE}/seq/seq_preselected.csv"
+    if check_s3_public_url_exists(s3_url):
+        logger.info(f"Loading sequencing data from {s3_url}")
+        return pd.read_csv(s3_url)
+    else:
+        raise FileNotFoundError(f"Sequencing data CSV file not found at {s3_url}")
 
 
 if __name__ == "__main__":
