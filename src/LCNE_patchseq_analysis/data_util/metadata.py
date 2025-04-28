@@ -112,6 +112,9 @@ def load_ephys_metadata(if_with_efel=False, if_with_seq=False, combine_roi_ids=F
                 # Get sequencing data from S3
                 df_seq = get_public_seq_preselected()
                 
+                # Add "gene_" columns names in df_seq to the dataframe
+                df_seq = df_seq.rename(columns=lambda x: f"gene_{x}" if x != "exp_component_name" else x)
+                
                 # Perform the merge on exp_component_name
                 df = df.merge(
                     df_seq,
