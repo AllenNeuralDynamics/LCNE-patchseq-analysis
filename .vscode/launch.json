@@ -19,7 +19,8 @@
             "justMyCode": false,
             "env": {
                 "PYTHONPATH": "${workspaceFolder}"
-            }
+            },
+            "preLaunchTask": "git pull"
         },
     ]
 }
