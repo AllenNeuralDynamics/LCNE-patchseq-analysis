@@ -49,6 +49,7 @@ panel = [
     's3fs',
     'bokeh',
     'umap-learn',
+    'tabulate',
 ]
 
 pipeline = [
