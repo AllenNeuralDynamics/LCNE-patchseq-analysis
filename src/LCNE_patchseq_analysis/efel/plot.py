@@ -11,7 +11,7 @@ import pandas as pd
 import seaborn as sns
 
 from LCNE_patchseq_analysis import RESULTS_DIRECTORY, TIME_STEP
-from LCNE_patchseq_analysis.efel.io import load_efel_features_from_roi
+from LCNE_patchseq_analysis.pipeline_util.s3 import load_efel_features_from_roi
 
 logger = logging.getLogger(__name__)
 matplotlib.use("Agg")  # Set the non-interactive backend
