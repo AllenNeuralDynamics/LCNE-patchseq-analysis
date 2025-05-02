@@ -58,7 +58,9 @@ def get_lims_dataframe(query):
 def get_lims_LCNE_patchseq():
     """Code from Brian"""
     lims_query = """
-        SELECT s.name, s.id as specimen_id,   
+        SELECT 
+            s.name as specimen_name,
+            s.id as specimen_id,   
         CASE d.gender_id
             WHEN 1 THEN 'male'
             WHEN 2 THEN 'female'
