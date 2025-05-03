@@ -60,7 +60,8 @@ def get_lims_LCNE_patchseq():
     lims_query = """
         SELECT 
             s.name as specimen_name,
-            s.id as specimen_id,   
+            s.id as specimen_id,
+            err.id AS ephys_roi_id,
         CASE d.gender_id
             WHEN 1 THEN 'male'
             WHEN 2 THEN 'female'
