@@ -94,6 +94,14 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
         return "unknown"
     df_merged["experimenter"] = df_merged["jem-id_patched_cell_container"].map(_map_experimenter)
     
+    # Compute age (in days) from date of birth and recording date
+    def _compute_age(row):
+        """Compute age in days from date of birth and recording date"""
+        if pd.isnull(row["date_of_birth"]) or pd.isnull(row["recording_date"]):
+            return None
+        return (row["recording_date"] - row["date_of_birth"]).days
+    df_merged["age_days"] = df_merged.apply(_compute_age, axis=1)
+    
     # Merge in CCF coordinates from VAST
     df_pinned_ccf = read_pinned_ccf_from_vast()
     df_merged = df_merged.merge(
