@@ -8,6 +8,7 @@ import pandas as pd
 from LCNE_patchseq_analysis.pipeline_util.lims import get_lims_LCNE_patchseq
 
 metadata_path = os.path.expanduser(R"~/Downloads/IVSCC_LC_summary.xlsx")
+cell_pinning_on_VAST = R"\\allen\programs\celltypes\workgroups\mousecelltypes\cell_pinning\soma_pins.csv"
 logger = logging.getLogger(__name__)
 
 
@@ -84,7 +85,6 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
 
     # --- Parse more metadata from the spreadsheet ---
     # Parse experimenter name
-    
     def _map_experimenter(cell_container):
         """Map cell container to experimenter name"""
         if pd.isnull(cell_container):
@@ -92,9 +92,16 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
         if cell_container.startswith("P") and len(cell_container) > 1:
             return cell_container[:2]
         return "unknown"
-    
     df_merged["experimenter"] = df_merged["jem-id_patched_cell_container"].map(_map_experimenter)
     
+    # Merge in CCF coordinates from VAST
+    df_pinned_ccf = read_pinned_ccf_from_vast()
+    df_merged = df_merged.merge(
+        df_pinned_ccf,
+        left_on="cell_specimen_id_tab_master",
+        right_on="cell_specimen_id",
+        how="left",
+    )
 
     return {
         "df_merged": df_merged,
@@ -103,6 +110,15 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
         **({"df_lims": df_lims} if add_lims else {}),
     }
 
+
+def read_pinned_ccf_from_vast(file_path=cell_pinning_on_VAST):
+    # Read csv from VAST
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"File not found at {file_path}")
+    df_pinned = pd.read_csv(file_path)
+    logger.info(f"Read {len(df_pinned)} rows from {file_path}...")
+    return df_pinned
+    
 
 def cross_check_metadata(df, source, check_separately=True):
     """Cross-check metadata between source and master tables
