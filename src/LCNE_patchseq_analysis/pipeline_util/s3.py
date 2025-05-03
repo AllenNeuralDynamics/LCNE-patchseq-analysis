@@ -24,6 +24,9 @@ def sync_directory(local_dir, destination, if_copy=False):
     Returns a status string based on the command output.
     """
     try:
+        if not destination.startswith("s3://"):
+            destination = "s3://" + destination
+        
         if if_copy:
             # Run aws s3 cp command and capture the output
             result = subprocess.run(
