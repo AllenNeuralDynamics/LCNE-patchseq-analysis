@@ -82,6 +82,20 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
             f"{len(df_merged[df_merged['spreadsheet_or_lims'] == 'lims_only'])} in LIMS only.\n"
         )
 
+    # --- Parse more metadata from the spreadsheet ---
+    # Parse experimenter name
+    
+    def _map_experimenter(cell_container):
+        """Map cell container to experimenter name"""
+        if pd.isnull(cell_container):
+            return "unknown"
+        if cell_container.startswith("P") and len(cell_container) > 1:
+            return cell_container[:2]
+        return "unknown"
+    
+    df_merged["experimenter"] = df_merged["jem-id_patched_cell_container"].map(_map_experimenter)
+    
+
     return {
         "df_merged": df_merged,
         "df_tab_master": df_tab_master,
