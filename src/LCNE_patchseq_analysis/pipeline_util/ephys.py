@@ -70,8 +70,10 @@ def upload_raw_from_isilon_to_s3_batch(df, s3_bucket=s3_bucket, max_workers=10):
 
     return pd.DataFrame(results)
 
-
-def trigger_patchseq_upload(metadata_path=os.path.expanduser(R"~\Downloads\IVSCC_LC_summary.xlsx")):
+def trigger_patchseq_upload(
+    metadata_path=os.path.expanduser(R"~\Downloads\IVSCC_LC_summary.xlsx"),
+    upload_raw_data=True,
+):
     # Generate a list of isilon paths
     dfs = read_brian_spreadsheet(file_path=metadata_path, add_lims=True)
     df_merged = dfs["df_merged"]
@@ -79,15 +81,20 @@ def trigger_patchseq_upload(metadata_path=os.path.expanduser(R"~\Downloads\IVSCC
     # Also save df_merged as csv and upload to s3
     df_merged.to_csv("df_metadata_merged.csv", index=False)
 
-    # Upload raw data
-    upload_raw_from_isilon_to_s3_batch(df_merged, s3_bucket=s3_bucket, max_workers=10)
+    # Conditionally upload raw data
+    if upload_raw_data:
+        logger.info("Uploading raw data to S3...")
+        upload_raw_from_isilon_to_s3_batch(df_merged, s3_bucket=s3_bucket, max_workers=10)
 
+    logger.info("Uploading df_metadata_merged.csv to S3...")
     sync_directory("df_metadata_merged.csv", s3_bucket + "/df_metadata_merged.csv", if_copy=True)
 
 
 if __name__ == "__main__":
 
     # Set logger level
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
 
-    trigger_patchseq_upload(os.path.expanduser(R"~\Downloads\IVSCC_LC_summary.xlsx"))
+    trigger_patchseq_upload(
+        os.path.expanduser(R"~\Downloads\IVSCC_LC_summary.xlsx"), upload_raw_data=False
+    )
