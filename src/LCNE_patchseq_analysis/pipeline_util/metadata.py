@@ -104,11 +104,20 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
     
     # Merge in CCF coordinates from VAST
     df_pinned_ccf = read_pinned_ccf_from_vast()
-    df_merged = df_merged.merge(
-        df_pinned_ccf,
-        left_on="cell_specimen_id_tab_master",
-        right_on="cell_specimen_id",
-        how="left",
+    if not df_pinned_ccf.empty:
+        df_merged = df_merged.merge(
+            df_pinned_ccf,
+            left_on="cell_specimen_id_tab_master",
+            right_on="cell_specimen_id",
+            how="left",
+        )
+    
+    # -- Parse mouse line --
+    # In "jem-id_cell_specimen" field, extract the string before the first ;
+    # this is the mouse line
+    df_merged["mouse_line"] = df_merged["jem-id_cell_specimen"].str.split(";").str[0]
+    df_merged["mouse_line"] = df_merged["mouse_line"].apply(
+        lambda x: "C57BL6J" if isinstance(x, str) and "C57BL6J" in x else x
     )
 
     return {
@@ -122,7 +131,8 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
 def read_pinned_ccf_from_vast(file_path=cell_pinning_on_VAST):
     # Read csv from VAST
     if not os.path.exists(file_path):
-        raise FileNotFoundError(f"File not found at {file_path}")
+        logger.warning(f"Pinned coordinates file not found at {file_path}")
+        return pd.DataFrame()
     df_pinned = pd.read_csv(file_path)
     logger.info(f"Read {len(df_pinned)} rows from {file_path}...")
     return df_pinned
