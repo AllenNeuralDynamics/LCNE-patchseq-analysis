@@ -102,9 +102,17 @@ def load_ephys_metadata(if_from_s3=False, if_with_seq=False, combine_roi_ids=Fal
     if if_from_s3:
         df = get_public_efel_cell_level_stats()
 
-        # Convert ephys_roi_id to str(int())
+        # -- Convert ephys_roi_id to str(int()) --
         df["ephys_roi_id"] = df["ephys_roi_id"].apply(
             lambda x: str(int(x)) if pd.notnull(x) else ""
+        )
+        
+        # -- Parse mouse line --
+        # In "jem-id_cell_specimen" field, extract the string before the first ;
+        # this is the mouse line
+        df_merged["mouse_line"] = df_merged["jem-id_cell_specimen"].str.split(";").str[0]
+        df_merged["mouse_line"] = df_merged["mouse_line"].apply(
+            lambda x: "C57BL6J" if isinstance(x, str) and "C57BL6J" in x else x
         )
 
         # Merge sequencing data if requested

@@ -111,14 +111,6 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
             right_on="cell_specimen_id",
             how="left",
         )
-    
-    # -- Parse mouse line --
-    # In "jem-id_cell_specimen" field, extract the string before the first ;
-    # this is the mouse line
-    df_merged["mouse_line"] = df_merged["jem-id_cell_specimen"].str.split(";").str[0]
-    df_merged["mouse_line"] = df_merged["mouse_line"].apply(
-        lambda x: "C57BL6J" if isinstance(x, str) and "C57BL6J" in x else x
-    )
 
     return {
         "df_merged": df_merged,
