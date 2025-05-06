@@ -110,8 +110,8 @@ def load_ephys_metadata(if_from_s3=False, if_with_seq=False, combine_roi_ids=Fal
         # -- Parse mouse line --
         # In "jem-id_cell_specimen" field, extract the string before the first ;
         # this is the mouse line
-        df_merged["mouse_line"] = df_merged["jem-id_cell_specimen"].str.split(";").str[0]
-        df_merged["mouse_line"] = df_merged["mouse_line"].apply(
+        df["mouse_line"] = df["jem-id_cell_specimen"].str.split(";").str[0]
+        df["mouse_line"] = df["mouse_line"].apply(
             lambda x: "C57BL6J" if isinstance(x, str) and "C57BL6J" in x else x
         )
 
