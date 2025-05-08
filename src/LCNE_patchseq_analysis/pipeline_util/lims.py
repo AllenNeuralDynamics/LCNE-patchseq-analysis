@@ -58,19 +58,24 @@ def get_lims_dataframe(query):
 def get_lims_LCNE_patchseq():
     """Code from Brian"""
     lims_query = """
-        SELECT
-            s.id AS specimen_id,
-            s.name AS specimen_name,
-            proj.code,
+        SELECT 
+            s.name as specimen_name,
+            s.id as specimen_id,
             err.id AS ephys_roi_id,
-            err.workflow_state AS Ephys_QC,
-            s.patched_cell_container,
-            err.storage_directory
-        FROM ephys_roi_results AS err
-        JOIN specimens AS s ON s.ephys_roi_result_id = err.id
-        JOIN projects AS proj ON s.project_id = proj.id
-        WHERE proj.code = 'mIVSCC-MET-R01_LC';
-    """
+        CASE d.gender_id
+            WHEN 1 THEN 'male'
+            WHEN 2 THEN 'female'
+            ELSE 'unknown'
+        END as gender, d.date_of_birth, a.name as age, proj.code, err.recording_date,
+        err.workflow_state as Ephys_QC, s.patched_cell_container, err.storage_directory
+        FROM donors d
+        JOIN ages a ON a.id=d.age_id
+        LEFT JOIN specimens s ON s.donor_id = d.id
+        LEFT JOIN ephys_roi_results err ON s.ephys_roi_result_id = err.id
+        JOIN projects proj ON s.project_id = proj.id
+        WHERE proj.code in ('mIVSCC-MET-R01_LC')
+        AND err.workflow_state IS NOT NULL    
+        """
     lims_df = get_lims_dataframe(lims_query)
     return lims_df
 
