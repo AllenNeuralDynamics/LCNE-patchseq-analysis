@@ -123,6 +123,19 @@ def get_public_seq_preselected() -> pd.DataFrame:
         return pd.read_csv(s3_url)
     else:
         raise FileNotFoundError(f"Sequencing data CSV file not found at {s3_url}")
+    
+
+def get_public_mymapcells(filename="mymapcells_20250519.csv"):
+    """
+    Load Yoh's MyMapCells result from public S3
+    """
+    s3_path = f"{S3_PATH_BASE}/seq/{filename}"
+    try:
+        with s3.open(s3_path, "rb") as f:
+            # Skip the first four rows
+            return pd.read_csv(f, skiprows=4)  
+    except Exception as e:
+        raise FileNotFoundError(f"CSV file not found at {s3_path}: {str(e)}")
 
 
 def load_dict_from_hdf5(filename: str):
@@ -163,8 +176,11 @@ def load_efel_features_from_roi(roi_id: str, if_from_s3=False):
         from LCNE_patchseq_analysis import RESULTS_DIRECTORY
         filename = f"{RESULTS_DIRECTORY}/features/{roi_id}_efel.h5"
         return load_dict_from_hdf5(filename)
-
+    
 
 if __name__ == "__main__":
     # print(get_public_url_sweep("1212546732", 46))
     print(get_public_efel_cell_level_stats())
+
+    df_test_mymapcells = get_public_mymapcells()
+    print(df_test_mymapcells.head())
