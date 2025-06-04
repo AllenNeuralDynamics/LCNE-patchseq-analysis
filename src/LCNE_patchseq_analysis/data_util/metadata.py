@@ -10,7 +10,7 @@ from LCNE_patchseq_analysis import RAW_DIRECTORY
 from LCNE_patchseq_analysis.pipeline_util.s3 import (
     get_public_efel_cell_level_stats,
     get_public_seq_preselected,
-    get_public_mymapcells,
+    get_public_mapmycells,
 )
 
 logger = logging.getLogger(__name__)
@@ -142,23 +142,23 @@ def load_ephys_metadata(if_from_s3=False, if_with_seq=False, combine_roi_ids=Fal
                     f"Successfully merged sequencing data for {merged_count} out of {len(df)} cells"
                 )
                 
-                # -- Merge MyMapCells results from S3 --
-                df_mymapcells = get_public_mymapcells()
+                # -- Merge MapMyCells results from S3 --
+                df_mapmycells = get_public_mapmycells()
                 
-                # Add "mymapcells_" prefix to the columns names in df_mymapcells
-                df_mymapcells = df_mymapcells.rename(
-                    columns=lambda x: f"mymapcells_{x}"
+                # Add "mapmycells_" prefix to the columns names in df_mapmycells
+                df_mapmycells = df_mapmycells.rename(
+                    columns=lambda x: f"mapmycells_{x}"
                 )
                 
-                # Merge MyMapCells data into df
+                # Merge MapMyCells data into df
                 df = df.merge(
-                    df_mymapcells, left_on="exp_component_name",
-                    right_on="mymapcells_cell_id",
+                    df_mapmycells, left_on="exp_component_name",
+                    right_on="mapmycells_cell_id",
                     how="left",
-                ).drop(columns=["mymapcells_cell_id"])
+                ).drop(columns=["mapmycells_cell_id"])
                 
                 # Set nan's in "subclass_category" to "seq_data_not_available"
-                df["mymapcells_subclass_category"] = df["mymapcells_subclass_category"
+                df["mapmycells_subclass_category"] = df["mapmycells_subclass_category"
                                                         ].fillna("seq_data_not_available")
                 
             except FileNotFoundError as e:

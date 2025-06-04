@@ -125,9 +125,9 @@ def get_public_seq_preselected() -> pd.DataFrame:
         raise FileNotFoundError(f"Sequencing data CSV file not found at {s3_url}")
     
 
-def get_public_mymapcells(filename="mymapcells_20250519.csv"):
+def get_public_mapmycells(filename="mapmycells_20250519.csv"):
     """
-    Load Yoh's MyMapCells result from public S3
+    Load Yoh's MapMyCells result from public S3
     """
     s3_path = f"{S3_PATH_BASE}/seq/{filename}"
     try:
@@ -189,5 +189,5 @@ if __name__ == "__main__":
     # print(get_public_url_sweep("1212546732", 46))
     print(get_public_efel_cell_level_stats())
 
-    df_test_mymapcells = get_public_mymapcells()
-    print(df_test_mymapcells.head())
+    df_test_mapmycells = get_public_mapmycells()
+    print(df_test_mapmycells.head())
