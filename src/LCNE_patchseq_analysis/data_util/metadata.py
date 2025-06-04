@@ -10,6 +10,7 @@ from LCNE_patchseq_analysis import RAW_DIRECTORY
 from LCNE_patchseq_analysis.pipeline_util.s3 import (
     get_public_efel_cell_level_stats,
     get_public_seq_preselected,
+    get_public_mapmycells,
 )
 
 logger = logging.getLogger(__name__)
@@ -119,9 +120,9 @@ def load_ephys_metadata(if_from_s3=False, if_with_seq=False, combine_roi_ids=Fal
         if if_with_seq:
             try:
                 logger.info("Loading sequencing data from S3...")
-                # Get sequencing data from S3
+                # -- Merge sequencing data from S3 --
                 df_seq = get_public_seq_preselected()
-
+                
                 # Add "gene_" columns names in df_seq to the dataframe
                 df_seq = df_seq.rename(
                     columns=lambda x: f"gene_{x} (log_normed)" if x != "cell_specimen_id" else x
@@ -130,7 +131,8 @@ def load_ephys_metadata(if_from_s3=False, if_with_seq=False, combine_roi_ids=Fal
                 # Perform the merge on cell_specimen_id
                 df = df.merge(
                     df_seq,
-                    on="cell_specimen_id",
+                    left_on="cell_specimen_id",
+                    right_on="cell_specimen_id",
                     how="left",
                 )
 
@@ -139,6 +141,26 @@ def load_ephys_metadata(if_from_s3=False, if_with_seq=False, combine_roi_ids=Fal
                 logger.info(
                     f"Successfully merged sequencing data for {merged_count} out of {len(df)} cells"
                 )
+                
+                # -- Merge MapMyCells results from S3 --
+                df_mapmycells = get_public_mapmycells()
+                
+                # Add "mapmycells_" prefix to the columns names in df_mapmycells
+                df_mapmycells = df_mapmycells.rename(
+                    columns=lambda x: f"mapmycells_{x}"
+                )
+                
+                # Merge MapMyCells data into df
+                df = df.merge(
+                    df_mapmycells, left_on="exp_component_name",
+                    right_on="mapmycells_cell_id",
+                    how="left",
+                ).drop(columns=["mapmycells_cell_id"])
+                
+                # Set nan's in "subclass_category" to "seq_data_not_available"
+                df["mapmycells_subclass_category"] = df["mapmycells_subclass_category"
+                                                        ].fillna("seq_data_not_available")
+                
             except FileNotFoundError as e:
                 logger.warning(f"Could not load sequencing data: {e}")
             except Exception as e:
