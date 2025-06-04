@@ -133,7 +133,14 @@ def get_public_mymapcells(filename="mymapcells_20250519.csv"):
     try:
         with s3.open(s3_path, "rb") as f:
             # Skip the first four rows
-            return pd.read_csv(f, skiprows=4)  
+            df = pd.read_csv(f, skiprows=4)
+            
+            # Add a new column "subclass_category" based on if "subclass_name" == "251 NTS Dbh Glut"
+            df["subclass_category"] = df["subclass_name"].apply(
+                lambda x:
+                    "251 NTS Dbh Glut" if x == "251 NTS Dbh Glut" else "Non-Dbh cells"
+            )
+            return df
     except Exception as e:
         raise FileNotFoundError(f"CSV file not found at {s3_path}: {str(e)}")
 

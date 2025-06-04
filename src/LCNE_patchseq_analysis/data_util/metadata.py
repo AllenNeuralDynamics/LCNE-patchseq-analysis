@@ -149,13 +149,17 @@ def load_ephys_metadata(if_from_s3=False, if_with_seq=False, combine_roi_ids=Fal
                 df_mymapcells = df_mymapcells.rename(
                     columns=lambda x: f"mymapcells_{x}"
                 )
-
+                
                 # Merge MyMapCells data into df
                 df = df.merge(
                     df_mymapcells, left_on="exp_component_name",
                     right_on="mymapcells_cell_id",
                     how="left",
                 ).drop(columns=["mymapcells_cell_id"])
+                
+                # Set nan's in "subclass_category" to "seq_data_not_available"
+                df["mymapcells_subclass_category"] = df["mymapcells_subclass_category"
+                                                        ].fillna("seq_data_not_available")
                 
             except FileNotFoundError as e:
                 logger.warning(f"Could not load sequencing data: {e}")
