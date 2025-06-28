@@ -12,7 +12,7 @@ import s3fs
 
 logger = logging.getLogger(__name__)
 
-s3 = s3fs.S3FileSystem(anon=True)  # All on public bucket
+s3 = s3fs.S3FileSystem(anon=False)  # All on public bucket
 
 S3_PUBLIC_URL_BASE = "https://aind-scratch-data.s3.us-west-2.amazonaws.com/aind-patchseq-data"
 S3_PATH_BASE = "aind-scratch-data/aind-patchseq-data"
