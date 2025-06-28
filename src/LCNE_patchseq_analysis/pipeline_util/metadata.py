@@ -29,11 +29,11 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
     tab_names = pd.ExcelFile(file_path).sheet_names
 
     # Get the master table
-    tab_master = [name for name in tab_names if "master" in name.lower()][0]
+    tab_master = "master_250331"
     df_tab_master = pd.read_excel(file_path, sheet_name=tab_master)
 
     # Get ephys features
-    tab_ephys_fx = [name for name in tab_names if "ephys_fx" in name.lower()][0]
+    tab_ephys_fx = "ipfx_ephys_fx_250611"
     df_tab_ephys_fx = pd.read_excel(file_path, sheet_name=tab_ephys_fx)
 
     # Merge the tables
