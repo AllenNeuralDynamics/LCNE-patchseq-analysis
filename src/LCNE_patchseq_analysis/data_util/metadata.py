@@ -188,6 +188,10 @@ def load_ephys_metadata(if_from_s3=False, if_with_seq=False, combine_roi_ids=Fal
         df["ephys_roi_id_tab_master"] = df["ephys_roi_id_tab_master"].combine_first(
             df["ephys_roi_id_lims"]
         )
+        
+    # Remove all rows that do not have ephys_roi_id_tab_master
+    # (neither from spreadsheet nor from LIMS)
+    df = df[pd.notnull(df["ephys_roi_id_tab_master"])].copy()
 
     # --- Temporary fix @ 2025-04-09 ---
     # The xyz are removed from the spreadsheet and for now I still don't know how to get from LIMS
