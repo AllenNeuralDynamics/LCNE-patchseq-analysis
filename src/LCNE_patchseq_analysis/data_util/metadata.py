@@ -9,8 +9,8 @@ import pandas as pd
 from LCNE_patchseq_analysis import RAW_DIRECTORY
 from LCNE_patchseq_analysis.pipeline_util.s3 import (
     get_public_efel_cell_level_stats,
-    get_public_seq_preselected,
     get_public_mapmycells,
+    get_public_seq_preselected,
 )
 
 logger = logging.getLogger(__name__)
@@ -107,7 +107,7 @@ def load_ephys_metadata(if_from_s3=False, if_with_seq=False, combine_roi_ids=Fal
         df["ephys_roi_id"] = df["ephys_roi_id"].apply(
             lambda x: str(int(x)) if pd.notnull(x) else ""
         )
-        
+
         # -- Parse mouse line --
         # In "jem-id_cell_specimen" field, extract the string before the first ;
         # this is the mouse line
@@ -122,7 +122,7 @@ def load_ephys_metadata(if_from_s3=False, if_with_seq=False, combine_roi_ids=Fal
                 logger.info("Loading sequencing data from S3...")
                 # -- Merge sequencing data from S3 --
                 df_seq = get_public_seq_preselected()
-                
+
                 # Add "gene_" columns names in df_seq to the dataframe
                 df_seq = df_seq.rename(
                     columns=lambda x: f"gene_{x} (log_normed)" if x != "cell_specimen_id" else x
@@ -141,34 +141,32 @@ def load_ephys_metadata(if_from_s3=False, if_with_seq=False, combine_roi_ids=Fal
                 logger.info(
                     f"Successfully merged sequencing data for {merged_count} out of {len(df)} cells"
                 )
-                
+
                 # -- Merge MapMyCells results from S3 --
                 df_mapmycells = get_public_mapmycells()
-                
+
                 # Add "mapmycells_" prefix to the columns names in df_mapmycells
-                df_mapmycells = df_mapmycells.rename(
-                    columns=lambda x: f"mapmycells_{x}"
-                )
-                
-                # If "cell_id" is in master table (Yoh already merged manually), we use cell_id to update
-                # exp_component_name if it is not already yet
+                df_mapmycells = df_mapmycells.rename(columns=lambda x: f"mapmycells_{x}")
+
+                # If "cell_id" is in master table (Yoh already merged manually),
+                # we use cell_id to update exp_component_name if it is not already yet
                 if "cell_id" in df.columns:
                     # If exp_component_name is missing, fill it with cell_id
-                    df["exp_component_name"] = df["exp_component_name"].combine_first(
-                        df["cell_id"]
-                    )
+                    df["exp_component_name"] = df["exp_component_name"].combine_first(df["cell_id"])
 
                 # Merge MapMyCells data into df
                 df = df.merge(
-                    df_mapmycells, left_on="exp_component_name",
+                    df_mapmycells,
+                    left_on="exp_component_name",
                     right_on="mapmycells_cell_id",
                     how="left",
                 ).drop(columns=["mapmycells_cell_id"])
-                
+
                 # Set nan's in "subclass_category" to "seq_data_not_available"
-                df["mapmycells_subclass_category"] = df["mapmycells_subclass_category"
-                                                        ].fillna("seq_data_not_available")
-                
+                df["mapmycells_subclass_category"] = df["mapmycells_subclass_category"].fillna(
+                    "seq_data_not_available"
+                )
+
             except FileNotFoundError as e:
                 logger.warning(f"Could not load sequencing data: {e}")
             except Exception as e:
@@ -196,7 +194,7 @@ def load_ephys_metadata(if_from_s3=False, if_with_seq=False, combine_roi_ids=Fal
         df["ephys_roi_id_tab_master"] = df["ephys_roi_id_tab_master"].combine_first(
             df["ephys_roi_id_lims"]
         )
-        
+
     # Remove all rows that do not have ephys_roi_id_tab_master
     # (neither from spreadsheet nor from LIMS)
     df = df[pd.notnull(df["ephys_roi_id_tab_master"])].copy()

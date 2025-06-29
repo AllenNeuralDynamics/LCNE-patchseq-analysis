@@ -8,7 +8,9 @@ import pandas as pd
 from LCNE_patchseq_analysis.pipeline_util.lims import get_lims_LCNE_patchseq
 
 metadata_path = os.path.expanduser(R"~/Downloads/IVSCC_LC_summary.xlsx")
-cell_pinning_on_VAST = R"\\allen\programs\celltypes\workgroups\mousecelltypes\cell_pinning\soma_pins.csv"
+cell_pinning_on_VAST = (
+    R"\\allen\programs\celltypes\workgroups\mousecelltypes\cell_pinning\soma_pins.csv"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -26,7 +28,6 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
         raise FileNotFoundError(f"File not found at {file_path}")
 
     logger.info(f"Reading metadata from {file_path}...")
-    tab_names = pd.ExcelFile(file_path).sheet_names
 
     # Get the master table
     tab_master = "master_250331"
@@ -35,7 +36,7 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
     # Get ephys features
     tab_ephys_fx = "ipfx_ephys_fx_250611"
     df_tab_ephys_fx = pd.read_excel(file_path, sheet_name=tab_ephys_fx)
-    
+
     # Add "ipfx_" prefix to ephys_fx columns except for "cell_specimen_id"
     df_tab_ephys_fx = df_tab_ephys_fx.rename(
         columns=lambda x: f"ipfx_{x}" if x != "cell_specimen_id" else x
@@ -92,16 +93,18 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
         if cell_container.startswith("P") and len(cell_container) > 1:
             return cell_container[:2]
         return "unknown"
+
     df_merged["experimenter"] = df_merged["jem-id_patched_cell_container"].map(_map_experimenter)
-    
+
     # Compute age (in days) from date of birth and recording date
     def _compute_age(row):
         """Compute age in days from date of birth and recording date"""
         if pd.isnull(row["date_of_birth"]) or pd.isnull(row["recording_date"]):
             return None
         return (row["recording_date"] - row["date_of_birth"]).days
+
     df_merged["age_days"] = df_merged.apply(_compute_age, axis=1)
-    
+
     # Merge in CCF coordinates from VAST
     df_pinned_ccf = read_pinned_ccf_from_vast()
     if not df_pinned_ccf.empty:
@@ -128,7 +131,7 @@ def read_pinned_ccf_from_vast(file_path=cell_pinning_on_VAST):
     df_pinned = pd.read_csv(file_path)
     logger.info(f"Read {len(df_pinned)} rows from {file_path}...")
     return df_pinned
-    
+
 
 def cross_check_metadata(df, source, check_separately=True):
     """Cross-check metadata between source and master tables

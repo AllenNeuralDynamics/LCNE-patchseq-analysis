@@ -26,7 +26,7 @@ def sync_directory(local_dir, destination, if_copy=False):
     try:
         if not destination.startswith("s3://"):
             destination = "s3://" + destination
-        
+
         if if_copy:
             # Run aws s3 cp command and capture the output
             result = subprocess.run(
@@ -123,7 +123,7 @@ def get_public_seq_preselected() -> pd.DataFrame:
         return pd.read_csv(s3_url)
     else:
         raise FileNotFoundError(f"Sequencing data CSV file not found at {s3_url}")
-    
+
 
 def get_public_mapmycells(filename="mapmycells_20250618.csv"):
     """
@@ -134,11 +134,10 @@ def get_public_mapmycells(filename="mapmycells_20250618.csv"):
         with s3.open(s3_path, "rb") as f:
             # Skip the first four rows
             df = pd.read_csv(f, skiprows=4)
-            
+
             # Add a new column "subclass_category" based on if "subclass_name" == "251 NTS Dbh Glut"
             df["subclass_category"] = df["subclass_name"].apply(
-                lambda x:
-                    "251 NTS Dbh Glut" if x == "251 NTS Dbh Glut" else "Non-Dbh cells"
+                lambda x: "251 NTS Dbh Glut" if x == "251 NTS Dbh Glut" else "Non-Dbh cells"
             )
             return df
     except Exception as e:
@@ -181,9 +180,10 @@ def load_efel_features_from_roi(roi_id: str, if_from_s3=False):
                 return load_dict_from_hdf5(tmp_file.name)
     else:
         from LCNE_patchseq_analysis import RESULTS_DIRECTORY
+
         filename = f"{RESULTS_DIRECTORY}/features/{roi_id}_efel.h5"
         return load_dict_from_hdf5(filename)
-    
+
 
 if __name__ == "__main__":
     # print(get_public_url_sweep("1212546732", 46))

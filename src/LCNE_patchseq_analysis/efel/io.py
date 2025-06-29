@@ -1,12 +1,8 @@
 """I/O utilities for eFEL features."""
 
 import logging
-import tempfile
 
 import pandas as pd
-
-from LCNE_patchseq_analysis import RESULTS_DIRECTORY
-from LCNE_patchseq_analysis.pipeline_util.s3 import S3_PATH_BASE, s3
 
 logger = logging.getLogger(__name__)
 
@@ -48,4 +44,5 @@ def load_dict_from_hdf5(filename: str):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
+    from LCNE_patchseq_analysis.pipeline_util.s3 import load_efel_features_from_roi
     print(load_efel_features_from_roi("1212546732", if_from_s3=True).keys())

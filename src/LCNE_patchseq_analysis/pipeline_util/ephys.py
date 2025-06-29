@@ -70,6 +70,7 @@ def upload_raw_from_isilon_to_s3_batch(df, s3_bucket=s3_bucket, max_workers=10):
 
     return pd.DataFrame(results)
 
+
 def trigger_patchseq_upload(
     metadata_path=os.path.expanduser(R"~\Downloads\IVSCC_LC_summary.xlsx"),
     upload_raw_data=True,

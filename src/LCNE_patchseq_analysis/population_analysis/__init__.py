@@ -7,22 +7,21 @@ and cell type classifications, as well as spike analysis utilities.
 """
 
 from .filters import (
-    create_filter_conditions,
     compute_confusion_matrix,
+    create_filter_conditions,
 )
-
 from .spikes import (
-    normalize_data,
-    normalize_spike_waveform,
     extract_representative_spikes,
     extract_simple_representative_spikes,
+    normalize_data,
+    normalize_spike_waveform,
 )
 
 __all__ = [
-    'create_filter_conditions',
-    'compute_confusion_matrix',
-    'normalize_data',
-    'normalize_spike_waveform',
-    'extract_representative_spikes',
-    'extract_simple_representative_spikes',
+    "create_filter_conditions",
+    "compute_confusion_matrix",
+    "normalize_data",
+    "normalize_spike_waveform",
+    "extract_representative_spikes",
+    "extract_simple_representative_spikes",
 ]
