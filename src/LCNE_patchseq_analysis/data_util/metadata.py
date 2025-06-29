@@ -116,6 +116,10 @@ def load_ephys_metadata(if_from_s3=False, if_with_seq=False, combine_roi_ids=Fal
             lambda x: "C57BL6J" if isinstance(x, str) and "C57BL6J" in x else x
         )
 
+        # -- Compute ipfx_capacity --
+        # capacitance = 1e6 * tau (s) / resistance (MOhm) -> pF
+        df["ipfx_capacitance (pF)"] = 1e6 * df["ipfx_tau"] / df["ipfx_input_resistance_mohm_qc"]
+
         # Merge sequencing data if requested
         if if_with_seq:
             try:
