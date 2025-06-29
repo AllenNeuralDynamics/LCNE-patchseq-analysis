@@ -18,8 +18,8 @@ from LCNE_patchseq_analysis.efel import (
     EXTRACT_SPIKE_FEATURES,
     EXTRACT_SPIKE_FROMS,
 )
-from LCNE_patchseq_analysis.pipeline_util.s3 import load_efel_features_from_roi
 from LCNE_patchseq_analysis.efel.plot import plot_cell_summary
+from LCNE_patchseq_analysis.pipeline_util.s3 import load_efel_features_from_roi
 
 logger = logging.getLogger(__name__)
 

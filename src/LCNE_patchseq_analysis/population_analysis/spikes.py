@@ -5,10 +5,11 @@ This module contains functions for extracting and analyzing representative spike
 waveforms from electrophysiology data.
 """
 
+from typing import Dict
+
 import numpy as np
 import pandas as pd
 from scipy.signal import savgol_filter
-from typing import Dict, List, Optional, Tuple
 
 
 def normalize_data(x, idx_range_to_norm=None):
@@ -19,29 +20,29 @@ def normalize_data(x, idx_range_to_norm=None):
     return (x - min_vals) / range_vals
 
 
-def normalize_spike_waveform(waveform: np.ndarray, method: str = 'minmax') -> np.ndarray:
+def normalize_spike_waveform(waveform: np.ndarray, method: str = "minmax") -> np.ndarray:
     """
     Normalize spike waveform using specified method.
-    
+
     Parameters:
     -----------
     waveform : np.ndarray
         The spike waveform to normalize
     method : str, default 'minmax'
         Normalization method ('minmax' or 'zscore')
-        
+
     Returns:
     --------
     np.ndarray
         Normalized waveform
     """
-    if method == 'minmax':
+    if method == "minmax":
         min_val = np.min(waveform)
         max_val = np.max(waveform)
         if max_val == min_val:
             return np.zeros_like(waveform)
         return (waveform - min_val) / (max_val - min_val)
-    elif method == 'zscore':
+    elif method == "zscore":
         mean_val = np.mean(waveform)
         std_val = np.std(waveform)
         if std_val == 0:
@@ -62,7 +63,7 @@ def extract_representative_spikes(
     filtered_df_meta: pd.DataFrame = None,
 ):
     """Extract and process representative spike waveforms.
-    
+
     Parameters:
     -----------
     df_spikes : pd.DataFrame
@@ -81,7 +82,7 @@ def extract_representative_spikes(
         Whether to smooth dV/dt traces
     filtered_df_meta : pd.DataFrame, optional
         Metadata filter to apply
-        
+
     Returns:
     --------
     tuple
@@ -89,12 +90,10 @@ def extract_representative_spikes(
     """
     # Get the waveforms
     df_waveforms = df_spikes.query("extract_from == @extract_from")
-    
+
     # Filter by filtered_df_meta
     if filtered_df_meta is not None:
-        df_waveforms = df_waveforms.query(
-            "ephys_roi_id in @filtered_df_meta.ephys_roi_id.values"
-        )
+        df_waveforms = df_waveforms.query("ephys_roi_id in @filtered_df_meta.ephys_roi_id.values")
 
     if len(df_waveforms) == 0:
         raise ValueError(f"No waveforms found for extract_from={extract_from}")
@@ -132,9 +131,7 @@ def extract_representative_spikes(
 
     # Normalize the v
     if if_normalize_v:
-        idx_range_to_norm = np.where(
-            (t >= normalize_window_v[0]) & (t <= normalize_window_v[1])
-        )[0]
+        idx_range_to_norm = np.where((t >= normalize_window_v[0]) & (t <= normalize_window_v[1]))[0]
         v = normalize_data(v, idx_range_to_norm)
 
     # Create dictionary with ephys_roi_id as keys
@@ -147,14 +144,13 @@ def extract_representative_spikes(
 
 
 def extract_simple_representative_spikes(
-    df_spikes: pd.DataFrame,
-    normalization_method: str = 'minmax'
+    df_spikes: pd.DataFrame, normalization_method: str = "minmax"
 ) -> Dict[str, Dict]:
     """
     Extract simple representative spike waveforms for each cell.
-    
+
     This is a simpler version that calculates mean waveforms per cell.
-    
+
     Parameters:
     -----------
     df_spikes : pd.DataFrame
@@ -163,7 +159,7 @@ def extract_simple_representative_spikes(
         - 'waveform': spike waveform data
     normalization_method : str, default 'minmax'
         Method for normalizing waveforms ('minmax' or 'zscore')
-        
+
     Returns:
     --------
     Dict[str, Dict]
@@ -173,39 +169,38 @@ def extract_simple_representative_spikes(
         - 'n_spikes': number of spikes used
     """
     representative_spikes = {}
-    
-    for cell_id in df_spikes['cell_specimen_id'].unique():
-        cell_spikes = df_spikes[df_spikes['cell_specimen_id'] == cell_id]
-        
+
+    for cell_id in df_spikes["cell_specimen_id"].unique():
+        cell_spikes = df_spikes[df_spikes["cell_specimen_id"] == cell_id]
+
         if len(cell_spikes) == 0:
             continue
-            
+
         # Extract waveforms
         waveforms = []
         for _, row in cell_spikes.iterrows():
-            waveform = row['waveform']
+            waveform = row["waveform"]
             if isinstance(waveform, (list, np.ndarray)) and len(waveform) > 0:
                 waveforms.append(np.array(waveform))
-        
+
         if not waveforms:
             continue
-            
+
         # Convert to numpy array for easier manipulation
         waveforms = np.array(waveforms)
-        
+
         # Calculate representative waveform (mean)
         representative_waveform = np.mean(waveforms, axis=0)
-        
+
         # Normalize the representative waveform
         normalized_waveform = normalize_spike_waveform(
-            representative_waveform, 
-            method=normalization_method
+            representative_waveform, method=normalization_method
         )
-        
+
         representative_spikes[str(cell_id)] = {
-            'waveform': representative_waveform,
-            'normalized_waveform': normalized_waveform,
-            'n_spikes': len(waveforms)
+            "waveform": representative_waveform,
+            "normalized_waveform": normalized_waveform,
+            "n_spikes": len(waveforms),
         }
-    
+
     return representative_spikes
