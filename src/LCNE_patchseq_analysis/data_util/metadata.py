@@ -150,6 +150,14 @@ def load_ephys_metadata(if_from_s3=False, if_with_seq=False, combine_roi_ids=Fal
                     columns=lambda x: f"mapmycells_{x}"
                 )
                 
+                # If "cell_id" is in master table (Yoh already merged manually), we use cell_id to update
+                # exp_component_name if it is not already yet
+                if "cell_id" in df.columns:
+                    # If exp_component_name is missing, fill it with cell_id
+                    df["exp_component_name"] = df["exp_component_name"].combine_first(
+                        df["cell_id"]
+                    )
+
                 # Merge MapMyCells data into df
                 df = df.merge(
                     df_mapmycells, left_on="exp_component_name",
