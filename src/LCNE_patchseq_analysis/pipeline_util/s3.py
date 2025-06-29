@@ -125,7 +125,7 @@ def get_public_seq_preselected() -> pd.DataFrame:
         raise FileNotFoundError(f"Sequencing data CSV file not found at {s3_url}")
     
 
-def get_public_mapmycells(filename="mapmycells_20250519.csv"):
+def get_public_mapmycells(filename="mapmycells_20250618.csv"):
     """
     Load Yoh's MapMyCells result from public S3
     """
