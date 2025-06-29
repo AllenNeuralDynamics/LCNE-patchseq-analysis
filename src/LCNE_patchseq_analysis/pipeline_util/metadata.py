@@ -35,15 +35,15 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
     # Get ephys features
     tab_ephys_fx = "ipfx_ephys_fx_250611"
     df_tab_ephys_fx = pd.read_excel(file_path, sheet_name=tab_ephys_fx)
+    
+    # Add "ipfx_" prefix to ephys_fx columns except for "cell_specimen_id"
+    df_tab_ephys_fx = df_tab_ephys_fx.rename(
+        columns=lambda x: f"ipfx_{x}" if x != "cell_specimen_id" else x
+    )
 
     # Merge the tables
     df_merged = df_tab_master.merge(
-        df_tab_ephys_fx.rename(
-            columns={
-                "failed_seal": "failed_no_seal",
-                "failed_input_access_resistance": "failed_bad_rs",
-            }
-        ),
+        df_tab_ephys_fx,
         on="cell_specimen_id",
         how="outer",
         suffixes=("_tab_master", "_tab_ephys_fx"),
