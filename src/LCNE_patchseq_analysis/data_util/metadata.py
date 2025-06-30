@@ -183,10 +183,6 @@ def load_ephys_metadata(if_from_s3=False, if_with_seq=False, combine_roi_ids=Fal
     df = df.query("spreadsheet_or_lims in ('both', 'spreadsheet_only')").copy()
 
     # Format injection region
-    df.loc[
-        df["injection region"].astype(str).str.contains("Crus", na=False),
-        "injection region",
-    ] = "Crus 1"
     df["injection region"] = df["injection region"].apply(format_injection_region)
 
     # Convert width columns to ms
@@ -229,6 +225,10 @@ def format_injection_region(x):
         return "Non-Retro"
     if "pl" in x.lower():
         return "Cortex"
+    if "crus" in x.lower():
+        return "Cerebellum"
+    if "c5" in x.lower():
+        return "Spinal cord"
     return x
 
 
