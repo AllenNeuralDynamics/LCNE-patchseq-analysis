@@ -24,7 +24,8 @@ dependencies = [
     'seaborn',
     'h5py',
     's3fs',
-    'requests'
+    'requests',
+    'trimesh'
 ]
 
 [project.optional-dependencies]
