@@ -229,6 +229,8 @@ def format_injection_region(x):
         return "Cerebellum"
     if "c5" in x.lower():
         return "Spinal cord"
+    if "val" in x.lower():
+        return "Thalamus"
     return x
 
 
