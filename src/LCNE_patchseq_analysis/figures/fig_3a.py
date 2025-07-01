@@ -18,7 +18,7 @@ import os
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 logger = logging.getLogger()
 
-def main():
+def figure_3a_ccf_projection(if_save_fig: bool = True) -> tuple:
     """Main function to generate Figure 3A"""
     
     # Import required modules
@@ -51,10 +51,7 @@ def main():
     
     # Plot the mesh first (sagittal view)
     plot_mesh(ax, mesh, direction="sagittal", meshcol="lightgray")
-    
-    # Set 1:1 aspect ratio
-    ax.set_aspect('equal')
-    
+        
     # Get unique regions and prepare colors using REGION_COLOR_MAPPER
     unique_regions = df_filtered['injection region'].unique()
     region_colors = []
@@ -91,23 +88,25 @@ def main():
     # Adjust layout to prevent legend cutoff
     plt.tight_layout()
     
-    # Determine the output directory as the script's folder
-    script_dir = os.path.dirname(os.path.abspath(__file__))
+    # If saving is enabled, save the figure
+    if if_save_fig:
+        # Determine the output directory as the script's folder
+        script_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # Save the figure as PNG
-    output_filename = os.path.join(script_dir, 'fig_3a_lc_mesh_sagittal.png')
-    plt.savefig(output_filename, dpi=300, bbox_inches='tight', 
-                facecolor='white', edgecolor='none')
-    logger.info(f"Figure saved as: {output_filename}")
+        # Save the figure as PNG
+        output_filename = os.path.join(script_dir, 'fig_3a_ccf_projection.png')
+        plt.savefig(output_filename, dpi=300, bbox_inches='tight', 
+                    facecolor='white', edgecolor='none')
+        logger.info(f"Figure saved as: {output_filename}")
 
-    # Also save as PDF for publication
-    output_pdf = os.path.join(script_dir, 'fig_3a_lc_mesh_sagittal.pdf')
-    plt.savefig(output_pdf, bbox_inches='tight', 
-                facecolor='white', edgecolor='none')
-    logger.info(f"Figure saved as: {output_pdf}")
-    
-    # Show the plot
-    plt.show()
+        # Also save as PDF for publication
+        output_pdf = os.path.join(script_dir, 'fig_3a_ccf_projection.pdf')
+        plt.savefig(output_pdf, bbox_inches='tight', 
+                    facecolor='white', edgecolor='none')
+        logger.info(f"Figure saved as: {output_pdf}")
+    else:
+        # Show the plot
+        plt.show()
     
     # Print summary statistics
     logger.info("\nSummary statistics:")
@@ -121,7 +120,7 @@ def main():
 
 if __name__ == "__main__":
     try:
-        fig, ax, df_filtered = main()
+        fig, ax, df_filtered = figure_3a_ccf_projection()
         print("Figure 3A generated successfully!")
     except Exception as e:
         logger.error(f"Error generating Figure 3A: {e}")
