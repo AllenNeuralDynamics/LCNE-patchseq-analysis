@@ -3,7 +3,7 @@ Load and plot LC meshgrid
 '''
 
 
-def plot_mesh(ax, allmeshes, direction: str = "c", meshcol="lightgray") -> None:
+def plot_mesh(ax, allmeshes, direction: str = "coronal", meshcol="lightgray") -> None:
     """
     Plot the three meshes on the given axis.
     parameter direction: select index to choose coordinate ('c' uses index 2, otherwise index 0)
