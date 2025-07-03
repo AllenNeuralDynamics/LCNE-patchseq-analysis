@@ -7,6 +7,9 @@ marker gene expression, and cell type classifications.
 """
 
 import pandas as pd
+from matplotlib_venn import venn3, venn3_circles
+import matplotlib.pyplot as plt
+import numpy as np
 
 # Query definitions for different cell filtering criteria
 q_fluorescence = '`jem-status_reporter` == "Positive"'
@@ -105,3 +108,38 @@ def compute_confusion_matrix(condition_mapper, name1, name2):
     print(f"`{name2}` does not have data: {(~condition_mapper[name2][1]).sum()}")
     print(f"Any of them does not have data: {unknown.sum()}")
     return confusion_matrix
+
+def plot_venn_three_filters(filter1, filter2, filter3, labels=("Filter 1", "Filter 2", "Filter 3"), ax=None):
+    """
+    Plot a Venn diagram for three boolean filters or sets.
+    Accepts either boolean arrays (same length) or sets of indices.
+    """
+    # Convert boolean arrays to sets of indices if needed
+    def to_set(f):
+        if isinstance(f, (pd.Series, np.ndarray)) and f.dtype == bool:
+            return set(np.where(f)[0])
+        elif isinstance(f, (pd.Series, np.ndarray)):
+            return set(f)
+        elif isinstance(f, set):
+            return f
+        else:
+            return set(list(f))
+    set1, set2, set3 = to_set(filter1), to_set(filter2), to_set(filter3)
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(6, 6), dpi=300)
+
+    v = venn3([set1, set2, set3], set_labels=labels, ax=ax)
+    c = venn3_circles([set1, set2, set3], ax=ax)
+
+    # Set edge color and style
+    for i, color in enumerate(("black", "blue", "green")):
+        c[i].set_edgecolor(color)
+        v.get_label_by_id(["A", "B", "C"][i]).set_color(color)
+    
+    # Clear all patch color
+    for patch in v.patches:
+        if patch:  # Some patches might be None
+            patch.set_facecolor('none')
+
+
+    return ax
