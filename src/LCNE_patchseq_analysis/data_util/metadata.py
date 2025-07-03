@@ -116,6 +116,10 @@ def load_ephys_metadata(if_from_s3=False, if_with_seq=False, combine_roi_ids=Fal
             lambda x: "C57BL6J" if isinstance(x, str) and "C57BL6J" in x else x
         )
 
+        # -- Compute ipfx_capacity --
+        # capacitance = 1e6 * tau (s) / resistance (MOhm) -> pF
+        df["ipfx_capacitance (pF)"] = 1e6 * df["ipfx_tau"] / df["ipfx_input_resistance_mohm_qc"]
+
         # Merge sequencing data if requested
         if if_with_seq:
             try:
@@ -179,10 +183,6 @@ def load_ephys_metadata(if_from_s3=False, if_with_seq=False, combine_roi_ids=Fal
     df = df.query("spreadsheet_or_lims in ('both', 'spreadsheet_only')").copy()
 
     # Format injection region
-    df.loc[
-        df["injection region"].astype(str).str.contains("Crus", na=False),
-        "injection region",
-    ] = "Crus 1"
     df["injection region"] = df["injection region"].apply(format_injection_region)
 
     # Convert width columns to ms
@@ -225,6 +225,12 @@ def format_injection_region(x):
         return "Non-Retro"
     if "pl" in x.lower():
         return "Cortex"
+    if "crus" in x.lower():
+        return "Cerebellum"
+    if "c5" in x.lower():
+        return "Spinal cord"
+    if "val" in x.lower():
+        return "Thalamus"
     return x
 
 

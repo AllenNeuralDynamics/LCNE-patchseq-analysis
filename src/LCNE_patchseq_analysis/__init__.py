@@ -19,11 +19,18 @@ TIME_STEP = 0.02  # ms
 
 REGION_COLOR_MAPPER = {
     "C5": "pink",
+    "Spinal cord": "pink",
+
+    "Cortex": "green",
     "PL": "green",
     "PL, MOs": "green",
-    "Cortex": "green",
+
     "VAL": "red",
+    "Thalamus": "red",
+
     "Crus 1": "gold",
+    "Cerebellum": "gold",
+
     "Non-Retro": "grey",
 }
 
