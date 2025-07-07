@@ -20,12 +20,7 @@ This repository maintains all the green parts in the above diagram:
 3. [ `.../panel_app` and `.../data_util`](https://github.com/AllenNeuralDynamics/LCNE-patchseq-analysis/tree/main/src/LCNE_patchseq_analysis/panel_app): data visualization using Panel
 
 ## The Panel app
-![patch-seq_viz_demo](https://github.com/user-attachments/assets/5faf8cbc-c1a2-4e71-b207-179e92746699)
-
-- I have deployed the app on Hugging Face Space: https://huggingface.co/spaces/hanhou/patchseq
-  - It may take some time for the app to start up. 
-  - "Show Raw Sweeps" does NOT work on Hugging Face because the app still looks for NWBs locally rather than from s3.
-- To try all the features (or to develop), it is recommended to use [this Code Ocean capsule](https://codeocean.allenneuraldynamics.org/capsule/4985779/tree) and follow [instructions here](https://hanhou.notion.site/Instruction-to-run-patch-seq-Panel-app-1e43ef97e73580ee800ef464a3f0ab77).
+The Panel app has been migrated to [LCNE-patchseq-viz](https://github.com/AllenNeuralDynamics/LCNE-patchseq-viz.git).
 
 
 ## Installation
