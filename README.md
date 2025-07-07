@@ -17,7 +17,10 @@ Here is the overall workflow of patchseq analysis for the LC-NE project
 This repository maintains all the green parts in the above diagram:
 1. [`src/LCNE_patchseq_analysis/pipeline_util`](https://github.com/AllenNeuralDynamics/LCNE-patchseq-analysis/tree/main/src/LCNE_patchseq_analysis/pipeline_util): upload data and metadata from various locations to cloud
 2. [`.../efel`](https://github.com/AllenNeuralDynamics/LCNE-patchseq-analysis/tree/main/src/LCNE_patchseq_analysis/efel): extract ephys features using the [eFEL library](https://efel.readthedocs.io/en/latest/eFeatures.html).
-3. [ `.../panel_app` and `.../data_util`](https://github.com/AllenNeuralDynamics/LCNE-patchseq-analysis/tree/main/src/LCNE_patchseq_analysis/panel_app): data visualization using Panel
+
+## Detailed workflow
+<img width="1240" alt="image" src="https://github.com/user-attachments/assets/f771ced3-5ec5-4607-a2cb-be2b4993dd23" />
+
 
 ## The Panel app
 The Panel app has been migrated to [LCNE-patchseq-viz](https://github.com/AllenNeuralDynamics/LCNE-patchseq-viz.git).
