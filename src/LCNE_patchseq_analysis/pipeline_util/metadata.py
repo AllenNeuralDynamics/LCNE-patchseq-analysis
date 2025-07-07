@@ -114,6 +114,16 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
             right_on="cell_specimen_id",
             how="left",
         )
+        
+    # Logging the latest cell that has coordinates and the total number of cells with coordinates
+    latest_cell = df_merged.loc[
+        df_merged["recording_date"].idxmax(), "Date"
+    ]
+    total_cells_with_coordinates = df_merged["x"].notnull().sum()
+    logger.info(
+        f"Latest cell with coordinates: {latest_cell}, "
+        f"Total cells with coordinates: {total_cells_with_coordinates}"
+    )
 
     return {
         "df_merged": df_merged,
