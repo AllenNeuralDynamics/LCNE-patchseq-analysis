@@ -14,6 +14,10 @@ logger = logging.getLogger(__name__)
 
 # Define the preselected columns of interest
 SEQ_COLUMNS = [
+    # --- New columns added in 0620 ---
+    "RNA_QC", # RNA quality control score
+    "imp_pscores",  # Imputed pseudocluster scores
+
     # --- Imputation to other experiments ---
     "imp_ML",
     "imp_DV",
