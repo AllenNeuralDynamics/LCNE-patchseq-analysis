@@ -116,7 +116,7 @@ def extract_preselected_columns():
     src_dir = src_dir.resolve()
     dst_dir = dst_dir.resolve()
 
-    src_file = src_dir / "log_normed_df.csv"
+    src_file = src_dir / "log_normed_df_more_0620.csv"
     id_mapping_file = src_dir / "exp_component_ids_for_han.csv"  # Aux file for mapping ids
     dst_file = dst_dir / "seq_preselected.csv"
 
