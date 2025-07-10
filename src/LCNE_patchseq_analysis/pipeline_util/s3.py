@@ -189,13 +189,13 @@ def load_efel_features_from_roi(roi_id: str, if_from_s3=False):
 def load_mesh_from_s3(mesh_filename="250513_LC_core_67_mesh_shrunk.obj"):
     """
     Load a mesh file from S3 using trimesh.
-    
+
     Args:
         mesh_filename: The filename of the mesh (e.g., "250513_LC_core_67_mesh_shrunk.obj")
-        
+
     Returns:
         trimesh.Trimesh: The loaded mesh object
-        
+
     Raises:
         FileNotFoundError: If the mesh file is not found at the expected S3 path
     """
@@ -218,7 +218,7 @@ if __name__ == "__main__":
 
     df_test_mapmycells = get_public_mapmycells()
     print(df_test_mapmycells.head())
-    
+
     # Example of loading a mesh from S3
     mesh = load_mesh_from_s3()
     print(f"Loaded mesh with {len(mesh.vertices)} vertices and {len(mesh.faces)} faces")

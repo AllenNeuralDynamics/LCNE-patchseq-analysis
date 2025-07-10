@@ -49,7 +49,7 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
         how="outer",
         suffixes=("_tab_master", "_tab_ephys_fx"),
     ).sort_values("Date", ascending=False)
-    
+
     if add_lims:
         logger.info("Querying and adding LIMS data...")
         df_lims = get_lims_LCNE_patchseq()
@@ -114,7 +114,7 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
             right_on="cell_specimen_id",
             how="left",
         )
-        
+
     # Logging the latest cell that has a column and the total number of cells with that column
     column_to_log = ["recording_date", "x", "ipfx_tau"]
     for col in column_to_log:
@@ -122,8 +122,7 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
             last_date = df_merged.loc[df_merged[col].notnull(), "Date"].max()
             total_cells = df_merged[col].notnull().sum()
             logger.info(
-                f"Last date with {col}: {last_date}, "
-                f"Total cells with {col}: {total_cells}"
+                f"Last date with {col}: {last_date}, " f"Total cells with {col}: {total_cells}"
             )
 
     return {

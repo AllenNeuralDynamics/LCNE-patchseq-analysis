@@ -1,6 +1,6 @@
-'''
+"""
 Load and plot LC meshgrid
-'''
+"""
 
 
 def plot_mesh(ax, allmeshes, direction: str = "coronal", meshcol="lightgray") -> None:

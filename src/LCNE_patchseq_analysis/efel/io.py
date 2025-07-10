@@ -45,4 +45,5 @@ def load_dict_from_hdf5(filename: str):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     from LCNE_patchseq_analysis.pipeline_util.s3 import load_efel_features_from_roi
+
     print(load_efel_features_from_roi("1212546732", if_from_s3=True).keys())
