@@ -97,5 +97,5 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
 
     trigger_patchseq_upload(
-        os.path.expanduser(R"~\Downloads\IVSCC_LC_summary.xlsx"), upload_raw_data=False
+        os.path.expanduser(R"~\Downloads\IVSCC_LC_summary_0709.xlsx"), upload_raw_data=False
     )

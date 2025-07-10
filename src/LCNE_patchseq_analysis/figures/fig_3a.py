@@ -70,7 +70,7 @@ def figure_3a_ccf_projection(if_save_fig: bool = True) -> tuple:
         ax.scatter(region_data['x'], region_data['y'], 
                   c=region_colors[i], alpha=0.7, s=50, 
                   edgecolors='black', linewidth=0.5,
-                  label=f'{region} (n={len(region_data)})')
+                  label=f'{region} (n={len(region_data)}, {region_data["x"].isnull().sum()} missing data)')
     
     # Add labels and title
     ax.set_xlabel('X Coordinate (μm)', fontsize=12)
@@ -111,10 +111,6 @@ def figure_3a_ccf_projection(if_save_fig: bool = True) -> tuple:
     # Print summary statistics
     logger.info("\nSummary statistics:")
     logger.info(f"- Total filtered cells: {len(df_filtered)}")
-    if len(df_filtered) > 0:
-        logger.info(f"- X coordinate range: {df_filtered['x'].min():.1f} to {df_filtered['x'].max():.1f}")
-        logger.info(f"- Y coordinate range: {df_filtered['y'].min():.1f} to {df_filtered['y'].max():.1f}")
-        logger.info(f"- Injection regions: {', '.join(unique_regions)}")
     
     return fig, ax, df_filtered
 

@@ -6,12 +6,12 @@ import os
 logger = logging.getLogger(__name__)
 
 
-__version__ = "0.24.2"
+__version__ = "0.25.0"
 
 # Get the path of this file
 PACKAGE_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 if os.name == "posix":  # Mac/Linux
-    RAW_DIRECTORY = os.path.join(PACKAGE_DIRECTORY, "../../data/LCNE-patchseq-ephys/raw/")
+    RAW_DIRECTORY = "/Users/han.hou/Scripts/LCNE-patchseq-analysis/data/LCNE-patchseq-ephys/raw"
 else:  # Windows
     RAW_DIRECTORY = os.path.join(R"E:\s3\aind-patchseq-data\raw")
 RESULTS_DIRECTORY = os.path.join(PACKAGE_DIRECTORY, "../../results/")

@@ -14,16 +14,23 @@ logger = logging.getLogger(__name__)
 
 # Define the preselected columns of interest
 SEQ_COLUMNS = [
-    # Coordinates and clusters
+    # --- New columns added in 0620 ---
+    "RNA_QC", # RNA quality control score
+    "imp_pscores",  # Imputed pseudocluster scores
+
+    # --- Imputation to other experiments ---
     "imp_ML",
     "imp_DV",
     "imp_AP",
     "imp_pseudoclusters",
-    # Noradrenergic markers
+
+    # --- Noradrenergic markers ---
     "Dbh",  # Dopamine beta-hydroxylase
     "Th",  # Tyrosine hydroxylase
     "Slc18a2",  # Vesicular monoamine transporter 2 (VMAT2)
     "Slc6a2",  # Norepinephrine transporter (NET)
+
+    # --- Active ion channels ---
     # Sodium channels (important for action potential initiation and upstroke)
     "Scn1a",  # Nav1.1, important for AP initiation
     "Scn2a",  # Nav1.2, expressed in axon initial segment
@@ -46,8 +53,41 @@ SEQ_COLUMNS = [
     # HCN channels (important for pacemaking and resonance)
     "Hcn1",  # Fast-activating HCN, affects rebound spiking
     "Hcn2",  # Slower-activating HCN, contributes to resonance
+    "Hcn3", 
     "Hcn4",  # Slowest-activating HCN, important in pacemaking
-    # Other common markers
+
+    # --- Leak channels and other important channels ---
+    # K2P (Two-pore-domain potassium) leak channels
+    "Kcnk1",  # TWIK-1, weak inward-rectifying K+ leak channel
+    "Kcnk2",  # TREK-1, mechanosensitive and temperature-sensitive K2P channel
+    "Kcnk3",  # TASK-1, pH-sensitive background K+ current
+    "Kcnk4",  # TRAAK, mechanosensitive leak K+ channel
+    "Kcnk9",  # TASK-3, regulates resting potential and excitability
+    "Kcnk10",  # TREK-2, contributes to leak K+ conductance
+    # Sodium leak channels and associated regulators
+    "Nalcn",  # Na+ leak channel, controls resting Na+ conductance and excitability
+    "Unc79",  # NALCN complex component
+    "Unc80",  # NALCN complex component
+    "Fam155a",  # Regulatory subunit of NALCN complex
+    # Chloride leak channels
+    "Clcn2",  # Voltage-gated Cl- channel, contributes to inhibitory tone
+
+    # Inward-rectifier and GPCR-modulated K+ channels (affect resting potential)
+    "Kcnj2",  # Kir2.1, stabilizes resting membrane potential
+    "Kcnj10",  # Kir4.1, highly expressed in glia and neurons, contributes to K+ buffering
+    "Kcnj3",  # GIRK1, G-protein-regulated inward-rectifying K+ channel
+    "Kcnj6",  # GIRK2, major component of GIRK channels in CNS
+
+    # --- Gap junctions and connexins ---
+    # Gap junction–related genes (CNS)
+    "Gja1",  # Connexin 43, major astrocytic gap junction protein
+    "Gjb6",  # Connexin 30, co-expressed with Gja1 in glia
+    "Gjd2",  # Connexin 36, neuronal gap junction, key for electrical synapses
+    "Gjd3",  # Connexin 31.9, expressed in some CNS neurons
+    "Panx1",  # Pannexin 1, forms large-pore channels in neurons and glia
+    "Panx2",  # Pannexin 2, CNS-specific, neuron-enriched
+
+    # --- Other common markers ---
     "Slc17a7",  # Excitatory marker
     "Gad1",  # Inhibitory marker
     "Sst",  # Somatostatin
@@ -80,8 +120,8 @@ def extract_preselected_columns():
     src_dir = src_dir.resolve()
     dst_dir = dst_dir.resolve()
 
-    src_file = src_dir / "log_normed_df.csv"
-    id_mapping_file = src_dir / "exp_component_ids_for_han.csv"  # Aux file for mapping ids
+    src_file = src_dir / "log_normed_df_more_0620.csv"
+    id_mapping_file = src_dir / "exp_component_ids_for_han_0620.csv"  # Aux file for mapping ids
     dst_file = dst_dir / "seq_preselected.csv"
 
     logger.info(f"Reading log-normalized data from {src_file}")
