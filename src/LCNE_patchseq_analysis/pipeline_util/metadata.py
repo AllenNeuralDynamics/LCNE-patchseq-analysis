@@ -34,7 +34,7 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
     df_tab_master = pd.read_excel(file_path, sheet_name=tab_master)
 
     # Get ephys features
-    tab_ephys_fx = "ipfx_ephys_fx_250611"
+    tab_ephys_fx = "ipfx_ephys_250709"
     df_tab_ephys_fx = pd.read_excel(file_path, sheet_name=tab_ephys_fx)
 
     # Add "ipfx_" prefix to ephys_fx columns except for "cell_specimen_id"
@@ -49,7 +49,7 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
         how="outer",
         suffixes=("_tab_master", "_tab_ephys_fx"),
     ).sort_values("Date", ascending=False)
-
+    
     if add_lims:
         logger.info("Querying and adding LIMS data...")
         df_lims = get_lims_LCNE_patchseq()
@@ -115,15 +115,16 @@ def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
             how="left",
         )
         
-    # Logging the latest cell that has coordinates and the total number of cells with coordinates
-    latest_cell = df_merged.loc[
-        df_merged["recording_date"].idxmax(), "Date"
-    ]
-    total_cells_with_coordinates = df_merged["x"].notnull().sum()
-    logger.info(
-        f"Latest cell with coordinates: {latest_cell}, "
-        f"Total cells with coordinates: {total_cells_with_coordinates}"
-    )
+    # Logging the latest cell that has a column and the total number of cells with that column
+    column_to_log = ["recording_date", "x", "ipfx_tau"]
+    for col in column_to_log:
+        if col in df_merged.columns:
+            last_date = df_merged.loc[df_merged[col].notnull(), "Date"].max()
+            total_cells = df_merged[col].notnull().sum()
+            logger.info(
+                f"Last date with {col}: {last_date}, "
+                f"Total cells with {col}: {total_cells}"
+            )
 
     return {
         "df_merged": df_merged,
