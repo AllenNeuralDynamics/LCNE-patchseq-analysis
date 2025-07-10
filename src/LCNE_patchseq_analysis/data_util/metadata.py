@@ -152,16 +152,10 @@ def load_ephys_metadata(if_from_s3=False, if_with_seq=False, combine_roi_ids=Fal
                 # Add "mapmycells_" prefix to the columns names in df_mapmycells
                 df_mapmycells = df_mapmycells.rename(columns=lambda x: f"mapmycells_{x}")
 
-                # If "cell_id" is in master table (Yoh already merged manually),
-                # we use cell_id to update exp_component_name if it is not already yet
-                if "cell_id" in df.columns:
-                    # If exp_component_name is missing, fill it with cell_id
-                    df["exp_component_name"] = df["exp_component_name"].combine_first(df["cell_id"])
-
                 # Merge MapMyCells data into df
                 df = df.merge(
                     df_mapmycells,
-                    left_on="exp_component_name",
+                    left_on="cell_id",  # Previously "exp_component_id", now "cell_id"
                     right_on="mapmycells_cell_id",
                     how="left",
                 ).drop(columns=["mapmycells_cell_id"])
