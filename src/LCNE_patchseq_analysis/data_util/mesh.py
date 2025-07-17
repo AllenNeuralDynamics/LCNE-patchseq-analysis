@@ -37,6 +37,23 @@ def plot_mesh(ax, allmeshes, direction: str = "coronal", meshcol="lightgray") ->
     ax.invert_yaxis()
 
 
+def trimesh_to_bokeh_data(mesh, direction: str = "coronal"):
+    """
+    Project mesh to 2D and prepare Bokeh plotting data
+    """
+    i = 2 if direction == "coronal" else 0
+    x = mesh.vertices[:, i]
+    y = mesh.vertices[:, 1]  # Y always in axis 1
+    faces = mesh.faces
+
+    # Each triangle becomes a patch
+    xs = [x[face].tolist() for face in faces]
+    ys = [y[face].tolist() for face in faces]
+
+    return dict(xs=xs, ys=ys)
+
+
+
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     from LCNE_patchseq_analysis.pipeline_util.s3 import load_mesh_from_s3
