@@ -1,7 +1,7 @@
 """
 Load and plot LC meshgrid
 """
-
+import numpy as np
 
 def plot_mesh(ax, allmeshes, direction: str = "coronal", meshcol="lightgray") -> None:
     """
@@ -37,9 +37,11 @@ def plot_mesh(ax, allmeshes, direction: str = "coronal", meshcol="lightgray") ->
     ax.invert_yaxis()
 
 
-def trimesh_to_bokeh_data(mesh, direction: str = "coronal"):
+def trimesh_to_bokeh_data(mesh, direction: str = "coronal", both_sides: bool = True) -> dict:
     """
     Project mesh to 2D and prepare Bokeh plotting data
+    parameter direction: select index to choose coordinate ('c' uses index 2, otherwise index 0)
+    parameter both_sides: if True, returns data for both sides of the mesh
     """
     i = 2 if direction == "coronal" else 0
     x = mesh.vertices[:, i]
@@ -49,6 +51,12 @@ def trimesh_to_bokeh_data(mesh, direction: str = "coronal"):
     # Each triangle becomes a patch
     xs = [x[face].tolist() for face in faces]
     ys = [y[face].tolist() for face in faces]
+
+    # If direction=="coronal" and both_sides=True, add the patches for the other side
+    # (flip horizontal axis relative to the center of the brain, i.e., 5700)
+    if direction == "coronal" and both_sides:
+        xs = xs + (5700*2 - np.array(xs)).tolist()
+        ys = ys + ys
 
     return dict(xs=xs, ys=ys)
 
