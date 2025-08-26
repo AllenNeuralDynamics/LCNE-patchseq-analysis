@@ -6,10 +6,10 @@ cell populations based on various criteria including fluorescence status,
 marker gene expression, and cell type classifications.
 """
 
-import pandas as pd
-from matplotlib_venn import venn3, venn3_circles
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+from matplotlib_venn import venn3, venn3_circles
 
 # Query definitions for different cell filtering criteria
 q_fluorescence = '`jem-status_reporter` == "Positive"'
@@ -35,10 +35,10 @@ q_mapmycells_has_data = (
 )
 
 q_nucleus_present = '`jem-nucleus_post_patch` == "nucleus_present"'
-q_nucleus_present_has_data = '`jem-nucleus_post_patch` == `jem-nucleus_post_patch`'
+q_nucleus_present_has_data = "`jem-nucleus_post_patch` == `jem-nucleus_post_patch`"
 
-q_RNA_QC = '`gene_RNA_QC (log_normed)` == True'
-q_RNA_QC_has_data = '`gene_RNA_QC (log_normed)` == `gene_RNA_QC (log_normed)`'
+q_RNA_QC = "`gene_RNA_QC (log_normed)` == True"
+q_RNA_QC_has_data = "`gene_RNA_QC (log_normed)` == `gene_RNA_QC (log_normed)`"
 
 q_retro = '`injection region` != "Non-Retro"'
 
@@ -73,7 +73,10 @@ def create_filter_conditions(df_meta):
         "Marker Gene Dbh Positive": [if_marker_gene_dbh_positive, if_marker_gene_has_data],
         "MapMyCells Dbh Subclass": [if_mapmycells_dbh, if_mapmycells_has_data],
         "RNA QC": [df_meta.eval(q_RNA_QC), df_meta.eval(q_RNA_QC_has_data)],
-        "Nucleus Present": [df_meta.eval(q_nucleus_present), df_meta.eval(q_nucleus_present_has_data)],
+        "Nucleus Present": [
+            df_meta.eval(q_nucleus_present),
+            df_meta.eval(q_nucleus_present_has_data),
+        ],
     }
 
     return condition_mapper
@@ -122,7 +125,7 @@ def compute_confusion_matrix(condition_mapper, name1, name2):
 def plot_venn_three_filters(condition_mapper, to_compare: list, ax=None):
     """
     Plot a Venn diagram for three boolean filters from condition_mapper.
-    
+
     Parameters:
     -----------
     condition_mapper : dict
@@ -131,7 +134,7 @@ def plot_venn_three_filters(condition_mapper, to_compare: list, ax=None):
         List of 3 filter names to compare (must be keys in condition_mapper)
     ax : matplotlib.axes.Axes, optional
         Axes to plot on. If None, creates new figure and axes.
-        
+
     Returns:
     --------
     matplotlib.axes.Axes
@@ -142,7 +145,7 @@ def plot_venn_three_filters(condition_mapper, to_compare: list, ax=None):
 
     # Get the positive conditions (first element) for each filter
     filter1 = condition_mapper[to_compare[0]][0]  # positive condition
-    filter2 = condition_mapper[to_compare[1]][0]  # positive condition  
+    filter2 = condition_mapper[to_compare[1]][0]  # positive condition
     filter3 = condition_mapper[to_compare[2]][0]  # positive condition
 
     # Convert boolean arrays to sets of indices
@@ -174,7 +177,7 @@ def plot_venn_three_filters(condition_mapper, to_compare: list, ax=None):
     # Clear all patch color
     for patch in v.patches:
         if patch:  # Some patches might be None
-            patch.set_facecolor('none')
+            patch.set_facecolor("none")
 
     return ax
 
