@@ -14,7 +14,7 @@ cell_pinning_on_VAST = (
 logger = logging.getLogger(__name__)
 
 
-def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):
+def read_brian_spreadsheet(file_path=metadata_path, add_lims=True):  # noqa: C901
     """Read metadata and ephys features from Brian's spreadsheet
 
     Assuming IVSCC_LC_summary.xlsx is downloaded at file_path

@@ -8,11 +8,10 @@ with filtered patch-seq data points overlaid in sagittal view.
 Filter: jem-status_reporter == 'Positive' & injection region != 'Non-Retro' & != 'Thalamus'
 """
 
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
 import logging
 import os
+
+import matplotlib.pyplot as plt
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -23,10 +22,10 @@ def figure_3a_ccf_projection(if_save_fig: bool = True) -> tuple:
     """Main function to generate Figure 3A"""
 
     # Import required modules
-    from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
-    from LCNE_patchseq_analysis.data_util.mesh import plot_mesh
-    from LCNE_patchseq_analysis.pipeline_util.s3 import load_mesh_from_s3
     from LCNE_patchseq_analysis import REGION_COLOR_MAPPER
+    from LCNE_patchseq_analysis.data_util.mesh import plot_mesh
+    from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
+    from LCNE_patchseq_analysis.pipeline_util.s3 import load_mesh_from_s3
 
     logger.info("Loading metadata...")
     # Load metadata
@@ -34,7 +33,11 @@ def figure_3a_ccf_projection(if_save_fig: bool = True) -> tuple:
     logger.info(f"Loaded metadata with shape: {df_meta.shape}")
 
     # Apply the specified filter
-    filter_query = "(`jem-status_reporter` == 'Positive') & (`injection region` != 'Non-Retro') & (`injection region` != 'Thalamus')"
+    filter_query = (
+        "(`jem-status_reporter` == 'Positive') & "
+        "(`injection region` != 'Non-Retro') & "
+        "(`injection region` != 'Thalamus')"
+    )
     df_filtered = df_meta.query(filter_query)
 
     logger.info(f"Total cells after filtering: {len(df_filtered)}")
@@ -76,7 +79,8 @@ def figure_3a_ccf_projection(if_save_fig: bool = True) -> tuple:
             s=50,
             edgecolors="black",
             linewidth=0.5,
-            label=f'{region} (n={len(region_data)}, {region_data["x"].isnull().sum()} missing data)',
+            label=f'{region} (n={len(region_data)}, '
+                  f'{region_data["x"].isnull().sum()} missing data)',
         )
 
     # Add labels and title
@@ -84,7 +88,8 @@ def figure_3a_ccf_projection(if_save_fig: bool = True) -> tuple:
     ax.set_ylabel("Y Coordinate (μm)", fontsize=12)
     ax.set_title(
         "LC Mesh with Filtered Data Points (Sagittal View)\n"
-        + f'Filter: jem-status_reporter == "Positive" & injection region != "Non-Retro" & != "Thalamus"\n'
+        + 'Filter: jem-status_reporter == "Positive" & injection region != '
+        + '"Non-Retro" & != "Thalamus"\n'
         + f"n = {len(df_filtered)} cells",
         fontsize=10,
     )

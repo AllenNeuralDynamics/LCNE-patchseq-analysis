@@ -6,10 +6,10 @@ cell populations based on various criteria including fluorescence status,
 marker gene expression, and cell type classifications.
 """
 
-import pandas as pd
-from matplotlib_venn import venn3, venn3_circles
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+from matplotlib_venn import venn3, venn3_circles
 
 # Query definitions for different cell filtering criteria
 q_fluorescence = '`jem-status_reporter` == "Positive"'
