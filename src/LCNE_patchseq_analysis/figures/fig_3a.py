@@ -180,7 +180,7 @@ def save_figure(
 
     return saved_paths
 
-def figure_3a_ccf_projection(
+def figure_3a_ccf_sagittal_by_projection(
     filter_query: str | None = None,
 ) -> tuple:
     """Deprecated wrapper around plot_in_ccf with optional filter and angle.
@@ -195,11 +195,32 @@ def figure_3a_ccf_projection(
 
     fig, ax = plot_in_ccf(filter_query, slicing_angle="sagittal")
 
-    script_dir = os.path.dirname(os.path.abspath(__file__))
     save_figure(
         fig=fig,
-        output_dir=script_dir,
         filename="fig_3a_ccf_sagittal_by_projection",
+        dpi=300,
+        formats=("png", "pdf"),
+    )
+    return fig, ax
+
+
+def sup_figure_3a_ccf_sagittal_coronal_by_slicing(
+        filter_query: str | None = None,
+) -> tuple:
+    """Supplementary figure for 3A: Sagittal and Coronal views of LC-NE cells by slicing.
+
+    Args:
+        filter_query: pandas query string to filter the metadata. If None, uses default.
+
+    Returns:
+        (fig, ax): Matplotlib figure and axes.
+    """
+
+    fig, ax = plot_in_ccf(filter_query, slicing_angle="coronal", )
+
+    save_figure(
+        fig=fig,
+        filename="sup_fig_3a_ccf_sagittal_coronal_by_slicing",
         dpi=300,
         formats=("png", "pdf"),
     )
@@ -216,8 +237,9 @@ if __name__ == "__main__":
         )
 
         # --- Fig 3a. Sagittal view of LC-NE cells colored by projection ---
-        figure_3a_ccf_projection(global_filter)
+        # figure_3a_ccf_sagittal_by_projection(global_filter)  # Done
 
+        sup_figure_3a_ccf_sagittal_coronal_by_slicing(global_filter)
 
 
     except Exception as e:
