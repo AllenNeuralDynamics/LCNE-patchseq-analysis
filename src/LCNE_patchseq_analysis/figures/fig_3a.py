@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 """
 Figure 3A: LC Mesh with Filtered Data Points (Sagittal or Coronal View)
@@ -22,6 +23,7 @@ from LCNE_patchseq_analysis import REGION_COLOR_MAPPER
 from LCNE_patchseq_analysis.data_util.mesh import plot_mesh
 from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
 from LCNE_patchseq_analysis.pipeline_util.s3 import load_mesh_from_s3
+from LCNE_patchseq_analysis.figures.util import save_figure
 
 
 # Configure logging
@@ -140,48 +142,11 @@ def plot_in_ccf(
     return fig, ax
 
 
-def save_figure(
-    fig: Figure,
-    output_dir: str | None = None,
-    filename: str = "plot",
-    dpi: int = 300,
-    formats: tuple[str, ...] = ("png", "pdf"),
-) -> list[str]:
-    """Save a matplotlib Figure with standardized naming.
-
-    Args:
-        fig: The matplotlib Figure to save.
-        output_dir: Directory to save into; defaults to this script directory.
-        filename: The filename without extension.
-        dpi: Resolution for raster formats (e.g., PNG).
-        formats: File formats to save, e.g., ("png", "pdf").
-
-    Returns:
-        List of saved file paths in the same order as formats.
-    """
-    if output_dir is None:
-        output_dir = os.path.dirname(os.path.abspath(__file__))
-
-    os.makedirs(output_dir, exist_ok=True)
-
-    saved_paths: list[str] = []
-    for ext in formats:
-        out_path = os.path.join(output_dir, f"{filename}.{ext}")
-        fig.savefig(
-            out_path,
-            dpi=dpi,
-            bbox_inches="tight",
-            facecolor="white",
-            edgecolor="none",
-        )
-        logger.info(f"Figure saved as: {out_path}")
-        saved_paths.append(out_path)
-
-    return saved_paths
 
 def figure_3a_ccf_sagittal(
     df_meta: pd.DataFrame,
     filter_query: str | None = None,
+    if_save_figure: bool = True,
 ) -> tuple:
     """Deprecated wrapper around plot_in_ccf with optional filter and angle.
 
@@ -195,18 +160,20 @@ def figure_3a_ccf_sagittal(
 
     fig, ax = plot_in_ccf(df_meta, filter_query, view="sagittal")
 
-    save_figure(
-        fig=fig,
-        filename="fig_3a_ccf_sagittal_by_projection",
-        dpi=300,
-        formats=("png", "pdf"),
-    )
+    if if_save_figure:
+        save_figure(
+            fig=fig,
+            filename="fig_3a_ccf_sagittal_by_projection",
+            dpi=300,
+            formats=("png", "pdf"),
+        )
     return fig, ax
 
 
 def sup_figure_3a_ccf_coronal(
     df_meta: pd.DataFrame,
     filter_query: str | None = None,
+    if_save_figure: bool = True,
 ) -> tuple:
     """Supplementary figure for 3A: Sagittal and Coronal views of LC-NE cells by slicing.
 
@@ -219,33 +186,23 @@ def sup_figure_3a_ccf_coronal(
 
     fig, ax = plot_in_ccf(df_meta, filter_query, view="coronal")
 
-    save_figure(
-        fig=fig,
-        filename="sup_fig_3a_ccf_sagittal_coronal_by_slicing",
-        dpi=300,
-        formats=("png", "pdf"),
-    )
+    if if_save_figure:
+        save_figure(
+            fig=fig,
+            filename="sup_fig_3a_ccf_sagittal_coronal_by_slicing",
+            dpi=300,
+            formats=("png", "pdf"),
+        )
     return fig, ax
 
 
 if __name__ == "__main__":
-    try:
-        # --- Fig 3a. Sagittal view of LC-NE cells colored by projection ---
-        logger.info("Loading metadata...")
-        df_meta = load_ephys_metadata(if_from_s3=True, if_with_seq=True)
-        logger.info(f"Loaded metadata with shape: {df_meta.shape}")
+    # --- Fig 3a. Sagittal view of LC-NE cells colored by projection ---
+    logger.info("Loading metadata...")
+    df_meta = load_ephys_metadata(if_from_s3=True, if_with_seq=True)
+    logger.info(f"Loaded metadata with shape: {df_meta.shape}")
 
-        # Defaults matching the previous behavior
-        global_filter = (
-            "(`jem-status_reporter` == 'Positive') & "
-            "(`injection region` != 'Non-Retro') & "
-            "(`injection region` != 'Thalamus')"
-        )
+    from LCNE_patchseq_analysis.figures import global_filter
+    figure_3a_ccf_sagittal(df_meta, global_filter)
+    sup_figure_3a_ccf_coronal(df_meta, global_filter)
 
-        figure_3a_ccf_sagittal(df_meta, global_filter)  # Done
-        sup_figure_3a_ccf_coronal(df_meta, global_filter)
-
-
-    except Exception as e:
-        logger.error(f"Error generating Figure 3A: {e}")
-        raise
