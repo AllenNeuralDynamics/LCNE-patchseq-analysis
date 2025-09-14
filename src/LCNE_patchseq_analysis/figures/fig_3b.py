@@ -4,7 +4,9 @@ import pandas as pd
 import seaborn as sns
 from LCNE_patchseq_analysis import REGION_COLOR_MAPPER
 from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
+
 from LCNE_patchseq_analysis.figures.util import save_figure
+from LCNE_patchseq_analysis.figures import sort_region
 
 
 def create_violin_plot_matplotlib(
@@ -47,10 +49,11 @@ def create_violin_plot_matplotlib(
     if plot_df.empty:
         return fig, ax
 
-    groups_order = sorted(plot_df[color_col].unique())
+    # If color_col = 'injection region', sort by predefined order
+    if color_col == 'injection region':
+        groups_order = sort_region(plot_df[color_col].unique())
 
     # Violin plot
-
     sns.violinplot(
         data=plot_df,
         x=color_col,
@@ -122,7 +125,6 @@ def figure_3a_tau_comparison(
     if filter_query:
         df_meta = df_meta.query(filter_query)
 
-    # Only plot if the columns exist
     fig, ax = create_violin_plot_matplotlib(
         df_to_use=df_meta,
         y_col="ipfx_tau",
@@ -138,5 +140,5 @@ def figure_3a_tau_comparison(
 
 if __name__ == "__main__":
     df_meta = load_ephys_metadata(if_from_s3=True, if_with_seq=True)
-    from LCNE_patchseq_analysis.figures import global_filter
-    figure_3a_tau_comparison(df_meta, global_filter)
+    from LCNE_patchseq_analysis.figures import GLOBAL_FILTER
+    figure_3a_tau_comparison(df_meta, GLOBAL_FILTER)

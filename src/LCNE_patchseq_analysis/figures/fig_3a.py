@@ -14,7 +14,6 @@ import os
 
 import matplotlib.pyplot as plt
 from matplotlib import colors as mcolors
-from matplotlib.figure import Figure
 
 import numpy as np
 import pandas as pd
@@ -23,7 +22,9 @@ from LCNE_patchseq_analysis import REGION_COLOR_MAPPER
 from LCNE_patchseq_analysis.data_util.mesh import plot_mesh
 from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
 from LCNE_patchseq_analysis.pipeline_util.s3 import load_mesh_from_s3
+
 from LCNE_patchseq_analysis.figures.util import save_figure
+from LCNE_patchseq_analysis.figures import sort_region
 
 
 # Configure logging
@@ -95,11 +96,15 @@ def plot_in_ccf(
             alpha=0.6
         )
         
-    # Legend: one entry per region
+    # Legend: one entry per region, following DEFAULT_AREA_ORDER if injection region
     from matplotlib.lines import Line2D
     unique_regions = df_filtered["injection region"].unique()
+    sorted_regions = sort_region(unique_regions)
+    # Sort df_filtered by injection region according to sorted_regions
+    df_filtered = df_filtered.set_index('injection region').loc[sorted_regions].reset_index()
+
     legend_elements = []
-    for region in unique_regions:
+    for region in sorted_regions:
         color_key = region if region in REGION_COLOR_MAPPER else region.lower()
         color = REGION_COLOR_MAPPER.get(color_key, "gray")
         label_text = f"{region} (n={sum(df_filtered['injection region']==region)})"
@@ -202,7 +207,7 @@ if __name__ == "__main__":
     df_meta = load_ephys_metadata(if_from_s3=True, if_with_seq=True)
     logger.info(f"Loaded metadata with shape: {df_meta.shape}")
 
-    from LCNE_patchseq_analysis.figures import global_filter
-    figure_3a_ccf_sagittal(df_meta, global_filter)
-    sup_figure_3a_ccf_coronal(df_meta, global_filter)
+    from LCNE_patchseq_analysis.figures import GLOBAL_FILTER
+    figure_3a_ccf_sagittal(df_meta, GLOBAL_FILTER)
+    sup_figure_3a_ccf_coronal(df_meta, GLOBAL_FILTER)
 
