@@ -5,7 +5,7 @@ import seaborn as sns
 from LCNE_patchseq_analysis import REGION_COLOR_MAPPER
 from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
 
-from LCNE_patchseq_analysis.figures.util import save_figure, create_violin_plot_matplotlib
+from LCNE_patchseq_analysis.figures.util import save_figure, generate_violin_plot
 from LCNE_patchseq_analysis.figures import sort_region
 
 
@@ -25,7 +25,7 @@ def figure_3c_tau_comparison(
     if filter_query:
         df_meta = df_meta.query(filter_query)
 
-    fig, ax = create_violin_plot_matplotlib(
+    fig, ax = generate_violin_plot(
         df_to_use=df_meta,
         y_col="ipfx_tau",
         color_col="injection region",

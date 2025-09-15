@@ -112,7 +112,7 @@ def generate_scatter_plot(
     fig.tight_layout()
     return fig, ax
 
-def plot_in_ccf(
+def generate_ccf_plot(
     df_meta: pd.DataFrame,
     filter_query: str | None,
     view: str,

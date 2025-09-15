@@ -3,7 +3,7 @@
 import pandas as pd
 import logging
 from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
-from LCNE_patchseq_analysis.figures.util import create_violin_plot_matplotlib, save_figure, plot_in_ccf
+from LCNE_patchseq_analysis.figures.util import generate_violin_plot, save_figure, generate_ccf_plot
 from LCNE_patchseq_analysis import REGION_COLOR_MAPPER
 from LCNE_patchseq_analysis.figures import sort_region
 
@@ -17,7 +17,7 @@ def figure_3a_ccf_sagittal(
     filter_query: str | None = None,
     if_save_figure: bool = True,
 ) -> tuple:
-    """Deprecated wrapper around plot_in_ccf with optional filter and angle.
+    """Deprecated wrapper around generate_ccf_plot with optional filter and angle.
 
     Args:
         filter_query: pandas query string to filter the metadata. If None, uses default.
@@ -27,7 +27,7 @@ def figure_3a_ccf_sagittal(
         (fig, ax): Matplotlib figure and axes.
     """
 
-    fig, ax = plot_in_ccf(df_meta, filter_query, view="sagittal")
+    fig, ax = generate_ccf_plot(df_meta, filter_query, view="sagittal")
 
     if if_save_figure:
         save_figure(
@@ -52,7 +52,7 @@ def sup_figure_3a_ccf_coronal(
         (fig, ax): Matplotlib figure and axes.
     """
 
-    fig, ax = plot_in_ccf(df_meta, filter_query, view="coronal")
+    fig, ax = generate_ccf_plot(df_meta, filter_query, view="coronal")
 
     if if_save_figure:
         save_figure(
@@ -85,7 +85,7 @@ def figure_3a_ycoord_violin(
     if filter_query:
         df_meta = df_meta.query(filter_query)
 
-    fig, ax = create_violin_plot_matplotlib(
+    fig, ax = generate_violin_plot(
         df_to_use=df_meta,
         y_col="y",
         color_col="injection region",
