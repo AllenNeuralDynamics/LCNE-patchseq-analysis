@@ -109,7 +109,7 @@ def create_violin_plot_matplotlib(
     return fig, ax
 
 
-def figure_3a_tau_comparison(
+def figure_3c_tau_comparison(
     df_meta: pd.DataFrame, filter_query: str | None = None, if_save_figure: bool = True
 ):
     """
@@ -133,12 +133,12 @@ def figure_3a_tau_comparison(
         font_size=12
     )
     if if_save_figure:
-        save_figure(fig, filename="fig_3b_violinplot_ipfx_tau", dpi=300, formats=("png", "pdf"))
-        print("Figure saved as fig_3b_violinplot_ipfx_tau.png/.pdf")
+        save_figure(fig, filename="fig_3c_violinplot_ipfx_tau", dpi=300, formats=("png", "pdf"))
+        print("Figure saved as fig_3c_violinplot_ipfx_tau.png/.pdf")
     return fig, ax
 
 
 if __name__ == "__main__":
     df_meta = load_ephys_metadata(if_from_s3=True, if_with_seq=True)
     from LCNE_patchseq_analysis.figures import GLOBAL_FILTER
-    figure_3a_tau_comparison(df_meta, GLOBAL_FILTER)
+    figure_3c_tau_comparison(df_meta, GLOBAL_FILTER)
