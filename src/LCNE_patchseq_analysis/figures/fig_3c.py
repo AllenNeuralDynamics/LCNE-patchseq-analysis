@@ -25,6 +25,7 @@ def figure_3c_tau_comparison(
     if filter_query:
         df_meta = df_meta.query(filter_query)
 
+    df_meta["ipfx_tau"] = df_meta["ipfx_tau"] * 1000  # convert to ms
     fig, ax = generate_violin_plot(
         df_to_use=df_meta,
         y_col="ipfx_tau",
@@ -32,6 +33,9 @@ def figure_3c_tau_comparison(
         color_palette_dict=REGION_COLOR_MAPPER,
         ax=ax
     )
+
+    ax.set_ylabel("Membrane time constant (ms)")
+
     if if_save_figure:
         save_figure(fig, filename="fig_3c_violinplot_ipfx_tau", dpi=300, formats=("png", "pdf"))
         print("Figure saved as fig_3c_violinplot_ipfx_tau.png/.pdf")

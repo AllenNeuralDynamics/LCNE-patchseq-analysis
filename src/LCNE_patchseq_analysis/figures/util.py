@@ -91,10 +91,10 @@ def generate_scatter_plot(
             ax.plot(x_vals, y_fit, color="black", linewidth=1.2, zorder=5, label="Linear fit")
             # Annotation: p-value and R^2
             r_squared = res.rvalue ** 2
-            annotation = f"p={res.pvalue:.2e}\nR^2={r_squared:.2f}"
+            annotation = f"p={res.pvalue:.2e}\nR={np.sqrt(r_squared):.2f}"
             ax.text(
                 0.98,
-                0.02,
+                0.85,
                 annotation,
                 transform=ax.transAxes,
                 ha="right",
@@ -131,9 +131,9 @@ def generate_ccf_plot(
 
     view = (view or "").strip().lower()
     if view == "sagittal":
-        x_key, y_key, mesh_direction, x_label = "x", "y", "sagittal", "X Coordinate (μm)"
+        x_key, y_key, mesh_direction, x_label = "x", "y", "sagittal", "Anterior-posterior (μm)"
     elif view == "coronal":
-        x_key, y_key, mesh_direction, x_label = "z", "y", "coronal", "Z Coordinate (μm)"
+        x_key, y_key, mesh_direction, x_label = "z", "y", "coronal", "Left-right (μm)"
     else:
         raise ValueError(f"Invalid view '{view}'. Use 'sagittal' or 'coronal'.")
 
@@ -210,7 +210,7 @@ def generate_ccf_plot(
 
     # Add labels and title
     ax.set_xlabel(x_label)
-    ax.set_ylabel("Y Coordinate (μm)")
+    ax.set_ylabel("Dorsal-ventral (μm)")
     ax.set_title(
         f"LC Mesh with Filtered Data Points ({view.capitalize()} View)\n"
         + f"Filter: {filter_query}\n"

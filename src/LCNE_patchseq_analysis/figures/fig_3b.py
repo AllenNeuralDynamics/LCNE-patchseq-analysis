@@ -37,8 +37,9 @@ def figure_3b_imputed_scRNAseq(
 		plot_linear_regression=plot_linear_regression,
 		ax=ax
 	)
-	# Optional axis inversion: comment out unless required
-	# ax.invert_xaxis()
+	# ax.invert_yaxis()
+	ax.set_xlabel("Dorsal-ventral (μm)")
+	ax.set_ylabel("Imputed pseudocluster\nfrom scRNA-seq")
 
 	if if_save_figure:
 		save_figure(
@@ -75,8 +76,8 @@ def figure_3b_imputed_MERFISH(
 		plot_linear_regression=plot_linear_regression,
 		ax=ax
 	)
-	# Optional axis inversion: comment out unless required
-	# ax.invert_xaxis()
+	ax.set_xlabel("Dorsal-ventral (μm)")
+	ax.set_ylabel("Imputed dorsal-ventral\nfrom MERFISH")
 
 	if if_save_figure:
 		save_figure(
