@@ -7,6 +7,8 @@ GLOBAL_FILTER = (
     "(`injection region` != 'Thalamus')"
 )
 
+# GLOBAL_FILTER += " & mapmycells_subclass_name.str.contains('DBH', case=False, na=False)"
+
 # Global default area order for injection region plots
 DEFAULT_AREA_ORDER = [
     "cortex",

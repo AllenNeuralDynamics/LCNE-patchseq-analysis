@@ -60,7 +60,7 @@ def plot_in_ccf(
     mesh = load_mesh_from_s3()
 
     # Create the plot with matplotlib backend
-    fig, ax = plt.subplots(figsize=(8, 5), dpi=300)
+    fig, ax = plt.subplots(figsize=(8, 5))
 
     # Plot the mesh first according to selected view
     plot_mesh(ax, mesh, direction=mesh_direction, meshcol="lightgray")
@@ -128,7 +128,6 @@ def plot_in_ccf(
     logger.info("\nSummary statistics:")
     logger.info(f"- Total filtered cells: {len(df_filtered)}")
 
-
     return fig, ax
 
 
@@ -154,7 +153,7 @@ def create_violin_plot_matplotlib(
         (fig, ax): Matplotlib figure and axes.
     """
 
-    fig, ax = plt.subplots(figsize=(5, 4), dpi=300)
+    fig, ax = plt.subplots(figsize=(5, 4))
     plot_df = df_to_use[[y_col, color_col]].dropna()
     if plot_df.empty:
         return fig, ax
