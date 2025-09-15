@@ -16,6 +16,7 @@ def figure_3a_ccf_sagittal(
     df_meta: pd.DataFrame,
     filter_query: str | None = None,
     if_save_figure: bool = True,
+    ax=None,
 ) -> tuple:
     """Deprecated wrapper around generate_ccf_plot with optional filter and angle.
 
@@ -27,7 +28,7 @@ def figure_3a_ccf_sagittal(
         (fig, ax): Matplotlib figure and axes.
     """
 
-    fig, ax = generate_ccf_plot(df_meta, filter_query, view="sagittal")
+    fig, ax = generate_ccf_plot(df_meta, filter_query, view="sagittal", ax=ax)
 
     if if_save_figure:
         save_figure(
@@ -42,6 +43,7 @@ def sup_figure_3a_ccf_coronal(
     df_meta: pd.DataFrame,
     filter_query: str | None = None,
     if_save_figure: bool = True,
+    ax=None,
 ) -> tuple:
     """Supplementary figure for 3A: Sagittal and Coronal views of LC-NE cells by slicing.
 
@@ -52,7 +54,7 @@ def sup_figure_3a_ccf_coronal(
         (fig, ax): Matplotlib figure and axes.
     """
 
-    fig, ax = generate_ccf_plot(df_meta, filter_query, view="coronal")
+    fig, ax = generate_ccf_plot(df_meta, filter_query, view="coronal", ax=ax)
 
     if if_save_figure:
         save_figure(
@@ -68,7 +70,8 @@ def sup_figure_3a_ccf_coronal(
 def figure_3a_ycoord_violin(
     df_meta: pd.DataFrame,
     filter_query: str | None = None,
-    if_save_figure: bool = True
+    if_save_figure: bool = True,
+    ax=None,
 ) -> tuple:
     """
     Generate and save violin plot for Y coordinate grouped by injection region.
@@ -90,7 +93,7 @@ def figure_3a_ycoord_violin(
         y_col="y",
         color_col="injection region",
         color_palette_dict=REGION_COLOR_MAPPER,
-        font_size=12
+        ax=ax
     )
     # Revert y-axis
     ax.invert_yaxis()

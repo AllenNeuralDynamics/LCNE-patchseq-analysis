@@ -12,13 +12,12 @@ from LCNE_patchseq_analysis.figures.util import save_figure, generate_scatter_pl
 logger = logging.getLogger(__name__)
 
 
-
-
 def figure_3b_imputed_scRNAseq(
 	df_meta: pd.DataFrame,
 	filter_query: str | None = None,
 	if_save_figure: bool = True,
 	plot_linear_regression: bool = True,
+	ax=None
 ):
 	"""Figure 3B: Scatter of imputed scRNAseq pseudoclusters vs anatomical y coordinate.
 
@@ -36,6 +35,7 @@ def figure_3b_imputed_scRNAseq(
 		color_col="injection region",
 		color_palette=REGION_COLOR_MAPPER,
 		plot_linear_regression=plot_linear_regression,
+		ax=ax
 	)
 	# Optional axis inversion: comment out unless required
 	# ax.invert_xaxis()
@@ -55,6 +55,7 @@ def figure_3b_imputed_MERFISH(
 	filter_query: str | None = None,
 	if_save_figure: bool = True,
 	plot_linear_regression: bool = True,
+	ax=None
 ):
 	"""Figure 3B: Scatter of imputed MERFISH pseudoclusters vs anatomical y coordinate.
 
@@ -72,6 +73,7 @@ def figure_3b_imputed_MERFISH(
 		color_col="injection region",
 		color_palette=REGION_COLOR_MAPPER,
 		plot_linear_regression=plot_linear_regression,
+		ax=ax
 	)
 	# Optional axis inversion: comment out unless required
 	# ax.invert_xaxis()
@@ -87,12 +89,11 @@ def figure_3b_imputed_MERFISH(
 
 if __name__ == "__main__":
 	from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
-	from LCNE_patchseq_analysis.figures import GLOBAL_FILTER
+	from LCNE_patchseq_analysis.figures import GENE_FILTER
 
 	df_meta = load_ephys_metadata(if_from_s3=True, if_with_seq=True)
 
     # For gene data, apply additional filtering
-	gene_filter = GLOBAL_FILTER + " & mapmycells_subclass_name.str.contains('DBH', case=False, na=False)"
-	figure_3b_imputed_scRNAseq(df_meta, gene_filter)
-	figure_3b_imputed_MERFISH(df_meta, gene_filter)
+	figure_3b_imputed_scRNAseq(df_meta, GENE_FILTER)
+	figure_3b_imputed_MERFISH(df_meta, GENE_FILTER)
 

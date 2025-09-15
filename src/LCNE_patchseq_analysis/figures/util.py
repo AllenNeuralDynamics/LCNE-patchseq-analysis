@@ -99,17 +99,17 @@ def generate_scatter_plot(
                 transform=ax.transAxes,
                 ha="right",
                 va="bottom",
-                fontsize=9,
                 bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", lw=0.5),
+                fontsize=9,
             )
         except Exception as e:  # noqa: BLE001 - lightweight handling, controlled scope
             logger.warning(f"Linear regression failed: {e}")
 
     ax.set_xlabel(x_col)
     ax.set_ylabel(y_col)
-    ax.legend(title=color_col, loc="best", fontsize=8)
-    sns.despine(ax=ax)
-    fig.tight_layout()
+    ax.legend(title=color_col, loc="best")
+    sns.despine(trim=True, ax=ax)
+    # fig.tight_layout()
     return fig, ax
 
 def generate_ccf_plot(
@@ -206,22 +206,21 @@ def generate_ccf_plot(
                 label=label_text,
             )
         )
-    ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=10)
+    ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc='upper left')
 
     # Add labels and title
-    ax.set_xlabel(x_label, fontsize=12)
-    ax.set_ylabel("Y Coordinate (μm)", fontsize=12)
+    ax.set_xlabel(x_label)
+    ax.set_ylabel("Y Coordinate (μm)")
     ax.set_title(
         f"LC Mesh with Filtered Data Points ({view.capitalize()} View)\n"
         + f"Filter: {filter_query}\n"
         + f"n = {len(df_filtered)} cells",
-        fontsize=10,
     )
 
     # Ensure equal aspect ratio is maintained
     ax.set_aspect("equal")
 
-    plt.tight_layout()
+    # plt.tight_layout()
 
     # Print summary statistics
     logger.info("\nSummary statistics:")
@@ -236,7 +235,6 @@ def generate_violin_plot(
     y_col: str,
     color_col: str,
     color_palette_dict: dict,
-    font_size: int = 12,
     ax=None
 ):
     """
@@ -247,7 +245,6 @@ def generate_violin_plot(
         y_col: Column name for y-axis variable.
         color_col: Column name for color grouping.
         color_palette_dict: Optional dict mapping group names to colors.
-        font_size: Font size for labels.
 
     Returns:
         (fig, ax): Matplotlib figure and axes.
@@ -272,7 +269,6 @@ def generate_violin_plot(
         group_nan_counts[group] = nan_count
 
     # Convert y_col to numeric
-
     plot_df[y_col] = pd.to_numeric(plot_df[y_col], errors='coerce')
     plot_df = plot_df.dropna(subset=[y_col])
     if plot_df.empty:
@@ -333,15 +329,17 @@ def generate_violin_plot(
     # Set x-axis labels with sample counts
 
     group_labels_with_counts = [
-        f"{group}\n(n={group_counts.get(group, 0)}, missing {group_nan_counts.get(group, 0)})"
+        f"{group}\n(n={group_counts.get(group, 0)})"
         for group in groups_order
     ]
+    logger.info("Group counts (non-NA): " + ", ".join(
+        [f"{group}: {group_counts.get(group, 0)}" for group in groups_order]
+    ))
     ax.set_xticks(range(len(groups_order)))
-    ax.set_xticklabels(group_labels_with_counts, rotation=30, ha='right', fontsize=font_size)
-    ax.set_ylabel(y_col, fontsize=font_size)
-    ax.set_xlabel(color_col, fontsize=font_size)
-    sns.despine(trim=True)
-    plt.tight_layout()
+    ax.set_xticklabels(group_labels_with_counts, rotation=30, ha='right')
+    ax.set_ylabel(y_col)
+    ax.set_xlabel(color_col)
+    sns.despine(trim=True, ax=ax)
     return fig, ax
 
 
@@ -351,6 +349,7 @@ def save_figure(
     filename: str = "plot",
     dpi: int = 300,
     formats: tuple[str, ...] = ("png", "pdf"),
+    **kwargs
 ) -> list[str]:
     """Save a matplotlib Figure with standardized naming.
 
@@ -375,9 +374,9 @@ def save_figure(
         fig.savefig(
             out_path,
             dpi=dpi,
-            bbox_inches="tight",
             facecolor="white",
             edgecolor="none",
+            **kwargs
         )
         logger.info(f"Figure saved as: {out_path}")
         saved_paths.append(out_path)

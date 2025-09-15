@@ -10,7 +10,7 @@ from LCNE_patchseq_analysis.figures import sort_region
 
 
 def figure_3c_tau_comparison(
-    df_meta: pd.DataFrame, filter_query: str | None = None, if_save_figure: bool = True
+    df_meta: pd.DataFrame, filter_query: str | None = None, if_save_figure: bool = True, ax=None
 ):
     """
     Generate and save violin plot for ipfx_tau grouped by injection region (Figure 3B).
@@ -30,7 +30,7 @@ def figure_3c_tau_comparison(
         y_col="ipfx_tau",
         color_col="injection region",
         color_palette_dict=REGION_COLOR_MAPPER,
-        font_size=12
+        ax=ax
     )
     if if_save_figure:
         save_figure(fig, filename="fig_3c_violinplot_ipfx_tau", dpi=300, formats=("png", "pdf"))
