@@ -33,7 +33,6 @@ def figure_3a_ccf_sagittal(
         save_figure(
             fig=fig,
             filename="fig_3a_ccf_sagittal_by_projection",
-            dpi=300,
             formats=("png", "pdf"),
         )
     return fig, ax
