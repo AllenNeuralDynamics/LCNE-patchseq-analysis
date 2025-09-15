@@ -231,7 +231,7 @@ def generate_ccf_plot(
 
 
 
-def create_violin_plot_matplotlib(
+def generate_violin_plot(
     df_to_use: pd.DataFrame,
     y_col: str,
     color_col: str,
