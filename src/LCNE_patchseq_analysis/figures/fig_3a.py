@@ -62,6 +62,7 @@ def sup_figure_3a_ccf_coronal(
             filename="sup_fig_3a_ccf_sagittal_coronal_by_slicing",
             dpi=300,
             formats=("png", "pdf"),
+            bbox_inches="tight",
         )
     return fig, ax
 

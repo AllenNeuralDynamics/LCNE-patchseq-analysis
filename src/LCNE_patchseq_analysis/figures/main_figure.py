@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 from LCNE_patchseq_analysis.figures.fig_3a import figure_3a_ccf_sagittal, figure_3a_ycoord_violin
 from LCNE_patchseq_analysis.figures.fig_3b import figure_3b_imputed_scRNAseq, figure_3b_imputed_MERFISH
-from LCNE_patchseq_analysis.figures.fig_3c import figure_3c_tau_comparison
+from LCNE_patchseq_analysis.figures.fig_3c import figure_3c_tau_comparison, figure_3c_latency_comparison
 from LCNE_patchseq_analysis.figures.util import save_figure
 
 
@@ -27,6 +27,7 @@ def generate_main_figure(
     ax1_0 = fig.add_subplot(gs0_1[0, 0])  # 3b left
     ax1_1 = fig.add_subplot(gs0_1[0, 1])  # 3b right
     ax2_0 = fig.add_subplot(gs0_2[0, 0])  # 3c left
+    ax2_1 = fig.add_subplot(gs0_2[0, 1])  # 3c right
 
     figure_3a_ccf_sagittal(df_meta, global_filter, ax=ax0_0, if_save_figure=False)
     ax0_0.set_title("")
@@ -44,6 +45,8 @@ def generate_main_figure(
 
     figure_3c_tau_comparison(df_meta, global_filter, ax=ax2_0, if_save_figure=False)
     ax2_0.set_box_aspect(1)
+    figure_3c_latency_comparison(df_meta, global_filter, ax=ax2_1, if_save_figure=False)
+    ax2_1.set_box_aspect(1)
 
 
     if if_save_figure:
