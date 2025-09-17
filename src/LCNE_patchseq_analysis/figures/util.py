@@ -11,6 +11,7 @@ import seaborn as sns
 from matplotlib import colors as mcolors
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from LCNE_patchseq_analysis.data_util.mesh import plot_mesh
 from LCNE_patchseq_analysis.pipeline_util.s3 import load_mesh_from_s3
@@ -30,6 +31,10 @@ def generate_scatter_plot(
     point_size: int = 40,
     alpha: float = 0.8,
     figsize: tuple = (4, 4),
+    show_marginal: bool = False,
+    marginal_kind: str = "kde",
+    marginal_size: str = "25%",
+    marginal_pad: float = 0.05,
     ax=None,
 ):
     """Generic scatter plot utility for Figure 3B style.
@@ -44,8 +49,12 @@ def generate_scatter_plot(
         point_size: Scatter marker size.
         alpha: Point transparency.
         figsize: Figure size.
+        show_marginal: If True, draw a marginal distribution of y values on the right side split by color_col.
+        marginal_kind: One of {'kde','hist'} selecting marginal distribution type.
+        marginal_size: Width of marginal axes (passed to axes_grid1 append_axes size argument).
+        marginal_pad: Padding between main and marginal axes.
     Returns:
-        (fig, ax)
+        (fig, ax) main axes (a reference to marginal axes is stored at ax.marginal_ax if created).
     """
     if color_palette is None and color_col.lower() == "injection region":
         color_palette = REGION_COLOR_MAPPER
@@ -79,6 +88,65 @@ def generate_scatter_plot(
         linewidth=0.3,
         ax=ax,
     )
+
+    # Optional marginal distribution panel (right side) sharing y-axis
+    if show_marginal:
+        try:
+            groups = hue_order if hue_order is not None else sorted(df_plot[color_col].dropna().unique())
+            # Build color lookup
+            if color_palette is None:
+                # Fall back to seaborn palette if none provided
+                palette_lut = dict(zip(groups, sns.color_palette(n_colors=len(groups))))
+            else:
+                palette_lut = {g: color_palette.get(g, "gray") for g in groups}
+
+            divider = make_axes_locatable(ax)
+            ax_marg = divider.append_axes("right", size=marginal_size, pad=marginal_pad, sharey=ax)
+            for g in groups:
+                sub = df_plot[df_plot[color_col] == g]
+                if sub.empty:
+                    continue
+                color = palette_lut.get(g, "gray")
+                if marginal_kind == "kde":
+                    try:
+                        sns.kdeplot(
+                            data=sub,
+                            y=y_col,
+                            ax=ax_marg,
+                            color=color,
+                            fill=False,
+                            linewidth=1.0,
+                            common_norm=False,
+                            cut=1,
+                        )
+                    except Exception as e:  # noqa: BLE001
+                        logger.warning(f"KDE marginal failed for group {g}: {e}")
+                elif marginal_kind == "hist":
+                    sns.histplot(
+                        data=sub,
+                        y=y_col,
+                        ax=ax_marg,
+                        color=color,
+                        element="step",
+                        fill=False,
+                        bins=20,
+                        stat="density",
+                        alpha=0.9,
+                    )
+                else:
+                    logger.warning(f"Unsupported marginal_kind '{marginal_kind}'. Skipping marginal plot.")
+                    break
+            # Cosmetic cleanup
+            ax_marg.set_xlabel("kde" if marginal_kind == "kde" else "Count")
+            ax_marg.set_ylabel("")
+            ax_marg.set_xticks([])
+            # Remove only marginal axis y ticks / labels (keep main axis intact)
+            ax_marg.tick_params(axis="y", left=False, labelleft=False)
+            sns.despine(ax=ax_marg, left=True, bottom=True)
+            # Attach for downstream access
+            ax.marginal_ax = ax_marg  # type: ignore[attr-defined]
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"Failed to create marginal axes: {e}")
 
     # Optional regression across all points (ignoring grouping)
     if plot_linear_regression:

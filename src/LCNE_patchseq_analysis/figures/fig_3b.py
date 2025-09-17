@@ -74,6 +74,8 @@ def figure_3b_imputed_MERFISH(
 		color_col="injection region",
 		color_palette=REGION_COLOR_MAPPER,
 		plot_linear_regression=plot_linear_regression,
+		show_marginal=True,
+		marginal_kind="kde",
 		ax=ax
 	)
 	ax.set_xlabel("Dorsal-ventral (μm)")
