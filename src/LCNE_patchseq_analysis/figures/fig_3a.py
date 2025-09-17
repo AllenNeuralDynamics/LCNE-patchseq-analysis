@@ -99,6 +99,7 @@ def figure_3a_ycoord_violin(
     # Revert y-axis
     ax.invert_yaxis()
     ax.set_ylabel("Dorsal-ventral (μm)")
+    ax.set_xlabel("")
 
     if if_save_figure:
         save_figure(fig, filename="fig_3a_violinplot_ycoord_by_injection_region", dpi=300, formats=("png", "pdf"))

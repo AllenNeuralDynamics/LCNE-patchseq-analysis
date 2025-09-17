@@ -1,11 +1,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy.__config__ import show
 import pandas as pd
 import seaborn as sns
 from LCNE_patchseq_analysis import REGION_COLOR_MAPPER
 from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
 
-from LCNE_patchseq_analysis.figures.util import save_figure, generate_violin_plot
+from LCNE_patchseq_analysis.figures.util import save_figure, generate_violin_plot, generate_scatter_plot
 from LCNE_patchseq_analysis.figures import sort_region
 
 
@@ -26,15 +27,27 @@ def figure_3c_tau_comparison(
         df_meta = df_meta.query(filter_query).copy()
 
     df_meta["ipfx_tau"] = df_meta["ipfx_tau"] * 1000  # convert to ms
-    fig, ax = generate_violin_plot(
-        df_to_use=df_meta,
+    # fig, ax = generate_violin_plot(
+    #     df_to_use=df_meta,
+    #     y_col="ipfx_tau",
+    #     color_col="injection region",
+    #     color_palette_dict=REGION_COLOR_MAPPER,
+    #     ax=ax
+    # )
+    fig, ax = generate_scatter_plot(
+        df=df_meta,
         y_col="ipfx_tau",
+        x_col="y",
         color_col="injection region",
-        color_palette_dict=REGION_COLOR_MAPPER,
+        color_palette=REGION_COLOR_MAPPER,
+        plot_linear_regression=True,
+        show_marginal=True,
+        marginal_kind="kde",
         ax=ax
     )
 
-    ax.set_ylabel("Membrane time constant (ms)")
+    ax.set_xlabel("Dorsal-ventral (μm)")
+    ax.set_ylabel("Time constant (ms)")
 
     if if_save_figure:
         save_figure(fig, filename="fig_3c_violinplot_ipfx_tau", dpi=300, formats=("png", "pdf"))
@@ -54,16 +67,27 @@ def figure_3c_latency_comparison(
     if filter_query:
         df_meta = df_meta.query(filter_query).copy()
 
-    df_meta["ipfx_latency_rheo"] = df_meta["ipfx_latency_rheo"] * 1000  # convert to ms
-    fig, ax = generate_violin_plot(
-        df_to_use=df_meta,
+    # fig, ax = generate_violin_plot(
+    #     df_to_use=df_meta,
+    #     y_col="ipfx_latency_rheo",
+    #     color_col="injection region",
+    #     color_palette_dict=REGION_COLOR_MAPPER,
+    #     ax=ax
+    # )
+    fig, ax = generate_scatter_plot(
+        df=df_meta,
         y_col="ipfx_latency_rheo",
+        x_col="y",
         color_col="injection region",
-        color_palette_dict=REGION_COLOR_MAPPER,
+        color_palette=REGION_COLOR_MAPPER,
+        plot_linear_regression=True,
+        show_marginal=True,
+        marginal_kind="kde",
         ax=ax
     )
 
-    ax.set_ylabel("Latency to first spike\nat rheobase (ms)")
+    ax.set_xlabel("Dorsal-ventral (μm)")
+    ax.set_ylabel("Latency to first spike\nat rheobase (s)")
 
     if if_save_figure:
         save_figure(fig, filename="fig_3c_violinplot_ipfx_latency", dpi=300, formats=("png", "pdf"))

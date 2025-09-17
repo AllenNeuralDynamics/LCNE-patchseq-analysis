@@ -160,10 +160,11 @@ def generate_scatter_plot(
                         zorder=6,
                     )
 
-            ax_marg.set_xlabel("Density" if marginal_kind == "kde" else "Count")
+            ax_marg.set_xlabel("kde" if marginal_kind == "kde" else "Count")
+            ax_marg.set_xticks([])
             ax_marg.set_ylabel("")
             ax_marg.tick_params(axis="y", left=False, labelleft=False)
-            sns.despine(ax=ax_marg, left=True)
+            sns.despine(ax=ax_marg, left=True, bottom=True)
             ax.marginal_ax = ax_marg  # type: ignore[attr-defined]
         except Exception as e:  # noqa: BLE001
             logger.warning(f"Failed to create marginal axes: {e}")
@@ -195,6 +196,7 @@ def generate_scatter_plot(
     ax.legend(title=color_col, loc="best")
     sns.despine(trim=True, ax=ax)
     return fig, ax
+
 
 def generate_ccf_plot(
     df_meta: pd.DataFrame,
@@ -237,7 +239,6 @@ def generate_ccf_plot(
     # Load the LC mesh
     logger.info("Loading LC mesh...")
     mesh = load_mesh_from_s3()
-
 
     # Create the plot with matplotlib backend only if ax is None
     if ax is None:
