@@ -37,44 +37,42 @@ def generate_scatter_plot(
     marginal_pad: float = 0.05,
     ax=None,
 ):
-    """Generic scatter plot utility for Figure 3B style.
+    """Generic scatter plot utility (Figure 3B style) with optional marginal distribution.
 
     Args:
         df: Input dataframe.
         y_col: Column for y axis.
         x_col: Column for x axis.
         color_col: Column that defines groups / colors.
-        color_palette: Mapping from group value to color. If None uses REGION_COLOR_MAPPER for injection regions.
+        color_palette: Mapping from group value to color. If None and color_col is 'injection region' uses REGION_COLOR_MAPPER.
         plot_linear_regression: If True overlay OLS line across all points and annotate p and R^2.
         point_size: Scatter marker size.
         alpha: Point transparency.
         figsize: Figure size.
-        show_marginal: If True, draw a marginal distribution of y values on the right side split by color_col.
-        marginal_kind: One of {'kde','hist'} selecting marginal distribution type.
-        marginal_size: Width of marginal axes (passed to axes_grid1 append_axes size argument).
+        show_marginal: If True add right-side marginal distribution of y per group.
+        marginal_kind: 'kde' or 'hist'. If 'kde', mean ± SEM lines are overlaid.
+        marginal_size: Width of marginal axes (axes_grid1 size spec).
         marginal_pad: Padding between main and marginal axes.
     Returns:
-        (fig, ax) main axes (a reference to marginal axes is stored at ax.marginal_ax if created).
+        (fig, ax): Main figure/axes. Marginal axes accessible at ax.marginal_ax if created.
     """
     if color_palette is None and color_col.lower() == "injection region":
         color_palette = REGION_COLOR_MAPPER
 
-    # Drop rows missing required columns
     required_cols = [y_col, x_col, color_col]
     df_plot = df.dropna(subset=required_cols).copy()
     if df_plot.empty:
         raise ValueError("No data left after dropping NA for required columns")
 
-    # Determine plotting order if injection region
     hue_order: Sequence[str] | None = None
     if color_col.lower() == "injection region":
-        unique_regions = df_plot[color_col].dropna().unique().tolist()
-        hue_order = sort_region(unique_regions)
+        hue_order = sort_region(df_plot[color_col].dropna().unique().tolist())
 
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize)
     else:
         fig = ax.figure
+
     sns.scatterplot(
         data=df_plot,
         x=x_col,
@@ -89,38 +87,34 @@ def generate_scatter_plot(
         ax=ax,
     )
 
-    # Optional marginal distribution panel (right side) sharing y-axis
     if show_marginal:
         try:
             groups = hue_order if hue_order is not None else sorted(df_plot[color_col].dropna().unique())
-            # Build color lookup
             if color_palette is None:
-                # Fall back to seaborn palette if none provided
                 palette_lut = dict(zip(groups, sns.color_palette(n_colors=len(groups))))
             else:
                 palette_lut = {g: color_palette.get(g, "gray") for g in groups}
 
             divider = make_axes_locatable(ax)
             ax_marg = divider.append_axes("right", size=marginal_size, pad=marginal_pad, sharey=ax)
+            # Allow color to be either a string or RGB(A) tuple
+            group_stats: list[tuple[str, float, float, object]] = []
             for g in groups:
                 sub = df_plot[df_plot[color_col] == g]
                 if sub.empty:
                     continue
                 color = palette_lut.get(g, "gray")
                 if marginal_kind == "kde":
-                    try:
-                        sns.kdeplot(
-                            data=sub,
-                            y=y_col,
-                            ax=ax_marg,
-                            color=color,
-                            fill=False,
-                            linewidth=1.0,
-                            common_norm=False,
-                            cut=1,
-                        )
-                    except Exception as e:  # noqa: BLE001
-                        logger.warning(f"KDE marginal failed for group {g}: {e}")
+                    sns.kdeplot(
+                        data=sub,
+                        y=y_col,
+                        ax=ax_marg,
+                        color=color,
+                        fill=True,
+                        linewidth=1.0,
+                        common_norm=True,
+                        cut=0,
+                    )
                 elif marginal_kind == "hist":
                     sns.histplot(
                         data=sub,
@@ -133,33 +127,56 @@ def generate_scatter_plot(
                         stat="density",
                         alpha=0.9,
                     )
+
+                y_vals = pd.to_numeric(sub[y_col], errors="coerce").dropna()
+                if len(y_vals) > 0:
+                    mean_val = float(y_vals.mean())
+                    sem_val = float(y_vals.std(ddof=1) / np.sqrt(len(y_vals))) if len(y_vals) > 1 else 0.0
+                    group_stats.append((g, mean_val, sem_val, color))
+
+            # Overlay mean ± SEM as simple dot + vertical error bar (one per group)
+            if group_stats:
+                dens_xlim = ax_marg.get_xlim()
+                max_x = dens_xlim[1] if dens_xlim[1] > 0 else 1.0
+                seg_start = max_x * 1.05
+                seg_end = max_x * 1.3  # slightly wider to spread markers
+                n_stats = len(group_stats)
+                if n_stats == 1:
+                    x_positions = [(seg_start + seg_end) / 2.0]
                 else:
-                    logger.warning(f"Unsupported marginal_kind '{marginal_kind}'. Skipping marginal plot.")
-                    break
-            # Cosmetic cleanup
-            ax_marg.set_xlabel("kde" if marginal_kind == "kde" else "Count")
+                    x_positions = np.linspace(seg_start, seg_end, n_stats)
+                for (g, mean_val, sem_val, color_val), xpos in zip(group_stats, x_positions):
+                    ax_marg.errorbar(
+                        xpos,
+                        mean_val,
+                        yerr=sem_val if sem_val > 0 else None,
+                        fmt='o',
+                        color=color_val,
+                        markersize=5,
+                        elinewidth=1.5,
+                        capsize=3,
+                        markeredgecolor='black',
+                        markeredgewidth=0.5,
+                        zorder=6,
+                    )
+
+            ax_marg.set_xlabel("Density" if marginal_kind == "kde" else "Count")
             ax_marg.set_ylabel("")
-            ax_marg.set_xticks([])
-            # Remove only marginal axis y ticks / labels (keep main axis intact)
             ax_marg.tick_params(axis="y", left=False, labelleft=False)
-            sns.despine(ax=ax_marg, left=True, bottom=True)
-            # Attach for downstream access
+            sns.despine(ax=ax_marg, left=True)
             ax.marginal_ax = ax_marg  # type: ignore[attr-defined]
         except Exception as e:  # noqa: BLE001
             logger.warning(f"Failed to create marginal axes: {e}")
 
-    # Optional regression across all points (ignoring grouping)
     if plot_linear_regression:
         try:
             from scipy.stats import linregress  # type: ignore
-
             res = linregress(df_plot[x_col], df_plot[y_col])
             x_vals = pd.Series(sorted(df_plot[x_col].values))
             y_fit = res.intercept + res.slope * x_vals
             ax.plot(x_vals, y_fit, color="black", linewidth=1.2, zorder=5, label="Linear fit")
-            # Annotation: p-value and R^2
-            r_squared = res.rvalue ** 2
-            annotation = f"p={res.pvalue:.2e}\nR={np.sqrt(r_squared):.2f}"
+            # Annotation: p-value and R
+            annotation = f"p={res.pvalue:.2e}\nR={res.rvalue:.2f}"
             ax.text(
                 0.98,
                 0.85,
@@ -170,14 +187,13 @@ def generate_scatter_plot(
                 bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", lw=0.5),
                 fontsize=9,
             )
-        except Exception as e:  # noqa: BLE001 - lightweight handling, controlled scope
+        except Exception as e:  # noqa: BLE001
             logger.warning(f"Linear regression failed: {e}")
 
     ax.set_xlabel(x_col)
     ax.set_ylabel(y_col)
     ax.legend(title=color_col, loc="best")
     sns.despine(trim=True, ax=ax)
-    # fig.tight_layout()
     return fig, ax
 
 def generate_ccf_plot(
