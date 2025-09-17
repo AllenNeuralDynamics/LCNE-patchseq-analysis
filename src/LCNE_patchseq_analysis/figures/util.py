@@ -160,7 +160,8 @@ def generate_scatter_plot(
                         zorder=6,
                     )
 
-            ax_marg.set_xlabel("kde" if marginal_kind == "kde" else "Count")
+            # ax_marg.set_xlabel("kde" if marginal_kind == "kde" else "Count")
+            ax_marg.set_xlabel("")
             ax_marg.set_xticks([])
             ax_marg.set_ylabel("")
             ax_marg.tick_params(axis="y", left=False, labelleft=False)

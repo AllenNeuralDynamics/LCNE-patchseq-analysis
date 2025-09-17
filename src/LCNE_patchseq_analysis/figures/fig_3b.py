@@ -67,11 +67,12 @@ def figure_3b_imputed_MERFISH(
 		- Imputed pseudocluster column name here assumed 'gene_imp_pseudoclusters (log_normed)'.
 	"""
 	if filter_query:
-		df_meta = df_meta.query(filter_query)
+		df_meta = df_meta.query(filter_query).copy()
 
+	df_meta["gene_imp_DV in um (log_normed)"] = df_meta["gene_imp_DV (log_normed)"] * 25  # TODO: confirm with Shuonan
 	fig, ax = generate_scatter_plot(
 		df=df_meta,
-		y_col="gene_imp_DV (log_normed)",
+		y_col="gene_imp_DV in um (log_normed)",
 		x_col="y",
 		color_col="injection region",
 		color_palette=REGION_COLOR_MAPPER,
@@ -81,7 +82,21 @@ def figure_3b_imputed_MERFISH(
 		ax=ax
 	)
 	ax.set_xlabel("Dorsal-ventral (μm)")
-	ax.set_ylabel("Imputed dorsal-ventral\nfrom MERFISH")
+	ax.set_ylabel("Imputed dorsal-ventral\nfrom MERFISH (μm)")
+
+	# Enforce identical x and y limits for comparability
+	x_min, x_max = ax.get_xlim()
+	y_min, y_max = ax.get_ylim()
+	common_min = min(x_min, y_min)
+	common_max = max(x_max, y_max)
+	ax.set_xlim(common_min, common_max)
+	ax.set_ylim(common_min, common_max)
+	ax.set_aspect('equal', adjustable='box')
+	# Sync x and y ticks for comparability
+	ticks = ax.get_xticks()
+	ax.set_xticks(ticks)
+	ax.set_yticks(ticks)
+	
 
 	if if_save_figure:
 		save_figure(
