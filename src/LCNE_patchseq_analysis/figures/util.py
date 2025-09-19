@@ -11,6 +11,7 @@ import seaborn as sns
 from matplotlib import colors as mcolors
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
+from matplotlib import gridspec
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from LCNE_patchseq_analysis.data_util.mesh import plot_mesh
@@ -19,6 +20,55 @@ from LCNE_patchseq_analysis import REGION_COLOR_MAPPER
 from LCNE_patchseq_analysis.figures import sort_region
 
 logger = logging.getLogger(__name__)
+
+
+def add_nested_subplots(parent_ax, nrows=1, ncols=1, sharex=False, sharey=False, grid_kwargs={}, **subplot_kwargs):
+    """
+    Replace a parent axis with a nested grid of subplots.
+
+    Parameters
+    ----------
+    parent_ax : matplotlib.axes.Axes
+        The axis to subdivide.
+    nrows, ncols : int
+        Shape of the nested grid.
+    sharex, sharey : bool or {'row', 'col', 'all', None}
+        Share x/y axes among nested subplots.
+        - True or 'all': all subplots share that axis
+        - 'row': share only within rows
+        - 'col': share only within columns
+        - False/None: no sharing
+    subplot_kwargs : dict
+        Extra kwargs passed to `fig.add_subplot`.
+
+    Returns
+    -------
+    axes : 2D numpy.ndarray of Axes
+        Array of new subplot axes.
+    """
+    fig = parent_ax.figure
+    subspec = parent_ax.get_subplotspec()
+    parent_ax.remove()
+    nested_gs = gridspec.GridSpecFromSubplotSpec(
+        nrows, ncols, subplot_spec=subspec, **grid_kwargs
+    )
+
+    axes = np.empty((nrows, ncols), dtype=object)
+
+    for i in range(nrows):
+        for j in range(ncols):
+            # determine sharing
+            kwargs = subplot_kwargs.copy()
+            if sharex:
+                if (i, j) != (0, 0):
+                    kwargs["sharex"] = axes[0, 0]
+            if sharey:
+                if (i, j) != (0, 0):
+                    kwargs["sharey"] = axes[0, 0]
+
+            axes[i, j] = fig.add_subplot(nested_gs[i, j], **kwargs)
+
+    return axes
 
 
 def generate_scatter_plot(
@@ -33,6 +83,8 @@ def generate_scatter_plot(
     figsize: tuple = (4, 4),
     show_marginal: bool = False,
     marginal_kind: str = "kde",
+    if_trim: bool = True,
+    if_same_xy: bool = False,
     marginal_size: str = "25%",
     marginal_pad: float = 0.05,
     ax=None,
@@ -73,6 +125,22 @@ def generate_scatter_plot(
     else:
         fig = ax.figure
 
+    if show_marginal:
+        # Replace parent axis with two sub-axes: main (left) and marginal (right)
+        axes_nested = add_nested_subplots(
+            ax,
+            sharey=True,
+            nrows=1,
+            ncols=2,
+            grid_kwargs={"width_ratios": [1, 0.28],
+                         "wspace": 0.02
+                         },  # marginal narrower
+        )
+        ax_main = axes_nested[0, 0]
+        ax_marg = axes_nested[0, 1]
+        ax = ax_main  # continue using ax variable for rest of function
+
+    # Re-draw scatter on new main axis
     sns.scatterplot(
         data=df_plot,
         x=x_col,
@@ -88,114 +156,118 @@ def generate_scatter_plot(
     )
 
     if show_marginal:
-        try:
-            groups = hue_order if hue_order is not None else sorted(df_plot[color_col].dropna().unique())
-            if color_palette is None:
-                palette_lut = dict(zip(groups, sns.color_palette(n_colors=len(groups))))
-            else:
-                palette_lut = {g: color_palette.get(g, "gray") for g in groups}
 
-            divider = make_axes_locatable(ax)
-            ax_marg = divider.append_axes("right", size=marginal_size, pad=marginal_pad, sharey=ax)
-            # Allow color to be either a string or RGB(A) tuple
-            group_stats: list[tuple[str, float, float, object]] = []
-            for g in groups:
-                sub = df_plot[df_plot[color_col] == g]
-                if sub.empty:
-                    continue
-                color = palette_lut.get(g, "gray")
-                if marginal_kind == "kde":
-                    sns.kdeplot(
-                        data=sub,
-                        y=y_col,
-                        ax=ax_marg,
-                        color=color,
-                        fill=True,
-                        linewidth=1.0,
-                        common_norm=True,
-                        cut=0,
-                    )
-                elif marginal_kind == "hist":
-                    sns.histplot(
-                        data=sub,
-                        y=y_col,
-                        ax=ax_marg,
-                        color=color,
-                        element="step",
-                        fill=False,
-                        bins=20,
-                        stat="density",
-                        alpha=0.9,
-                    )
+        groups = hue_order if hue_order is not None else sorted(df_plot[color_col].dropna().unique())
+        if color_palette is None:
+            palette_lut = dict(zip(groups, sns.color_palette(n_colors=len(groups))))
+        else:
+            palette_lut = {g: color_palette.get(g, "gray") for g in groups}
 
-                y_vals = pd.to_numeric(sub[y_col], errors="coerce").dropna()
-                if len(y_vals) > 0:
-                    mean_val = float(y_vals.mean())
-                    sem_val = float(y_vals.std(ddof=1) / np.sqrt(len(y_vals))) if len(y_vals) > 1 else 0.0
-                    group_stats.append((g, mean_val, sem_val, color))
+        group_stats: list[tuple[str, float, float, object]] = []
+        for g in groups:
+            sub = df_plot[df_plot[color_col] == g]
+            if sub.empty:
+                continue
+            color = palette_lut.get(g, "gray")
+            if marginal_kind == "kde":
+                sns.kdeplot(
+                    data=sub,
+                    y=y_col,
+                    ax=ax_marg,
+                    color=color,
+                    fill=True,
+                    linewidth=1.0,
+                    common_norm=True,
+                    cut=0,
+                )
+            elif marginal_kind == "hist":
+                sns.histplot(
+                    data=sub,
+                    y=y_col,
+                    ax=ax_marg,
+                    color=color,
+                    element="step",
+                    fill=False,
+                    bins=20,
+                    stat="density",
+                    alpha=0.9,
+                )
 
-            # Overlay mean ± SEM as simple dot + vertical error bar (one per group)
-            if group_stats:
-                dens_xlim = ax_marg.get_xlim()
-                max_x = dens_xlim[1] if dens_xlim[1] > 0 else 1.0
-                seg_start = max_x * 1.05
-                seg_end = max_x * 1.3  # slightly wider to spread markers
-                n_stats = len(group_stats)
-                if n_stats == 1:
-                    x_positions = [(seg_start + seg_end) / 2.0]
-                else:
-                    x_positions = np.linspace(seg_start, seg_end, n_stats)
-                for (g, mean_val, sem_val, color_val), xpos in zip(group_stats, x_positions):
-                    ax_marg.errorbar(
-                        xpos,
-                        mean_val,
-                        yerr=sem_val if sem_val > 0 else None,
-                        fmt='o',
-                        color=color_val,
-                        markersize=5,
-                        elinewidth=1.5,
-                        capsize=3,
-                        markeredgecolor='black',
-                        markeredgewidth=0.5,
-                        zorder=6,
-                    )
+            y_vals = pd.to_numeric(sub[y_col], errors="coerce").dropna()
+            if len(y_vals) > 0:
+                mean_val = float(y_vals.mean())
+                sem_val = float(y_vals.std(ddof=1) / np.sqrt(len(y_vals))) if len(y_vals) > 1 else 0.0
+                group_stats.append((g, mean_val, sem_val, color))
 
-            # ax_marg.set_xlabel("kde" if marginal_kind == "kde" else "Count")
-            ax_marg.set_xlabel("")
-            ax_marg.set_xticks([])
-            ax_marg.set_ylabel("")
-            ax_marg.tick_params(axis="y", left=False, labelleft=False)
-            sns.despine(ax=ax_marg, left=True, bottom=True)
-            ax.marginal_ax = ax_marg  # type: ignore[attr-defined]
-        except Exception as e:  # noqa: BLE001
-            logger.warning(f"Failed to create marginal axes: {e}")
+        # Overlay mean ± SEM as simple dot + vertical error bar (one per group)
+        if group_stats:
+            dens_xlim = ax_marg.get_xlim()
+            max_x = dens_xlim[1] if dens_xlim[1] > 0 else 1.0
+            seg_start = max_x * 1.05
+            seg_end = max_x * 1.3
+            n_stats = len(group_stats)
+            x_positions = [(seg_start + seg_end) / 2.0] if n_stats == 1 else np.linspace(seg_start, seg_end, n_stats)
+            for (g, mean_val, sem_val, color_val), xpos in zip(group_stats, x_positions):
+                ax_marg.errorbar(
+                    xpos,
+                    mean_val,
+                    yerr=sem_val if sem_val > 0 else None,
+                    fmt='o',
+                    color=color_val,
+                    markersize=5,
+                    elinewidth=1.5,
+                    capsize=3,
+                    markeredgecolor='black',
+                    markeredgewidth=0.5,
+                    zorder=6,
+                )
+
+        ax_marg.xaxis.set_visible(False)
+        ax_marg.yaxis.set_visible(False)
+        sns.despine(ax=ax_marg, left=True, right=True, top=True, bottom=True)
+        ax.marginal_ax = ax_marg  # type: ignore[attr-defined]
 
     if plot_linear_regression:
-        try:
-            from scipy.stats import linregress  # type: ignore
-            res = linregress(df_plot[x_col], df_plot[y_col])
-            x_vals = pd.Series(sorted(df_plot[x_col].values))
-            y_fit = res.intercept + res.slope * x_vals
-            ax.plot(x_vals, y_fit, color="black", linewidth=1.2, zorder=5, label="Linear fit")
-            # Annotation: p-value and R
-            annotation = f"p={res.pvalue:.2e}\nR={res.rvalue:.2f}"
-            ax.text(
-                0.98,
-                0.85,
-                annotation,
-                transform=ax.transAxes,
-                ha="right",
-                va="bottom",
-                bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", lw=0.5),
-                fontsize=9,
-            )
-        except Exception as e:  # noqa: BLE001
-            logger.warning(f"Linear regression failed: {e}")
+        from scipy.stats import linregress  # type: ignore
+        res = linregress(df_plot[x_col], df_plot[y_col])
+        x_vals = pd.Series(sorted(df_plot[x_col].values))
+        y_fit = res.intercept + res.slope * x_vals
+        ax.plot(x_vals, y_fit, color="black", linewidth=1.2, zorder=5, label="Linear fit")
+        # Annotation: p-value and R
+        annotation = f"p={res.pvalue:.2e}, r={res.rvalue:.2f}"
+        ax.text(
+            0.95,
+            0.95,
+            annotation,
+            transform=ax.transAxes,
+            ha="right",
+            va="bottom",
+            bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", lw=0.5),
+            fontsize=9,
+        )
 
     ax.set_xlabel(x_col)
     ax.set_ylabel(y_col)
     ax.legend(title=color_col, loc="best")
-    sns.despine(trim=True, ax=ax)
+
+    sns.despine(trim=if_trim, ax=ax)
+    if if_same_xy:
+        x_min, x_max = ax.get_xlim()
+        y_min, y_max = ax.get_ylim()
+        common_min = min(x_min, y_min)
+        common_max = max(x_max, y_max)
+        ax.set_xlim(common_min, common_max)
+        ax.set_ylim(common_min, common_max)
+        ax.plot(
+        	[common_min, common_max],
+        	[common_min, common_max],
+        	color="gray",
+        	linestyle="--",
+        	zorder=5,
+        	label="y=x",
+        )
+
+
     return fig, ax
 
 

@@ -79,24 +79,12 @@ def figure_3b_imputed_MERFISH(
 		plot_linear_regression=plot_linear_regression,
 		show_marginal=True,
 		marginal_kind="kde",
+		if_trim=False,
+		if_same_xy=True,
 		ax=ax
 	)
 	ax.set_xlabel("Dorsal-ventral (μm)")
 	ax.set_ylabel("Imputed dorsal-ventral\nfrom MERFISH (μm)")
-
-	# Enforce identical x and y limits for comparability
-	x_min, x_max = ax.get_xlim()
-	y_min, y_max = ax.get_ylim()
-	common_min = min(x_min, y_min)
-	common_max = max(x_max, y_max)
-	ax.set_xlim(common_min, common_max)
-	ax.set_ylim(common_min, common_max)
-	ax.set_aspect('equal', adjustable='box')
-	# Sync x and y ticks for comparability
-	ticks = ax.get_xticks()
-	ax.set_xticks(ticks)
-	ax.set_yticks(ticks)
-	
 
 	if if_save_figure:
 		save_figure(

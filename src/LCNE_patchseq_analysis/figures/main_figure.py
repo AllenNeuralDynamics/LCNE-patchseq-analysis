@@ -15,8 +15,8 @@ def generate_main_figure(
     if_save_figure: bool = True,
 ):
     # --- Layout ---
-    fig = plt.figure(constrained_layout=False, figsize=(10, 14))
-    gs0 = fig.add_gridspec(3, 1, height_ratios=[1, 1, 1], width_ratios=[1], hspace=0.3)
+    fig = plt.figure(constrained_layout=False, figsize=(10, 13))
+    gs0 = fig.add_gridspec(3, 1, height_ratios=[1, 1, 1], width_ratios=[1], hspace=0.5)
 
     gs0_0 = gs0[0].subgridspec(1, 2, width_ratios=[1.5, 1], wspace=0.3)
     gs0_1 = gs0[1].subgridspec(1, 2, width_ratios=[1, 1], wspace=0.5)
@@ -36,18 +36,14 @@ def generate_main_figure(
     figure_3a_ycoord_violin(df_meta, global_filter, ax=ax0_1, if_save_figure=False)
     #ax0_1.set_position([0.55, 0.68, 0.2, 0.15])  # [left, bottom, width, height]
     
-    figure_3b_imputed_scRNAseq(df_meta, gene_filter, ax=ax1_0, if_save_figure=False)
+    _, ax1_0 = figure_3b_imputed_scRNAseq(df_meta, gene_filter, ax=ax1_0, if_save_figure=False)
     ax1_0.get_legend().remove()
-    ax1_0.set_box_aspect(1)
-    figure_3b_imputed_MERFISH(df_meta, gene_filter, ax=ax1_1, if_save_figure=False)
+    _, ax1_1 = figure_3b_imputed_MERFISH(df_meta, gene_filter, ax=ax1_1, if_save_figure=False)
     ax1_1.get_legend().remove()
-    ax1_1.set_box_aspect(1)
 
-    figure_3c_tau_comparison(df_meta, global_filter, ax=ax2_0, if_save_figure=False)
-    ax2_0.set_box_aspect(1)
+    _, ax2_0 = figure_3c_tau_comparison(df_meta, global_filter, ax=ax2_0, if_save_figure=False)
     ax2_0.get_legend().remove()
-    figure_3c_latency_comparison(df_meta, global_filter, ax=ax2_1, if_save_figure=False)
-    ax2_1.set_box_aspect(1)
+    _, ax2_1 = figure_3c_latency_comparison(df_meta, global_filter, ax=ax2_1, if_save_figure=False)
     ax2_1.get_legend().remove()
 
 
