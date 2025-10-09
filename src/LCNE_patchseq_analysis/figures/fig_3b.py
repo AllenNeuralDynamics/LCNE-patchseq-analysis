@@ -35,7 +35,7 @@ def figure_3b_imputed_scRNAseq(
 		color_col="injection region",
 		color_palette=REGION_COLOR_MAPPER,
 		plot_linear_regression=plot_linear_regression,
-		show_marginal=True,
+		show_marginal_y=True,
 		marginal_kind="kde",
 		ax=ax
 	)
@@ -77,7 +77,7 @@ def figure_3b_imputed_MERFISH(
 		color_col="injection region",
 		color_palette=REGION_COLOR_MAPPER,
 		plot_linear_regression=plot_linear_regression,
-		show_marginal=True,
+		show_marginal_y=True,
 		marginal_kind="kde",
 		if_trim=False,
 		if_same_xy=True,

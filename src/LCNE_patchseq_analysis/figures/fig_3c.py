@@ -41,7 +41,7 @@ def figure_3c_tau_comparison(
         color_col="injection region",
         color_palette=REGION_COLOR_MAPPER,
         plot_linear_regression=True,
-        show_marginal=True,
+        show_marginal_y=True,
         marginal_kind="kde",
         ax=ax
     )
@@ -81,7 +81,7 @@ def figure_3c_latency_comparison(
         color_col="injection region",
         color_palette=REGION_COLOR_MAPPER,
         plot_linear_regression=True,
-        show_marginal=True,
+        show_marginal_y=True,
         marginal_kind="kde",
         ax=ax
     )
