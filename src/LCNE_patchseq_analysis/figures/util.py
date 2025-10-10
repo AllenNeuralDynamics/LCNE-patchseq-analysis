@@ -322,17 +322,25 @@ def generate_scatter_plot(
         res = linregress(df_plot[x_col], df_plot[y_col])
         x_vals = pd.Series(sorted(df_plot[x_col].values))
         y_fit = res.intercept + res.slope * x_vals
-        ax.plot(x_vals, y_fit, color="black", linewidth=1.2, zorder=5, label="Linear fit")
+        ax.plot(
+            x_vals,
+            y_fit,
+            color="black",
+            linewidth=2 if res.pvalue < 0.05 else 1,
+            linestyle="-" if res.pvalue < 0.05 else ":",
+            zorder=5,
+            label="Linear fit",
+        )
         # Annotation: p-value and R
         annotation = f"p={res.pvalue:.2e}, r={res.rvalue:.2f}"
         ax.text(
             0.95,
-            0.95,
+            0.05,
             annotation,
             transform=ax.transAxes,
             ha="right",
             va="bottom",
-            bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", lw=0.5),
+            bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", lw=0.5, alpha=0.2),
             fontsize=9,
         )
 
@@ -356,7 +364,6 @@ def generate_scatter_plot(
         	zorder=5,
         	label="y=x",
         )
-
 
     return fig, ax
 
@@ -506,7 +513,6 @@ def generate_ccf_plot(
     logger.info(f"- Total filtered cells: {len(df_filtered)}")
 
     return fig, ax
-
 
 
 def generate_violin_plot(

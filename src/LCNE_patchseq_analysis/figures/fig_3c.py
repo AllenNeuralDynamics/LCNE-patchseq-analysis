@@ -1,8 +1,12 @@
 import pandas as pd
+
+import matplotlib.pyplot as plt
+
 from LCNE_patchseq_analysis import REGION_COLOR_MAPPER
 from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
 
 from LCNE_patchseq_analysis.figures.util import save_figure, generate_scatter_plot
+from LCNE_patchseq_analysis.figures import DEFAULT_EPHYS_FEATURES
 
 
 def figure_3c_tau_comparison(
@@ -87,6 +91,48 @@ def figure_3c_latency_comparison(
     if if_save_figure:
         save_figure(fig, filename="fig_3c_violinplot_ipfx_latency", dpi=300, formats=("png", "pdf"))
         print("Figure saved as fig_3c_violinplot_ipfx_latency.png/.pdf")
+    return fig, ax
+
+
+def sup_figure_3c_all_ipfx_features(
+    df_meta: pd.DataFrame, filter_query: str | None = None, if_save_figure: bool = True, ax=None
+):
+
+    if filter_query:
+        df_meta = df_meta.query(filter_query).copy()
+
+    # Get all ipfx features
+    n_features = len(DEFAULT_EPHYS_FEATURES)
+    n_cols = 5
+    n_rows = (n_features + n_cols - 1) // n_cols
+
+    fig, axes = plt.subplots(
+        n_rows, n_cols, figsize=(n_cols * 4, n_rows * 3.5), sharex=True,
+        gridspec_kw={"wspace": 0.3, "hspace": 0.4}
+    )
+
+    for i, feature in enumerate(DEFAULT_EPHYS_FEATURES):
+        ax = axes[i // n_cols, i % n_cols]
+        col_name, feature_name = list(feature.items())[0]
+        generate_scatter_plot(
+            df=df_meta,
+            y_col=col_name,
+            x_col="y",
+            color_col="injection region",
+            color_palette=REGION_COLOR_MAPPER,
+            plot_linear_regression=True,
+            show_marginal_y=True,
+            marginal_kind="kde",
+            ax=ax
+        )
+        ax.set_title(feature_name)
+        ax.set_ylabel("")
+        ax.set_xlabel("Dorsal-ventral (μm)")
+        ax.legend_.remove()
+
+    if if_save_figure:
+        save_figure(fig, filename="sup_fig_3c_all_ipfx_features", dpi=300, formats=("png", "pdf"))
+        print("Figure saved as sup_fig_3c_all_ipfx_features.png/.pdf")
     return fig, ax
 
 
