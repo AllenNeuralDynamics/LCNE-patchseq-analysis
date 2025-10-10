@@ -139,12 +139,13 @@ def anova_features(
     return out
 
 
-def anova_ipfx_features(
+def anova_selected_ephys_features(
     df: pd.DataFrame,
-    filter_query: str = "",
+    filter_query: str | None = None,
 ) -> pd.DataFrame:
-    
-    df = df.query(filter_query)
+
+    if filter_query:
+        df = df.query(filter_query)
 
     return anova_features(
         df,
@@ -157,10 +158,11 @@ def anova_ipfx_features(
 
 def anova_gene(
     df: pd.DataFrame,
-    filter_query: str = "",
+    filter_query: str | None = None,
 ) -> pd.DataFrame:
-    
-    df = df.query(filter_query)
+
+    if filter_query:
+        df = df.query(filter_query)
 
     return anova_features(
         df,
@@ -181,7 +183,7 @@ if __name__ == "__main__":
     from LCNE_patchseq_analysis.figures import GLOBAL_FILTER, GENE_FILTER
 
     # Run ANOVA on selected ephys features
-    result_ipfx = anova_ipfx_features(df_meta, filter_query=GLOBAL_FILTER)
+    result_ipfx = anova_selected_ephys_features(df_meta, filter_query=GLOBAL_FILTER)
     logger.info("ANOVA completed on %d features", result_ipfx["feature"].nunique())
     print(result_ipfx.head())
 
