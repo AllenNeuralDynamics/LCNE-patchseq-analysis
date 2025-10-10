@@ -140,31 +140,33 @@ def sup_figure_3c_all_ipfx_features(
             marginal_kind="kde",
             ax=ax
         )
-        # Determine significance (any adjusted p-value < 0.05)
-        sig_projection = pd.notna(p_adj_projection) and p_adj_projection < 0.05
-        sig_dv = pd.notna(p_adj_dv) and p_adj_dv < 0.05
-        if sig_projection and sig_dv:
-            title_color = "darkred"  # both significant
-        elif sig_projection:
-            title_color = "royalblue"  # projection significant only
-        elif sig_dv:
-            title_color = "darkgreen"  # D-V significant only
-        else:
-            title_color = "black"  # neither significant
-
         # Compose multi-line styled header: feature name (bold) + stats (smaller)
         ax.set_title("")  # clear default title handling
         ax.text(
             0.5, 1.2, f"{feature_name}", transform=ax.transAxes,
-            ha="center", va="bottom", fontsize=12, fontweight="bold", color=title_color,
+            ha="center", va="bottom", fontsize=12, fontweight="bold", 
+            color="royalblue" if (p_adj_projection < 0.05 or p_adj_dv < 0.05) else "black",
         )
-        stats_text = (
-            f"Projection: p={p_val_projection:.2g} (adj={p_adj_projection:.2g})\n"
-            f"D-V: p={p_val_dv:.2g} (adj={p_adj_dv:.2g})"
+
+        ax.text(
+            0.05,
+            1.15,
+            f"Projection: p={p_val_projection:.2g} (adj={p_adj_projection:.2g})\n",
+            transform=ax.transAxes,
+            ha="left",
+            va="top",
+            fontsize=9,
+            color="royalblue" if p_adj_projection < 0.05 else "black",
         )
         ax.text(
-            0.05, 1.15, stats_text, transform=ax.transAxes,
-            ha="left", va="top", fontsize=9, color=title_color,
+            0.05,
+            1.05,
+            f"D-V: p={p_val_dv:.2g} (adj={p_adj_dv:.2g})",
+            transform=ax.transAxes,
+            ha="left",
+            va="top",
+            fontsize=9,
+            color="royalblue" if p_adj_dv < 0.05 else "black",
         )
         ax.set_ylabel("")
         ax.set_xlabel("Dorsal-ventral (μm)")
