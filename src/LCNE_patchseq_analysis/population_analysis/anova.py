@@ -10,13 +10,6 @@ coordinate (dorsal-ventral). For each feature a Type II ANOVA table is
 generated and key statistics (F, p, sums of squares, partial eta squared) are
 collected into a tidy DataFrame.
 
-Public functions
-----------------
-anova_features(df, features, cat_col="injection_region", cont_col="y", adjust_p=False)
-    Core worker executing the formula above for each feature.
-
-anova_efel_all(df, cat_col="injection_region", cont_col="y", adjust_p=False)
-    Convenience wrapper selecting all columns whose names start with ``efel``.
 """
 
 import logging
@@ -31,6 +24,7 @@ from statsmodels.formula.api import ols
 from statsmodels.stats.multitest import multipletests
 
 from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
+from LCNE_patchseq_analysis.figures import DEFAULT_EPHYS_FEATURES
 
 
 def anova_features(
@@ -153,10 +147,9 @@ def anova_efel_all(
     anova_typ: int = 2,
 ) -> pd.DataFrame:
 
-    feat_cols = [c for c in df.columns if c.startswith("ipfx")][31:]
     return anova_features(
         df,
-        features=feat_cols,
+        features=[list(col.keys())[0] for col in DEFAULT_EPHYS_FEATURES],
         cat_col=cat_col,
         cont_col=cont_col,
         adjust_p=adjust_p,
