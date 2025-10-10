@@ -116,12 +116,32 @@ def anova_features(
     if out.empty:
         return out
 
-    if adjust_p:
-        reject, p_adj, _, _ = multipletests(out["p"].values, method="fdr_bh")
-        out["p_adj"] = p_adj
-        out["significant"] = reject
+    # Drop any rows where p is NaN or not finite (user requested simpler behavior)
+    out = out[out["p"].notna() & np.isfinite(out["p"])].copy()
 
-    # out = out.sort_values(["term", "p"]).reset_index(drop=True)
+    if adjust_p and not out.empty:
+        # Adjust within each term separately
+        out.reset_index(drop=True, inplace=True)
+        out["p_adj"] = np.nan
+        out["significant"] = False
+        unique_terms = list(out["term"].unique())
+        for term in unique_terms:
+            term_idx = out.index[out["term"] == term]
+            if len(term_idx) == 0:
+                continue
+            # Build numeric p-value array explicitly to satisfy type checkers
+            pvals = np.array([float(x) for x in out.loc[term_idx, "p"]], dtype=float)
+            if pvals.size == 0:
+                continue
+            reject, p_adj, _, _ = multipletests(pvals, method="fdr_bh")
+            out.loc[term_idx, "p_adj"] = p_adj
+            out.loc[term_idx, "significant"] = reject
+
+    # Sort according to the lowest p-value between the two terms for each feature
+    features_sorted = (
+        out.groupby("feature")["p"].min().sort_values().index.tolist()
+    )
+    out = out.set_index("feature").loc[features_sorted].reset_index()
     return out
 
 
@@ -132,11 +152,11 @@ def anova_efel_all(
     adjust_p: bool = False,
     anova_typ: int = 2,
 ) -> pd.DataFrame:
-    """Convenience wrapper running ``anova_features`` on all columns starting with 'efel'."""
-    efel_cols = [c for c in df.columns if c.startswith("ipfx")]
+
+    feat_cols = [c for c in df.columns if c.startswith("ipfx")][31:]
     return anova_features(
         df,
-        features=efel_cols,
+        features=feat_cols,
         cat_col=cat_col,
         cont_col=cont_col,
         adjust_p=adjust_p,
