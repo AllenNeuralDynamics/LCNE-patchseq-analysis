@@ -3,7 +3,6 @@ import logging
 from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
 from LCNE_patchseq_analysis.figures.util import generate_violin_plot, save_figure, generate_ccf_plot
 from LCNE_patchseq_analysis import REGION_COLOR_MAPPER
-from LCNE_patchseq_analysis.figures import sort_region
 
 
 # Configure logging

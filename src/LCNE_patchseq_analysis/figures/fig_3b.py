@@ -1,12 +1,8 @@
 import logging
-from typing import Mapping, Sequence
 
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 from LCNE_patchseq_analysis import REGION_COLOR_MAPPER
-from LCNE_patchseq_analysis.figures import sort_region
 from LCNE_patchseq_analysis.figures.util import save_figure, generate_scatter_plot
 
 logger = logging.getLogger(__name__)
