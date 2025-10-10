@@ -139,21 +139,36 @@ def anova_features(
     return out
 
 
-def anova_efel_all(
+def anova_ipfx_features(
     df: pd.DataFrame,
-    cat_col: str = "injection region",
-    cont_col: str = "y",
-    adjust_p: bool = False,
-    anova_typ: int = 2,
+    filter_query: str = "",
 ) -> pd.DataFrame:
+    
+    df = df.query(filter_query)
 
     return anova_features(
         df,
         features=[list(col.keys())[0] for col in DEFAULT_EPHYS_FEATURES],
-        cat_col=cat_col,
-        cont_col=cont_col,
-        adjust_p=adjust_p,
-        anova_typ=anova_typ,
+        cat_col="injection region",
+        cont_col="y",
+        adjust_p=True,
+        anova_typ=2,
+    )
+
+def anova_gene(
+    df: pd.DataFrame,
+    filter_query: str = "",
+) -> pd.DataFrame:
+    
+    df = df.query(filter_query)
+
+    return anova_features(
+        df,
+        features=[col for col in df.columns if col.startswith("gene_")],
+        cat_col="injection region",
+        cont_col="y",
+        adjust_p=True,
+        anova_typ=2,
     )
 
 
@@ -163,10 +178,16 @@ if __name__ == "__main__":
     df_meta = load_ephys_metadata(if_from_s3=True, if_with_seq=True)
     logger.info(f"Loaded metadata with shape: {df_meta.shape}")
 
-    from LCNE_patchseq_analysis.figures import GLOBAL_FILTER
+    from LCNE_patchseq_analysis.figures import GLOBAL_FILTER, GENE_FILTER
 
-    # Example: run ANOVA on all efel* features
-    df_filtered = df_meta.query(GLOBAL_FILTER)
-    results = anova_efel_all(df_filtered, adjust_p=True)
-    logger.info("ANOVA completed on %d features", results["feature"].nunique())
-    print(results.head())
+    # Run ANOVA on selected ephys features
+    result_ipfx = anova_ipfx_features(df_meta, filter_query=GLOBAL_FILTER)
+    logger.info("ANOVA completed on %d features", result_ipfx["feature"].nunique())
+    print(result_ipfx.head())
+
+    # Run ANOVA on gene expression
+    df_filtered = df_meta.query(GENE_FILTER)
+    result_gene = anova_gene(
+        df_filtered,
+        filter_query=GENE_FILTER
+    )
