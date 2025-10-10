@@ -23,55 +23,6 @@ from LCNE_patchseq_analysis.figures import sort_region
 logger = logging.getLogger(__name__)
 
 
-def add_nested_subplots(parent_ax, nrows=1, ncols=1, sharex=False, sharey=False, grid_kwargs={}, **subplot_kwargs):
-    """
-    Replace a parent axis with a nested grid of subplots.
-
-    Parameters
-    ----------
-    parent_ax : matplotlib.axes.Axes
-        The axis to subdivide.
-    nrows, ncols : int
-        Shape of the nested grid.
-    sharex, sharey : bool or {'row', 'col', 'all', None}
-        Share x/y axes among nested subplots.
-        - True or 'all': all subplots share that axis
-        - 'row': share only within rows
-        - 'col': share only within columns
-        - False/None: no sharing
-    subplot_kwargs : dict
-        Extra kwargs passed to `fig.add_subplot`.
-
-    Returns
-    -------
-    axes : 2D numpy.ndarray of Axes
-        Array of new subplot axes.
-    """
-    fig = parent_ax.figure
-    subspec = parent_ax.get_subplotspec()
-    parent_ax.remove()
-    nested_gs = gridspec.GridSpecFromSubplotSpec(
-        nrows, ncols, subplot_spec=subspec, **grid_kwargs
-    )
-
-    axes = np.empty((nrows, ncols), dtype=object)
-
-    for i in range(nrows):
-        for j in range(ncols):
-            # determine sharing
-            kwargs = subplot_kwargs.copy()
-            if sharex:
-                if (i, j) != (0, 0):
-                    kwargs["sharex"] = axes[0, 0]
-            if sharey:
-                if (i, j) != (0, 0):
-                    kwargs["sharey"] = axes[0, 0]
-
-            axes[i, j] = fig.add_subplot(nested_gs[i, j], **kwargs)
-
-    return axes
-
-
 def _compute_group_stats(series: pd.Series) -> tuple[float, float]:
     """Return (mean, sem) for numeric series; sem=0 if <2 values."""
     vals = pd.to_numeric(series, errors="coerce").dropna()
@@ -123,6 +74,8 @@ def _overlay_group_stats_on_axis(
                 zorder=6,
                 **(marker_kwargs or {}),
             )
+        # Set xlim to accommodate markers
+        axis.set_xlim(dens_xlim[0], seg_end * 1.2)
     elif orientation == 'x':
         dens_ylim = axis.get_ylim()
         max_y = dens_ylim[1] if dens_ylim[1] > 0 else 1.0
@@ -145,6 +98,8 @@ def _overlay_group_stats_on_axis(
                 zorder=6,
                 **(marker_kwargs or {}),
             )
+        # Set ylim to accommodate markers
+        axis.set_ylim(dens_ylim[0], seg_end * 1.2)
 
 
 def add_marginal_distributions(
