@@ -1,5 +1,3 @@
-
-
 import pandas as pd
 import logging
 from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
@@ -28,7 +26,9 @@ def figure_3a_ccf_sagittal(
         (fig, ax): Matplotlib figure and axes.
     """
 
-    fig, ax = generate_ccf_plot(df_meta, filter_query, view="sagittal", ax=ax)
+    fig, ax = generate_ccf_plot(
+        df_meta, filter_query, view="sagittal", ax=ax, show_marginal_x=True, show_marginal_y=True
+    )
 
     if if_save_figure:
         save_figure(
@@ -65,7 +65,6 @@ def sup_figure_3a_ccf_coronal(
             bbox_inches="tight",
         )
     return fig, ax
-
 
 
 def figure_3a_ycoord_violin(
@@ -117,4 +116,3 @@ if __name__ == "__main__":
     figure_3a_ccf_sagittal(df_meta, GLOBAL_FILTER)
     sup_figure_3a_ccf_coronal(df_meta, GLOBAL_FILTER)
     figure_3a_ycoord_violin(df_meta, GLOBAL_FILTER)
-

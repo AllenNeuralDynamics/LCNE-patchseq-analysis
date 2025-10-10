@@ -411,6 +411,11 @@ def generate_ccf_plot(
     filter_query: str | None,
     view: str,
     ax=None,
+    show_marginal_x: bool = False,
+    show_marginal_y: bool = False,
+    marginal_kind: str = "kde",
+    marginal_size: str = "15%",
+    marginal_pad: float = 0.05,
 ) -> tuple:
     """Generate LC mesh projection with filtered neurons in sagittal or coronal view.
 
@@ -512,6 +517,32 @@ def generate_ccf_plot(
 
     # Ensure equal aspect ratio is maintained
     ax.set_aspect("equal")
+
+    # Optional marginal distributions (x = AP or LR axis; y = DV) using same color grouping
+    if show_marginal_x or show_marginal_y:
+        # unify column names for add_marginal_distributions
+        # For sagittal view x_col is 'x', for coronal 'z'
+        x_plot_col = x_key
+        y_plot_col = y_key  # always 'y'
+        add_marginal_distributions(
+            ax=ax,
+            df=df_filtered.rename(columns={x_plot_col: '__x_plot__', y_plot_col: '__y_plot__'}),
+            x_col='__x_plot__',
+            y_col='__y_plot__',
+            group_col='injection region',
+            color_palette=REGION_COLOR_MAPPER,
+            hue_order=sort_region(df_filtered['injection region'].unique()),
+            show_x=show_marginal_x,
+            show_y=show_marginal_y,
+            kind=marginal_kind,
+            size=marginal_size,
+            pad=marginal_pad,
+        )
+        # Clean temporary labels on marginal axes if present
+        if hasattr(ax, 'marginal_ax_x'):
+            getattr(ax, 'marginal_ax_x').set_xlabel("")  # type: ignore[call-arg]
+        if hasattr(ax, 'marginal_ax_y'):
+            getattr(ax, 'marginal_ax_y').set_ylabel("")  # type: ignore[call-arg]
 
     # plt.tight_layout()
 
