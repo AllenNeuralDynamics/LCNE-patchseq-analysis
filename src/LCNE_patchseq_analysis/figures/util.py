@@ -643,7 +643,7 @@ def save_figure(
         List of saved file paths in the same order as formats.
     """
     if output_dir is None:
-        output_dir = os.path.dirname(os.path.abspath(__file__))
+        output_dir = os.path.dirname(os.path.abspath(__file__)) + "/../../../results/figures"
 
     os.makedirs(output_dir, exist_ok=True)
 
