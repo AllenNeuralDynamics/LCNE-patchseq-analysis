@@ -25,7 +25,8 @@ dependencies = [
     'h5py',
     's3fs',
     'requests',
-    'trimesh'
+    'trimesh',
+    'statsmodels'
 ]
 
 [project.optional-dependencies]

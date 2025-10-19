@@ -1,139 +1,124 @@
-#!/usr/bin/env python3
-"""
-Figure 3A: LC Mesh with Filtered Data Points (Sagittal View)
-
-This script creates a publication-ready figure showing the locus coeruleus mesh
-with filtered patch-seq data points overlaid in sagittal view.
-
-Filter: jem-status_reporter == 'Positive' & injection region != 'Non-Retro' & != 'Thalamus'
-"""
-
 import logging
-import os
 
-import matplotlib.pyplot as plt
+import pandas as pd
+
+from LCNE_patchseq_analysis import REGION_COLOR_MAPPER
+from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
+from LCNE_patchseq_analysis.figures.util import generate_ccf_plot, generate_violin_plot, save_figure
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger()
 
 
-def figure_3a_ccf_projection(if_save_fig: bool = True) -> tuple:
-    """Main function to generate Figure 3A"""
+def figure_3a_ccf_sagittal(
+    df_meta: pd.DataFrame,
+    filter_query: str | None = None,
+    if_save_figure: bool = True,
+    ax=None,
+) -> tuple:
+    """Deprecated wrapper around generate_ccf_plot with optional filter and angle.
 
-    # Import required modules
-    from LCNE_patchseq_analysis import REGION_COLOR_MAPPER
-    from LCNE_patchseq_analysis.data_util.mesh import plot_mesh
-    from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
-    from LCNE_patchseq_analysis.pipeline_util.s3 import load_mesh_from_s3
+    Args:
+        filter_query: pandas query string to filter the metadata. If None, uses default.
+        slicing_angle: 'sagittal' or 'coronal'. Defaults to 'sagittal'.
 
-    logger.info("Loading metadata...")
-    # Load metadata
-    df_meta = load_ephys_metadata(if_from_s3=True, if_with_seq=True)
-    logger.info(f"Loaded metadata with shape: {df_meta.shape}")
+    Returns:
+        (fig, ax): Matplotlib figure and axes.
+    """
 
-    # Apply the specified filter
-    filter_query = (
-        "(`jem-status_reporter` == 'Positive') & "
-        "(`injection region` != 'Non-Retro') & "
-        "(`injection region` != 'Thalamus')"
-    )
-    df_filtered = df_meta.query(filter_query)
-
-    logger.info(f"Total cells after filtering: {len(df_filtered)}")
-    logger.info("Injection regions in filtered data:")
-    region_counts = df_filtered["injection region"].value_counts()
-    for region, count in region_counts.items():
-        logger.info(f"  {region}: {count}")
-
-    # Load the LC mesh
-    logger.info("Loading LC mesh...")
-    mesh = load_mesh_from_s3()
-
-    # Create the plot with matplotlib backend
-    fig, ax = plt.subplots(figsize=(8, 5), dpi=300)
-
-    # Plot the mesh first (sagittal view)
-    plot_mesh(ax, mesh, direction="sagittal", meshcol="lightgray")
-
-    # Get unique regions and prepare colors using REGION_COLOR_MAPPER
-    unique_regions = df_filtered["injection region"].unique()
-    region_colors = []
-
-    logger.info("Color mapping:")
-    for region in unique_regions:
-        # Try to get color from REGION_COLOR_MAPPER, with fallback
-        color_key = region if region in REGION_COLOR_MAPPER else region.lower()
-        color = REGION_COLOR_MAPPER.get(color_key, "gray")
-        region_colors.append(color)
-        logger.info(f"  {region}: {color}")
-
-    # Plot the filtered data points with consistent colors
-    for i, region in enumerate(unique_regions):
-        region_data = df_filtered[df_filtered["injection region"] == region]
-        ax.scatter(
-            region_data["x"],
-            region_data["y"],
-            c=region_colors[i],
-            alpha=0.7,
-            s=50,
-            edgecolors="black",
-            linewidth=0.5,
-            label=f'{region} (n={len(region_data)}, '
-                  f'{region_data["x"].isnull().sum()} missing data)',
-        )
-
-    # Add labels and title
-    ax.set_xlabel("X Coordinate (μm)", fontsize=12)
-    ax.set_ylabel("Y Coordinate (μm)", fontsize=12)
-    ax.set_title(
-        "LC Mesh with Filtered Data Points (Sagittal View)\n"
-        + 'Filter: jem-status_reporter == "Positive" & injection region != '
-        + '"Non-Retro" & != "Thalamus"\n'
-        + f"n = {len(df_filtered)} cells",
-        fontsize=10,
+    fig, ax = generate_ccf_plot(
+        df_meta, filter_query, view="sagittal", ax=ax, show_marginal_x=True, show_marginal_y=True
     )
 
-    # Add legend
-    ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left", fontsize=10)
-
-    # Ensure equal aspect ratio is maintained
-    ax.set_aspect("equal")
-
-    # Adjust layout to prevent legend cutoff
-    plt.tight_layout()
-
-    # If saving is enabled, save the figure
-    if if_save_fig:
-        # Determine the output directory as the script's folder
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-
-        # Save the figure as PNG
-        output_filename = os.path.join(script_dir, "fig_3a_ccf_projection.png")
-        plt.savefig(
-            output_filename, dpi=300, bbox_inches="tight", facecolor="white", edgecolor="none"
+    if if_save_figure:
+        save_figure(
+            fig=fig,
+            filename="fig_3a_ccf_sagittal_by_projection",
+            formats=("png", "pdf"),
         )
-        logger.info(f"Figure saved as: {output_filename}")
+    return fig, ax
 
-        # Also save as PDF for publication
-        output_pdf = os.path.join(script_dir, "fig_3a_ccf_projection.pdf")
-        plt.savefig(output_pdf, bbox_inches="tight", facecolor="white", edgecolor="none")
-        logger.info(f"Figure saved as: {output_pdf}")
-    else:
-        # Show the plot
-        plt.show()
 
-    # Print summary statistics
-    logger.info("\nSummary statistics:")
-    logger.info(f"- Total filtered cells: {len(df_filtered)}")
+def sup_figure_3a_ccf_coronal(
+    df_meta: pd.DataFrame,
+    filter_query: str | None = None,
+    if_save_figure: bool = True,
+    ax=None,
+) -> tuple:
+    """Supplementary figure for 3A: Sagittal and Coronal views of LC-NE cells by slicing.
 
-    return fig, ax, df_filtered
+    Args:
+        filter_query: pandas query string to filter the metadata. If None, uses default.
+
+    Returns:
+        (fig, ax): Matplotlib figure and axes.
+    """
+
+    fig, ax = generate_ccf_plot(df_meta, filter_query, view="coronal", ax=ax)
+
+    if if_save_figure:
+        save_figure(
+            fig=fig,
+            filename="sup_fig_3a_ccf_sagittal_coronal_by_slicing",
+            dpi=300,
+            formats=("png", "pdf"),
+            bbox_inches="tight",
+        )
+    return fig, ax
+
+
+def figure_3a_ycoord_violin(
+    df_meta: pd.DataFrame,
+    filter_query: str | None = None,
+    if_save_figure: bool = True,
+    ax=None,
+) -> tuple:
+    """
+    Generate and save violin plot for Y coordinate grouped by injection region.
+
+    Args:
+        df_meta: DataFrame containing metadata.
+        filter_query: Optional pandas query string to filter the metadata.
+        if_save_figure: Whether to save the figure to file.
+
+    Returns:
+        (fig, ax): Matplotlib figure and axes, or (None, None) if columns missing.
+    """
+    # Apply filter if provided
+    if filter_query:
+        df_meta = df_meta.query(filter_query)
+
+    fig, ax = generate_violin_plot(
+        df_to_use=df_meta,
+        y_col="y",
+        color_col="injection region",
+        color_palette_dict=REGION_COLOR_MAPPER,
+        ax=ax,
+    )
+    # Revert y-axis
+    ax.invert_yaxis()
+    ax.set_ylabel("Dorsal-ventral (μm)")
+    ax.set_xlabel("")
+
+    if if_save_figure:
+        save_figure(
+            fig,
+            filename="fig_3a_violinplot_ycoord_by_injection_region",
+            dpi=300,
+            formats=("png", "pdf"),
+        )
+        print("Figure saved as fig_3a_violinplot_ycoord_by_injection_region.png/.pdf")
+    return fig, ax
 
 
 if __name__ == "__main__":
-    try:
-        fig, ax, df_filtered = figure_3a_ccf_projection()
-        print("Figure 3A generated successfully!")
-    except Exception as e:
-        logger.error(f"Error generating Figure 3A: {e}")
-        raise
+    # --- Fig 3a. Sagittal view of LC-NE cells colored by projection ---
+    logger.info("Loading metadata...")
+    df_meta = load_ephys_metadata(if_from_s3=True, if_with_seq=True)
+    logger.info(f"Loaded metadata with shape: {df_meta.shape}")
+
+    from LCNE_patchseq_analysis.figures import GLOBAL_FILTER
+
+    figure_3a_ccf_sagittal(df_meta, GLOBAL_FILTER)
+    sup_figure_3a_ccf_coronal(df_meta, GLOBAL_FILTER)
+    figure_3a_ycoord_violin(df_meta, GLOBAL_FILTER)

@@ -10,6 +10,7 @@ from LCNE_patchseq_analysis import RAW_DIRECTORY
 from LCNE_patchseq_analysis.pipeline_util.s3 import (
     get_public_efel_cell_level_stats,
     get_public_mapmycells,
+    get_public_morphology,
     get_public_seq_preselected,
 )
 
@@ -85,7 +86,9 @@ def jsons_to_df(json_dicts):
     return df_merged
 
 
-def load_ephys_metadata(if_from_s3=False, if_with_seq=False, combine_roi_ids=False):
+def load_ephys_metadata(
+    if_from_s3=True, if_with_seq=True, if_with_morphology=True, combine_roi_ids=True
+):
     """Load ephys metadata
 
     Per discussion with Brian, we should only look at those in the spreadsheet.
@@ -97,6 +100,7 @@ def load_ephys_metadata(if_from_s3=False, if_with_seq=False, combine_roi_ids=Fal
                       else, load the downloaded Brian's spreadsheet only.
         if_with_seq: If True, merge in sequencing data from seq_preselected.csv,
                      matching on the exp_component_name column.
+        if_with_morphology: If True, merge in morphology data from S3,
         combine_roi_ids: If True, combine "ephys_roi_id_lims" into "ephys_roi_id_tab_master".
     """
     # -- Load the cell level stats from eFEL output --
@@ -170,6 +174,20 @@ def load_ephys_metadata(if_from_s3=False, if_with_seq=False, combine_roi_ids=Fal
             except Exception as e:
                 logger.error(f"Error merging sequencing data: {e}")
 
+        if if_with_morphology:
+            # -- Merge morphology result from S3 --
+            df_morphology = get_public_morphology()
+            df_morphology = df_morphology.rename(
+                columns=lambda x: f"morphology_{x}" if x != "specimen_id" else x
+            )
+
+            df = df.merge(
+                df_morphology,
+                left_on="cell_specimen_id",
+                right_on="specimen_id",
+                how="left",
+            ).drop(columns=["specimen_id"])
+
         return df
 
     # -- Load the downloaded Brian's spreadsheet only --
@@ -236,5 +254,5 @@ if __name__ == "__main__":
     df_merged = jsons_to_df(json_dicts)
     print(df_merged.head())
 
-    df_meta = load_ephys_metadata()
+    df_meta = load_ephys_metadata(if_from_s3=False)
     print(df_meta.head())
