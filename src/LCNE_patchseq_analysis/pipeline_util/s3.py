@@ -145,6 +145,20 @@ def get_public_mapmycells(filename="mapmycells_20250618.csv"):
         raise FileNotFoundError(f"CSV file not found at {s3_path}: {str(e)}")
 
 
+def get_public_morphology(filename="LC_patchseq_RawFeatureWide.csv"):
+    """
+    Load morphology features from public S3
+    """
+    s3_path = f"{S3_PATH_BASE}/morphology/{filename}"
+    try:
+        with s3.open(s3_path, "rb") as f:
+            # Skip the first four rows
+            df = pd.read_csv(f)
+            return df
+    except Exception as e:
+        raise FileNotFoundError(f"CSV file not found at {s3_path}: {str(e)}")
+
+
 def load_dict_from_hdf5(filename: str):
     """
     Load a dictionary of DataFrames from an HDF5 file using pandas.HDFStore.
