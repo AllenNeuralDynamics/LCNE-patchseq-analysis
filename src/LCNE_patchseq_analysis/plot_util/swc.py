@@ -2,6 +2,7 @@ import navis as nv
 import numpy as np
 import k3d
 from typing import Tuple, List, Optional
+import matplotlib.colors as mcolors
 
 def _split_paths_by_backtrack(df) -> List[np.ndarray]:
     """Split into polylines: if current row's parent_id != previous row's node_id,
@@ -126,37 +127,71 @@ def plot_swc_k3d(
 
 def plot_all_morphology_cells(
     save_html: str = "all_morphology_cells.html",
-    color: int = 0x00aaff,
     width: float = 0.3,
-    soma_color: int = 0xff0000,
+    filter_query: Optional[str] = None,
+    add_lc_mesh: bool = True,
+    mesh_color: int = 0xaaaaaa,
+    mesh_opacity: float = 0.1,
 ) -> k3d.Plot:
-    """Plot all cells with morphology data in a single k3d visualization."""
+    """Plot all cells with morphology data in a single k3d visualization.
+    Uses coordinate system: X (A->P), Y (D->V), Z (L->R).
+    Flips left hemisphere cells (z > 5700) to right hemisphere.
+    Colors neurons by injection region."""
     from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
-    from LCNE_patchseq_analysis import MORPHOLOGY_DIRECTORY
+    from LCNE_patchseq_analysis import MORPHOLOGY_DIRECTORY, REGION_COLOR_MAPPER
+    from LCNE_patchseq_analysis.pipeline_util.s3 import load_mesh_from_s3
+    from LCNE_patchseq_analysis.data_util.mesh import add_mesh_to_k3d
+    
+    def color_to_hex(color_name: str) -> int:
+        """Convert matplotlib color name to hex integer for k3d."""
+        rgb = mcolors.to_rgb(color_name)
+        return int(rgb[0] * 255) << 16 | int(rgb[1] * 255) << 8 | int(rgb[2] * 255)
     
     # Load metadata
     df_meta = load_ephys_metadata(if_from_s3=True, if_with_seq=True, if_with_morphology=True)
+
+    # Apply filter if provided
+    if filter_query:
+        df_meta = df_meta.query(filter_query).copy()
     
     # Filter cells with morphology
     df_with_morph = df_meta[df_meta['morphology_soma_surface_area'].notna()].copy()
     
-    # Create k3d plot
+    # Create k3d plot with axis labels
     plot = k3d.plot()
+    plot.axes = ['X (A→P)', 'Y (D→V)', 'Z (L→R)']
+    
+    # Add LC mesh if requested
+    if add_lc_mesh:
+        mesh = load_mesh_from_s3()
+        plot = add_mesh_to_k3d(plot, mesh, color=mesh_color, opacity=mesh_opacity, both_sides=False)
     
     # Plot each cell
     for idx, row in df_with_morph.iterrows():
         specimen_id = int(row['cell_specimen_id'])
         swc_path = f"{MORPHOLOGY_DIRECTORY}/swc_upright_mdp/{specimen_id}.swc"
         
-        # Get offset from metadata
-        offset = np.array([row['x'], row['y'], row['z']], dtype=np.float32)
+        # Get coordinates from metadata: X (A->P), Y (D->V), Z (L->R)
+        x, y, z = row['x'], row['y'], row['z']
+        
+        # Flip left hemisphere cells to right hemisphere
+        if z > 5700:
+            z = 5700 * 2 - z
+        
+        offset = np.array([x, y, z], dtype=np.float32)
+        
+        # Get color based on injection region
+        injection_region = row.get('injection region', 'Non-Retro')
+        region_key = injection_region if injection_region in REGION_COLOR_MAPPER else injection_region.lower()
+        color_name = REGION_COLOR_MAPPER.get(region_key, 'gray')
+        neuron_color = color_to_hex(color_name)
         
         # Add neuron to plot with offset
         plot, _ = plot_swc_k3d(
             swc_path,
-            color=color,
+            color=neuron_color,
             width=width,
-            soma_color=soma_color,
+            soma_color=neuron_color,
             plot=plot,
             offset=offset
         )
@@ -170,5 +205,7 @@ def plot_all_morphology_cells(
 
 
 if __name__ == "__main__":
-    plot_all_morphology_cells()
+    from LCNE_patchseq_analysis.figures import GLOBAL_FILTER
+    plot_all_morphology_cells(filter_query=None, save_html="all_morphology_cells.html")
+    plot_all_morphology_cells(filter_query=GLOBAL_FILTER, save_html="all_morphology_cells_filtered.html")
 
