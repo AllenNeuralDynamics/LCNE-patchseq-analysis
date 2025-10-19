@@ -52,9 +52,16 @@ def plot_swc_k3d(
     soma_color: int = 0xff0000,
     background_color: Optional[int] = None,
     save_html: Optional[str] = None,
+    plot: Optional[k3d.Plot] = None,
+    offset: Optional[np.ndarray] = None,
 ) -> Tuple[k3d.Plot, List[np.ndarray]]:
     """Render SWC in k3d with a single color; soma is defined ONLY as rows with parent_id==-1,
-    drawn using the real SWC radius."""
+    drawn using the real SWC radius.
+    
+    Args:
+        offset: Optional (x, y, z) offset to apply to all coordinates
+        plot: Optional existing k3d.Plot to add to (creates new if None)
+    """
     # Load (first neuron if list)
     n = nv.read_swc(swc_path)
     if isinstance(n, nv.core.NeuronList):
@@ -67,13 +74,20 @@ def plot_swc_k3d(
     if missing:
         raise ValueError(f"SWC missing columns: {missing}")
 
+    # Apply offset if provided
+    if offset is not None:
+        df['x'] += offset[0]
+        df['y'] += offset[1]
+        df['z'] += offset[2]
+
     # Build polylines by the backtrack rule
     paths = _split_paths_by_backtrack(df)
 
     # Prepare plot
-    plot = k3d.plot()
-    if background_color is not None:
-        plot.background_color = background_color
+    if plot is None:
+        plot = k3d.plot()
+        if background_color is not None:
+            plot.background_color = background_color
 
     # Draw neuron (single color)
     # for P in paths:
@@ -93,7 +107,7 @@ def plot_swc_k3d(
         # Prefer spheres with real-world radii; fall back to points if spheres are unavailable
         try:
             # Some k3d versions provide k3d.spheres(centers=..., radii=..., colors=...)
-            plot += k3d.spheres(centers=centers, radii=radii, colors=[soma_color]*len(radii))
+            plot += k3d.spheres(centers=centers, radii=radii, colors=[soma_color]*len(radii), name=f"{n.name}_soma")
         except AttributeError:
             # Fallback: render as 3D points; point_size approximates radius
             # (Note: depending on k3d version, point_size may behave like pixels; this is a best-effort fallback.)
@@ -108,3 +122,53 @@ def plot_swc_k3d(
             f.write(plot.get_snapshot())
 
     return plot, paths
+
+
+def plot_all_morphology_cells(
+    save_html: str = "all_morphology_cells.html",
+    color: int = 0x00aaff,
+    width: float = 0.3,
+    soma_color: int = 0xff0000,
+) -> k3d.Plot:
+    """Plot all cells with morphology data in a single k3d visualization."""
+    from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
+    from LCNE_patchseq_analysis import MORPHOLOGY_DIRECTORY
+    
+    # Load metadata
+    df_meta = load_ephys_metadata(if_from_s3=True, if_with_seq=True, if_with_morphology=True)
+    
+    # Filter cells with morphology
+    df_with_morph = df_meta[df_meta['morphology_soma_surface_area'].notna()].copy()
+    
+    # Create k3d plot
+    plot = k3d.plot()
+    
+    # Plot each cell
+    for idx, row in df_with_morph.iterrows():
+        specimen_id = int(row['cell_specimen_id'])
+        swc_path = f"{MORPHOLOGY_DIRECTORY}/swc_upright_mdp/{specimen_id}.swc"
+        
+        # Get offset from metadata
+        offset = np.array([row['x'], row['y'], row['z']], dtype=np.float32)
+        
+        # Add neuron to plot with offset
+        plot, _ = plot_swc_k3d(
+            swc_path,
+            color=color,
+            width=width,
+            soma_color=soma_color,
+            plot=plot,
+            offset=offset
+        )
+    
+    # Save to HTML
+    with open(save_html, "w", encoding="utf-8") as f:
+        f.write(plot.get_snapshot())
+    
+    print(f"Saved visualization of {len(df_with_morph)} cells to {save_html}")
+    return plot
+
+
+if __name__ == "__main__":
+    plot_all_morphology_cells()
+
