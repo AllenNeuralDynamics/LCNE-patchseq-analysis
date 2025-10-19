@@ -461,7 +461,7 @@ def generate_ccf_plot(  # NoQA: C901
     for region in sorted_regions:
         color_key = region if region in REGION_COLOR_MAPPER else region.lower()
         color = REGION_COLOR_MAPPER.get(color_key, "gray")
-        label_text = f"{region} (n={sum(df_filtered['injection region']==region)})"
+        label_text = f"{region} (n={sum(df_filtered['injection region']==region)})"  # noqa: E225
         legend_elements.append(
             Line2D(
                 [0],
