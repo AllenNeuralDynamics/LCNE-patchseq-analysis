@@ -1,9 +1,10 @@
-import pandas as pd
 import logging
-from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
-from LCNE_patchseq_analysis.figures.util import generate_violin_plot, save_figure, generate_ccf_plot
-from LCNE_patchseq_analysis import REGION_COLOR_MAPPER
 
+import pandas as pd
+
+from LCNE_patchseq_analysis import REGION_COLOR_MAPPER
+from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
+from LCNE_patchseq_analysis.figures.util import generate_ccf_plot, generate_violin_plot, save_figure
 
 # Configure logging
 logger = logging.getLogger()
@@ -92,7 +93,7 @@ def figure_3a_ycoord_violin(
         y_col="y",
         color_col="injection region",
         color_palette_dict=REGION_COLOR_MAPPER,
-        ax=ax
+        ax=ax,
     )
     # Revert y-axis
     ax.invert_yaxis()
@@ -100,7 +101,12 @@ def figure_3a_ycoord_violin(
     ax.set_xlabel("")
 
     if if_save_figure:
-        save_figure(fig, filename="fig_3a_violinplot_ycoord_by_injection_region", dpi=300, formats=("png", "pdf"))
+        save_figure(
+            fig,
+            filename="fig_3a_violinplot_ycoord_by_injection_region",
+            dpi=300,
+            formats=("png", "pdf"),
+        )
         print("Figure saved as fig_3a_violinplot_ycoord_by_injection_region.png/.pdf")
     return fig, ax
 
@@ -112,6 +118,7 @@ if __name__ == "__main__":
     logger.info(f"Loaded metadata with shape: {df_meta.shape}")
 
     from LCNE_patchseq_analysis.figures import GLOBAL_FILTER
+
     figure_3a_ccf_sagittal(df_meta, GLOBAL_FILTER)
     sup_figure_3a_ccf_coronal(df_meta, GLOBAL_FILTER)
     figure_3a_ycoord_violin(df_meta, GLOBAL_FILTER)

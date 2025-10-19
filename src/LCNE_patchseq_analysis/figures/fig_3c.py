@@ -1,12 +1,10 @@
-import pandas as pd
-
 import matplotlib.pyplot as plt
+import pandas as pd
 
 from LCNE_patchseq_analysis import REGION_COLOR_MAPPER
 from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
-
-from LCNE_patchseq_analysis.figures.util import save_figure, generate_scatter_plot
 from LCNE_patchseq_analysis.figures import DEFAULT_EPHYS_FEATURES
+from LCNE_patchseq_analysis.figures.util import generate_scatter_plot, save_figure
 from LCNE_patchseq_analysis.population_analysis.anova import anova_features
 
 
@@ -21,21 +19,24 @@ def _generate_multi_feature_scatter_plots(
 ):
     """
     Abstract function to generate scatter plots for multiple features vs anatomical y coordinate.
-    
+
     Args:
         df_meta: DataFrame containing metadata.
-        features: List of feature column names to plot. 
-                  For ephys features, this should be a list of dicts like [{"col_name": "display_name"}].
+        features: List of feature column names to plot.
+                  For ephys features, this should be a list of dicts like
+                  [{"col_name": "display_name"}].
                   For gene/morphology, this should be a list of column names.
         df_anova: DataFrame containing ANOVA results.
         filename: Base filename for saving the figure.
         feature_name_mapper: Optional function to map column names to display names.
-                             If None and features is a list of dicts, uses the dict values.
-                             If None and features is a list of strings, strips prefix from column names.
+                             If None and features is a list of dicts,
+                             uses the dict values.
+                             If None and features is a list of strings, strips
+                               prefix from column names.
         filter_query: Optional pandas query string to filter the metadata.
         if_save_figure: Whether to save the figure.
         n_cols: Number of columns in the subplot grid.
-    
+
     Returns:
         (fig, axes): Matplotlib figure and axes array.
     """
@@ -45,8 +46,11 @@ def _generate_multi_feature_scatter_plots(
     n_rows = (n_features + n_cols - 1) // n_cols
 
     fig, axes = plt.subplots(
-        n_rows, n_cols, figsize=(n_cols * 4, n_rows * 3.5), sharex=True,
-        gridspec_kw={"wspace": 0.3, "hspace": 0.5}
+        n_rows,
+        n_cols,
+        figsize=(n_cols * 4, n_rows * 3.5),
+        sharex=True,
+        gridspec_kw={"wspace": 0.3, "hspace": 0.5},
     )
 
     # Ensure axes is 2D array for consistent indexing
@@ -67,13 +71,23 @@ def _generate_multi_feature_scatter_plots(
                 feature_name = feature_name_mapper(col_name)
             else:
                 # Default: strip common prefixes
-                feature_name = col_name.replace("gene_", "").replace("morphology_", "").replace("ipfx_", "")
+                feature_name = (
+                    col_name.replace("gene_", "").replace("morphology_", "").replace("ipfx_", "")
+                )
 
         # Get p-value and adjusted p-value
-        p_val_projection = df_anova.query(f'feature == "{col_name}" and term.str.contains("injection region")')["p"].values[0]
-        p_adj_projection = df_anova.query(f'feature == "{col_name}" and term.str.contains("injection region")')["p_adj"].values[0]
-        p_val_dv = df_anova.query(f'feature == "{col_name}" and term.str.contains("y")')["p"].values[0]
-        p_adj_dv = df_anova.query(f'feature == "{col_name}" and term.str.contains("y")')["p_adj"].values[0]
+        p_val_projection = df_anova.query(
+            f'feature == "{col_name}" and term.str.contains("injection region")'
+        )["p"].values[0]
+        p_adj_projection = df_anova.query(
+            f'feature == "{col_name}" and term.str.contains("injection region")'
+        )["p_adj"].values[0]
+        p_val_dv = df_anova.query(f'feature == "{col_name}" and term.str.contains("y")')[
+            "p"
+        ].values[0]
+        p_adj_dv = df_anova.query(f'feature == "{col_name}" and term.str.contains("y")')[
+            "p_adj"
+        ].values[0]
 
         ax = axes[i // n_cols][i % n_cols]
         generate_scatter_plot(
@@ -85,14 +99,20 @@ def _generate_multi_feature_scatter_plots(
             plot_linear_regression=True,
             show_marginal_y=True,
             marginal_kind="kde",
-            ax=ax
+            ax=ax,
         )
-        
+
         # Compose multi-line styled header: feature name (bold) + stats (smaller)
         ax.set_title("")  # clear default title handling
         ax.text(
-            0.5, 1.2, f"{feature_name}", transform=ax.transAxes,
-            ha="center", va="bottom", fontsize=12, fontweight="bold", 
+            0.5,
+            1.2,
+            f"{feature_name}",
+            transform=ax.transAxes,
+            ha="center",
+            va="bottom",
+            fontsize=12,
+            fontweight="bold",
             color="royalblue" if (p_adj_projection < 0.05 or p_adj_dv < 0.05) else "black",
         )
 
@@ -128,7 +148,7 @@ def _generate_multi_feature_scatter_plots(
     if if_save_figure:
         save_figure(fig, filename=filename, dpi=300, formats=("png", "pdf"))
         print(f"Figure saved as {filename}.png/.pdf")
-    
+
     return fig, axes
 
 
@@ -165,7 +185,7 @@ def figure_3c_tau_comparison(
         plot_linear_regression=True,
         show_marginal_y=True,
         marginal_kind="kde",
-        ax=ax
+        ax=ax,
     )
 
     ax.set_xlabel("Dorsal-ventral (μm)")
@@ -205,7 +225,7 @@ def figure_3c_latency_comparison(
         plot_linear_regression=True,
         show_marginal_y=True,
         marginal_kind="kde",
-        ax=ax
+        ax=ax,
     )
 
     ax.set_xlabel("Dorsal-ventral (μm)")
@@ -261,7 +281,9 @@ def sup_figure_3b_all_gene_features(
         df_meta = df_meta.query(filter_query).copy()
 
     # Get ANOVA results
-    gene_features = [col for col in df_meta.columns if col.startswith("gene_") and "RNA_QC" not in col]
+    gene_features = [
+        col for col in df_meta.columns if col.startswith("gene_") and "RNA_QC" not in col
+    ]
     df_anova = anova_features(
         df_meta,
         features=gene_features,
@@ -270,7 +292,7 @@ def sup_figure_3b_all_gene_features(
         adjust_p=True,
         anova_typ=2,
     )
-    
+
     return _generate_multi_feature_scatter_plots(
         df_meta=df_meta,
         features=gene_features,
@@ -303,7 +325,7 @@ def sup_figure_3d_morphology(
         adjust_p=True,
         anova_typ=2,
     )
-    
+
     return _generate_multi_feature_scatter_plots(
         df_meta=df_meta,
         features=morphology_features,
@@ -316,4 +338,5 @@ def sup_figure_3d_morphology(
 if __name__ == "__main__":
     df_meta = load_ephys_metadata(if_from_s3=True, if_with_seq=True)
     from LCNE_patchseq_analysis.figures import GLOBAL_FILTER
+
     sup_figure_3c_all_ipfx_features(df_meta, GLOBAL_FILTER)

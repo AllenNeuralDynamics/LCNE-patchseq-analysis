@@ -13,8 +13,6 @@ collected into a tidy DataFrame.
 """
 
 import logging
-logger = logging.getLogger(__name__)
-
 from typing import Iterable, List
 
 import numpy as np
@@ -23,11 +21,11 @@ import statsmodels.api as sm
 from statsmodels.formula.api import ols
 from statsmodels.stats.multitest import multipletests
 
-from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
-from LCNE_patchseq_analysis.figures import DEFAULT_EPHYS_FEATURES
+
+logger = logging.getLogger(__name__)
 
 
-def anova_features(
+def anova_features(  # NoQA: C901
     df: pd.DataFrame,
     features: Iterable[str],
     cat_col: str = "injection region",
@@ -91,7 +89,9 @@ def anova_features(
             f_val = row.get("F", np.nan)
             p_val = row.get("PR(>F)", np.nan)
             partial_eta_sq = (
-                sum_sq / (sum_sq + residual_ss) if np.isfinite(residual_ss) and (sum_sq + residual_ss) > 0 else np.nan
+                sum_sq / (sum_sq + residual_ss)
+                if np.isfinite(residual_ss) and (sum_sq + residual_ss) > 0
+                else np.nan
             )
             records.append(
                 {
@@ -132,29 +132,6 @@ def anova_features(
             out.loc[term_idx, "significant"] = reject
 
     # Sort according to the lowest p-value between the two terms for each feature
-    features_sorted = (
-        out.groupby("feature")["p"].min().sort_values().index.tolist()
-    )
+    features_sorted = out.groupby("feature")["p"].min().sort_values().index.tolist()
     out = out.set_index("feature").loc[features_sorted].reset_index()
     return out
-
-
-if __name__ == "__main__":
-    # --- Fig 3a. Sagittal view of LC-NE cells colored by projection ---
-    logger.info("Loading metadata...")
-    df_meta = load_ephys_metadata(if_from_s3=True, if_with_seq=True)
-    logger.info(f"Loaded metadata with shape: {df_meta.shape}")
-
-    from LCNE_patchseq_analysis.figures import GLOBAL_FILTER, GENE_FILTER
-
-    # Run ANOVA on selected ephys features
-    result_ipfx = anova_selected_ephys_features(df_meta, filter_query=GLOBAL_FILTER)
-    logger.info("ANOVA completed on %d features", result_ipfx["feature"].nunique())
-    print(result_ipfx.head())
-
-    # Run ANOVA on gene expression
-    df_filtered = df_meta.query(GENE_FILTER)
-    result_gene = anova_gene(
-        df_filtered,
-        filter_query=GENE_FILTER
-    )

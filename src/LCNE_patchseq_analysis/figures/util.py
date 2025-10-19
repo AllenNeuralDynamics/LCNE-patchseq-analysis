@@ -1,24 +1,23 @@
 """Plotting utilities for LCNE patchseq analysis figures."""
 
-import os
 import logging
+import os
 from typing import Mapping, Sequence
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib import colors as mcolors
-from matplotlib.figure import Figure
 from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
-from matplotlib import gridspec
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from LCNE_patchseq_analysis.data_util.mesh import plot_mesh
-from LCNE_patchseq_analysis.pipeline_util.s3 import load_mesh_from_s3
 from LCNE_patchseq_analysis import REGION_COLOR_MAPPER
+from LCNE_patchseq_analysis.data_util.mesh import plot_mesh
 from LCNE_patchseq_analysis.figures import sort_region
+from LCNE_patchseq_analysis.pipeline_util.s3 import load_mesh_from_s3
 
 logger = logging.getLogger(__name__)
 
@@ -52,48 +51,56 @@ def _overlay_group_stats_on_axis(
     """
     if not stats:
         return
-    if orientation == 'y':
+    if orientation == "y":
         dens_xlim = axis.get_xlim()
         max_x = dens_xlim[1] if dens_xlim[1] > 0 else 1.0
         seg_start = max_x * offset_scale[0]
         seg_end = max_x * offset_scale[1]
         n_stats = len(stats)
-        x_positions = [(seg_start + seg_end) / 2.0] if n_stats == 1 else np.linspace(seg_start, seg_end, n_stats)
+        x_positions = (
+            [(seg_start + seg_end) / 2.0]
+            if n_stats == 1
+            else np.linspace(seg_start, seg_end, n_stats)
+        )
         for (g, mean_val, sem_val, color_val), xpos in zip(stats, x_positions):
             axis.errorbar(
                 xpos,
                 mean_val,
                 yerr=sem_val if sem_val and sem_val > 0 else None,
-                fmt='o',
+                fmt="o",
                 color=color_val,
                 markersize=5,
                 elinewidth=1.5,
                 capsize=3,
-                markeredgecolor='black',
+                markeredgecolor="black",
                 markeredgewidth=0.5,
                 zorder=6,
                 **(marker_kwargs or {}),
             )
         # Set xlim to accommodate markers
         axis.set_xlim(dens_xlim[0], seg_end * 1.2)
-    elif orientation == 'x':
+    elif orientation == "x":
         dens_ylim = axis.get_ylim()
         max_y = dens_ylim[1] if dens_ylim[1] > 0 else 1.0
         seg_start = max_y * offset_scale[0]
         seg_end = max_y * offset_scale[1]
         n_stats = len(stats)
-        y_positions = [(seg_start + seg_end) / 2.0] if n_stats == 1 else np.linspace(seg_start, seg_end, n_stats)
+        y_positions = (
+            [(seg_start + seg_end) / 2.0]
+            if n_stats == 1
+            else np.linspace(seg_start, seg_end, n_stats)
+        )
         for (g, mean_val, sem_val, color_val), ypos in zip(stats, y_positions):
             axis.errorbar(
                 mean_val,
                 ypos,
                 xerr=sem_val if sem_val and sem_val > 0 else None,
-                fmt='o',
+                fmt="o",
                 color=color_val,
                 markersize=5,
                 elinewidth=1.5,
                 capsize=3,
-                markeredgecolor='black',
+                markeredgecolor="black",
                 markeredgewidth=0.5,
                 zorder=6,
                 **(marker_kwargs or {}),
@@ -102,7 +109,7 @@ def _overlay_group_stats_on_axis(
         axis.set_ylim(dens_ylim[0], seg_end * 1.2)
 
 
-def add_marginal_distributions(
+def add_marginal_distributions(    # NoQA: C901
     ax: Axes,
     df: pd.DataFrame,
     x_col: str,
@@ -121,7 +128,8 @@ def add_marginal_distributions(
     """Attach marginal distributions (top/right) with optional mean±SEM overlays.
 
     New features:
-    - Mean±SEM overlay added to x marginal (previously only y) controlled by show_stats_x/show_stats_y.
+    - Mean±SEM overlay added to x marginal (previously only y) controlled
+      by show_stats_x/show_stats_y.
     - Stats stored on ax: ax.marginal_stats_x / ax.marginal_stats_y.
     - Modular internal helpers for clarity.
     """
@@ -174,7 +182,7 @@ def add_marginal_distributions(
             if not np.isnan(mean_val):
                 stats_x.append((g, mean_val, sem_val, color))
         if show_stats_x and stats_x:
-            _overlay_group_stats_on_axis(ax_top, orientation='x', stats=stats_x)
+            _overlay_group_stats_on_axis(ax_top, orientation="x", stats=stats_x)
         ax_top.xaxis.set_visible(False)
         ax_top.yaxis.set_visible(False)
         sns.despine(ax=ax_top, left=True, right=True, top=True, bottom=True)
@@ -217,7 +225,7 @@ def add_marginal_distributions(
             if not np.isnan(mean_val):
                 stats_y.append((g, mean_val, sem_val, color))
         if show_stats_y and stats_y:
-            _overlay_group_stats_on_axis(ax_right, orientation='y', stats=stats_y)
+            _overlay_group_stats_on_axis(ax_right, orientation="y", stats=stats_y)
         ax_right.xaxis.set_visible(False)
         ax_right.yaxis.set_visible(False)
         sns.despine(ax=ax_right, left=True, right=True, top=True, bottom=True)
@@ -255,7 +263,8 @@ def generate_scatter_plot(
         y_col: Column for y axis.
         x_col: Column for x axis.
         color_col: Column that defines groups / colors.
-        color_palette: Mapping from group value to color. If None and color_col is 'injection region' uses REGION_COLOR_MAPPER.
+        color_palette: Mapping from group value to color.
+          If None and color_col is 'injection region' uses REGION_COLOR_MAPPER.
         plot_linear_regression: If True overlay OLS line across all points and annotate p and R^2.
         point_size: Scatter marker size.
         alpha: Point transparency.
@@ -319,6 +328,7 @@ def generate_scatter_plot(
 
     if plot_linear_regression:
         from scipy.stats import linregress  # type: ignore
+
         res = linregress(df_plot[x_col], df_plot[y_col])
         x_vals = pd.Series(sorted(df_plot[x_col].values))
         y_fit = res.intercept + res.slope * x_vals
@@ -357,18 +367,18 @@ def generate_scatter_plot(
         ax.set_xlim(common_min, common_max)
         ax.set_ylim(common_min, common_max)
         ax.plot(
-        	[common_min, common_max],
-        	[common_min, common_max],
-        	color="gray",
-        	linestyle="--",
-        	zorder=5,
-        	label="y=x",
+            [common_min, common_max],
+            [common_min, common_max],
+            color="gray",
+            linestyle="--",
+            zorder=5,
+            label="y=x",
         )
 
     return fig, ax
 
 
-def generate_ccf_plot(
+def generate_ccf_plot(  # NoQA: C901
     df_meta: pd.DataFrame,
     filter_query: str | None,
     view: str,
@@ -389,7 +399,6 @@ def generate_ccf_plot(
         (fig, ax): The matplotlib figure/axes.
     """
 
-
     view = (view or "").strip().lower()
     if view == "sagittal":
         x_key, y_key, mesh_direction, x_label = "x", "y", "sagittal", "Anterior-posterior (μm)"
@@ -397,7 +406,6 @@ def generate_ccf_plot(
         x_key, y_key, mesh_direction, x_label = "z", "y", "coronal", "Left-right (μm)"
     else:
         raise ValueError(f"Invalid view '{view}'. Use 'sagittal' or 'coronal'.")
-
 
     # Apply the specified filter
     if filter_query:
@@ -431,23 +439,23 @@ def generate_ccf_plot(
         color = REGION_COLOR_MAPPER.get(color_key, "gray")
         # Slicing plane match?
         match = row["slicing plane"].lower() == view
-        lw = 3 if match else 0.5
-        ls = 'solid' if match else 'dotted'
+        ls = "solid" if match else "dotted"
         ax.scatter(
-            row[x_key], row[y_key],
+            row[x_key],
+            row[y_key],
             c=[mcolors.to_rgba(color, 1.0)],
             s=60,
-            edgecolors='black',
+            edgecolors="black",
             linestyle=ls,
             label=None,
-            alpha=0.6
+            alpha=0.6,
         )
-        
+
     unique_regions = df_filtered["injection region"].unique()
     sorted_regions = sort_region(unique_regions)
 
     # Sort df_filtered by injection region according to sorted_regions
-    df_filtered = df_filtered.set_index('injection region').loc[sorted_regions].reset_index()
+    df_filtered = df_filtered.set_index("injection region").loc[sorted_regions].reset_index()
 
     legend_elements = []
     for region in sorted_regions:
@@ -456,17 +464,18 @@ def generate_ccf_plot(
         label_text = f"{region} (n={sum(df_filtered['injection region']==region)})"
         legend_elements.append(
             Line2D(
-                [0], [0],
-                marker='o',
-                color='black',
+                [0],
+                [0],
+                marker="o",
+                color="black",
                 markerfacecolor=color,
-                markeredgecolor='black',
+                markeredgecolor="black",
                 markersize=6,
-                linestyle='None',
+                linestyle="None",
                 label=label_text,
             )
         )
-    ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc='upper left')
+    ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc="upper left")
 
     # Add labels and title
     ax.set_xlabel(x_label)
@@ -488,12 +497,12 @@ def generate_ccf_plot(
         y_plot_col = y_key  # always 'y'
         add_marginal_distributions(
             ax=ax,
-            df=df_filtered.rename(columns={x_plot_col: '__x_plot__', y_plot_col: '__y_plot__'}),
-            x_col='__x_plot__',
-            y_col='__y_plot__',
-            group_col='injection region',
+            df=df_filtered.rename(columns={x_plot_col: "__x_plot__", y_plot_col: "__y_plot__"}),
+            x_col="__x_plot__",
+            y_col="__y_plot__",
+            group_col="injection region",
             color_palette=REGION_COLOR_MAPPER,
-            hue_order=sort_region(df_filtered['injection region'].unique()),
+            hue_order=sort_region(df_filtered["injection region"].unique()),
             show_x=show_marginal_x,
             show_y=show_marginal_y,
             kind=marginal_kind,
@@ -501,10 +510,10 @@ def generate_ccf_plot(
             pad=marginal_pad,
         )
         # Clean temporary labels on marginal axes if present
-        if hasattr(ax, 'marginal_ax_x'):
-            getattr(ax, 'marginal_ax_x').set_xlabel("")  # type: ignore[call-arg]
-        if hasattr(ax, 'marginal_ax_y'):
-            getattr(ax, 'marginal_ax_y').set_ylabel("")  # type: ignore[call-arg]
+        if hasattr(ax, "marginal_ax_x"):
+            getattr(ax, "marginal_ax_x").set_xlabel("")  # type: ignore[call-arg]
+        if hasattr(ax, "marginal_ax_y"):
+            getattr(ax, "marginal_ax_y").set_ylabel("")  # type: ignore[call-arg]
 
     # plt.tight_layout()
 
@@ -516,11 +525,7 @@ def generate_ccf_plot(
 
 
 def generate_violin_plot(
-    df_to_use: pd.DataFrame,
-    y_col: str,
-    color_col: str,
-    color_palette_dict: dict,
-    ax=None
+    df_to_use: pd.DataFrame, y_col: str, color_col: str, color_palette_dict: dict, ax=None
 ):
     """
     Create a violin plot to compare data distributions across groups using matplotlib/seaborn.
@@ -554,14 +559,13 @@ def generate_violin_plot(
         group_nan_counts[group] = nan_count
 
     # Convert y_col to numeric
-    plot_df[y_col] = pd.to_numeric(plot_df[y_col], errors='coerce')
+    plot_df[y_col] = pd.to_numeric(plot_df[y_col], errors="coerce")
     plot_df = plot_df.dropna(subset=[y_col])
     if plot_df.empty:
         return fig, ax
 
-
     # If color_col = 'injection region', sort by predefined order
-    if color_col == 'injection region':
+    if color_col == "injection region":
         groups_order = sort_region(plot_df[color_col].unique())
     else:
         groups_order = sorted(plot_df[color_col].unique())
@@ -580,7 +584,7 @@ def generate_violin_plot(
         cut=0,
         order=groups_order,
         width=0.5,
-        legend=False
+        legend=False,
     )
 
     # Overlay raw data points
@@ -590,38 +594,61 @@ def generate_violin_plot(
         x=color_col,
         y=y_col,
         ax=ax,
-        color='black',
+        color="black",
         size=2,
         alpha=0.5,
         jitter=True,
-        order=groups_order
+        order=groups_order,
     )
 
     # Plot mean ± SEM for each group
 
     for i, group in enumerate(groups_order):
-        group_data = pd.to_numeric(plot_df[plot_df[color_col] == group][y_col], errors='coerce').dropna()
+        group_data = pd.to_numeric(
+            plot_df[plot_df[color_col] == group][y_col], errors="coerce"
+        ).dropna()
         if len(group_data) > 0:
             mean_val = float(np.mean(group_data))
-            sem_val = float(np.std(group_data, ddof=1) / np.sqrt(len(group_data))) if len(group_data) > 1 else 0.0
-            group_color = color_palette_dict.get(group, 'black') if color_palette_dict else 'black'
-            ax.plot(i + 0.45, mean_val, 'o', color=group_color, markersize=5,
-                    markeredgecolor='black', markeredgewidth=1, zorder=10)
+            sem_val = (
+                float(np.std(group_data, ddof=1) / np.sqrt(len(group_data)))
+                if len(group_data) > 1
+                else 0.0
+            )
+            group_color = color_palette_dict.get(group, "black") if color_palette_dict else "black"
+            ax.plot(
+                i + 0.45,
+                mean_val,
+                "o",
+                color=group_color,
+                markersize=5,
+                markeredgecolor="black",
+                markeredgewidth=1,
+                zorder=10,
+            )
             if sem_val > 0.0:
-                ax.errorbar(i + 0.45, mean_val, yerr=sem_val, color='black',
-                            capsize=5, capthick=1, elinewidth=1, zorder=9, fmt='none')
+                ax.errorbar(
+                    i + 0.45,
+                    mean_val,
+                    yerr=sem_val,
+                    color="black",
+                    capsize=5,
+                    capthick=1,
+                    elinewidth=1,
+                    zorder=9,
+                    fmt="none",
+                )
 
     # Set x-axis labels with sample counts
 
     group_labels_with_counts = [
-        f"{group}\n(n={group_counts.get(group, 0)})"
-        for group in groups_order
+        f"{group}\n(n={group_counts.get(group, 0)})" for group in groups_order
     ]
-    logger.info("Group counts (non-NA): " + ", ".join(
-        [f"{group}: {group_counts.get(group, 0)}" for group in groups_order]
-    ))
+    logger.info(
+        "Group counts (non-NA): "
+        + ", ".join([f"{group}: {group_counts.get(group, 0)}" for group in groups_order])
+    )
     ax.set_xticks(range(len(groups_order)))
-    ax.set_xticklabels(group_labels_with_counts, rotation=30, ha='right')
+    ax.set_xticklabels(group_labels_with_counts, rotation=30, ha="right")
     ax.set_ylabel(y_col)
     ax.set_xlabel(color_col)
     sns.despine(trim=True, ax=ax)
@@ -634,7 +661,7 @@ def save_figure(
     filename: str = "plot",
     dpi: int = 300,
     formats: tuple[str, ...] = ("png", "pdf"),
-    **kwargs
+    **kwargs,
 ) -> list[str]:
     """Save a matplotlib Figure with standardized naming.
 
@@ -656,13 +683,7 @@ def save_figure(
     saved_paths: list[str] = []
     for ext in formats:
         out_path = os.path.join(output_dir, f"{filename}.{ext}")
-        fig.savefig(
-            out_path,
-            dpi=dpi,
-            facecolor="white",
-            edgecolor="none",
-            **kwargs
-        )
+        fig.savefig(out_path, dpi=dpi, facecolor="white", edgecolor="none", **kwargs)
         logger.info(f"Figure saved as: {out_path}")
         saved_paths.append(out_path)
 

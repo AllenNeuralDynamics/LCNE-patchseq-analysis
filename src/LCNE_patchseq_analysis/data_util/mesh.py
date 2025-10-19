@@ -44,6 +44,7 @@ def plot_mesh(
         # Reflect along axis index i around midline: x_reflected = 2*midline - x
         verts = mesh.vertices.copy()
         verts[:, i] = 2 * midline - verts[:, i]
+
         class _Tmp:
             vertices = verts
             faces = mesh.faces
@@ -92,13 +93,13 @@ def trimesh_to_bokeh_data(mesh, direction: str = "coronal", both_sides: bool = T
 def add_mesh_to_k3d(
     plot,
     mesh,
-    color: int = 0xaaaaaa,
+    color: int = 0xAAAAAA,
     opacity: float = 0.3,
     both_sides: bool = True,
     midline: float = 5700.0,
 ):
     """Add LC mesh to k3d plot.
-    
+
     Args:
         plot: k3d.Plot object
         mesh: trimesh.Trimesh object
@@ -108,19 +109,21 @@ def add_mesh_to_k3d(
         midline: Z coordinate for reflection (default 5700 for L/R hemisphere boundary)
     """
     import k3d
-    
-    vertices = mesh.vertices.astype('float32')
-    indices = mesh.faces.astype('uint32')
-    
+
+    vertices = mesh.vertices.astype("float32")
+    indices = mesh.faces.astype("uint32")
+
     # Add original mesh
     plot += k3d.mesh(vertices, indices, color=color, opacity=opacity, name="LC_mesh")
-    
+
     # Add reflected mesh if both_sides
     if both_sides:
         vertices_reflected = vertices.copy()
         vertices_reflected[:, 2] = 2 * midline - vertices_reflected[:, 2]  # flip Z axis
-        plot += k3d.mesh(vertices_reflected, indices, color=color, opacity=opacity, name="LC_mesh_reflected")
-    
+        plot += k3d.mesh(
+            vertices_reflected, indices, color=color, opacity=opacity, name="LC_mesh_reflected"
+        )
+
     return plot
 
 

@@ -10,8 +10,8 @@ from LCNE_patchseq_analysis import RAW_DIRECTORY
 from LCNE_patchseq_analysis.pipeline_util.s3 import (
     get_public_efel_cell_level_stats,
     get_public_mapmycells,
-    get_public_seq_preselected,
     get_public_morphology,
+    get_public_seq_preselected,
 )
 
 logger = logging.getLogger(__name__)
@@ -86,7 +86,9 @@ def jsons_to_df(json_dicts):
     return df_merged
 
 
-def load_ephys_metadata(if_from_s3=False, if_with_seq=False, if_with_morphology=False, combine_roi_ids=False):
+def load_ephys_metadata(
+    if_from_s3=False, if_with_seq=False, if_with_morphology=False, combine_roi_ids=False
+):
     """Load ephys metadata
 
     Per discussion with Brian, we should only look at those in the spreadsheet.

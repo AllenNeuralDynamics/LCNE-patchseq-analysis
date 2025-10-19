@@ -12,7 +12,9 @@ __version__ = "0.27.0"
 PACKAGE_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 if os.name == "posix":  # Mac/Linux
     RAW_DIRECTORY = "/Users/han.hou/Scripts/LCNE-patchseq-analysis/data/LCNE-patchseq-ephys/raw"
-    MORPHOLOGY_DIRECTORY = "/Users/han.hou/Scripts/LCNE-patchseq-analysis/data/LCNE-patchseq-ephys/morphology"
+    MORPHOLOGY_DIRECTORY = (
+        "/Users/han.hou/Scripts/LCNE-patchseq-analysis/data/LCNE-patchseq-ephys/morphology"
+    )
 else:  # Windows
     RAW_DIRECTORY = os.path.join(R"E:\s3\aind-patchseq-data\raw")
     MORPHOLOGY_DIRECTORY = os.path.join(R"E:\s3\aind-patchseq-data\morphology")
