@@ -139,41 +139,6 @@ def anova_features(
     return out
 
 
-def anova_selected_ephys_features(
-    df: pd.DataFrame,
-    filter_query: str | None = None,
-) -> pd.DataFrame:
-
-    if filter_query:
-        df = df.query(filter_query)
-
-    return anova_features(
-        df,
-        features=[list(col.keys())[0] for col in DEFAULT_EPHYS_FEATURES],
-        cat_col="injection region",
-        cont_col="y",
-        adjust_p=True,
-        anova_typ=2,
-    )
-
-def anova_gene(
-    df: pd.DataFrame,
-    filter_query: str | None = None,
-) -> pd.DataFrame:
-
-    if filter_query:
-        df = df.query(filter_query)
-
-    return anova_features(
-        df,
-        features=[col for col in df.columns if col.startswith("gene_")],
-        cat_col="injection region",
-        cont_col="y",
-        adjust_p=True,
-        anova_typ=2,
-    )
-
-
 if __name__ == "__main__":
     # --- Fig 3a. Sagittal view of LC-NE cells colored by projection ---
     logger.info("Loading metadata...")
