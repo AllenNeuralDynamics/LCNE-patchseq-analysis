@@ -87,7 +87,7 @@ def jsons_to_df(json_dicts):
 
 
 def load_ephys_metadata(
-    if_from_s3=False, if_with_seq=False, if_with_morphology=False, combine_roi_ids=False
+    if_from_s3=True, if_with_seq=True, if_with_morphology=True, combine_roi_ids=True
 ):
     """Load ephys metadata
 
@@ -254,5 +254,5 @@ if __name__ == "__main__":
     df_merged = jsons_to_df(json_dicts)
     print(df_merged.head())
 
-    df_meta = load_ephys_metadata()
+    df_meta = load_ephys_metadata(if_from_s3=False)
     print(df_meta.head())

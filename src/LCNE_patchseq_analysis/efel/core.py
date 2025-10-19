@@ -350,7 +350,7 @@ if __name__ == "__main__":
 
     from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
 
-    df_meta = load_ephys_metadata()
+    df_meta = load_ephys_metadata(if_from_s3=False)
 
     for _ephys_roi_id in ["1408379728"]:
         logger.info(f"Processing {_ephys_roi_id}...")

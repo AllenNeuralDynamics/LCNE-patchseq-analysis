@@ -20,7 +20,7 @@ def extract_efel_features_in_parallel(skip_existing: bool = True, skip_errors: b
     """Extract eFEL features in parallel."""
 
     def get_roi_ids():
-        df_meta = load_ephys_metadata(combine_roi_ids=True)
+        df_meta = load_ephys_metadata(if_from_s3=False, combine_roi_ids=True)
         return df_meta["ephys_roi_id_tab_master"]
 
     def check_existing(ephys_roi_id):
