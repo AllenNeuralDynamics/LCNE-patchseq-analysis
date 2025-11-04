@@ -146,8 +146,8 @@ def _generate_multi_feature_scatter_plots(
         axes[i // n_cols][i % n_cols].set_visible(False)
 
     if if_save_figure:
-        save_figure(fig, filename=filename, dpi=300, formats=("png", "pdf"))
-        print(f"Figure saved as {filename}.png/.pdf")
+        save_figure(fig, filename=filename, dpi=300, formats=("png", "svg"))
+        print(f"Figure saved as {filename}.png/.svg")
 
     return fig, axes
 
@@ -192,8 +192,8 @@ def figure_3c_tau_comparison(
     ax.set_ylabel("Time constant (ms)")
 
     if if_save_figure:
-        save_figure(fig, filename="fig_3c_violinplot_ipfx_tau", dpi=300, formats=("png", "pdf"))
-        print("Figure saved as fig_3c_violinplot_ipfx_tau.png/.pdf")
+        save_figure(fig, filename="fig_3c_violinplot_ipfx_tau", dpi=300, formats=("png", "svg"))
+        print("Figure saved as fig_3c_violinplot_ipfx_tau.png/.svg")
     return fig, ax
 
 
@@ -232,8 +232,8 @@ def figure_3c_latency_comparison(
     ax.set_ylabel("Latency to first spike\nat rheobase (s)")
 
     if if_save_figure:
-        save_figure(fig, filename="fig_3c_violinplot_ipfx_latency", dpi=300, formats=("png", "pdf"))
-        print("Figure saved as fig_3c_violinplot_ipfx_latency.png/.pdf")
+        save_figure(fig, filename="fig_3c_violinplot_ipfx_latency", dpi=300, formats=("png", "svg"))
+        print("Figure saved as fig_3c_violinplot_ipfx_latency.png/.svg")
     return fig, ax
 
 

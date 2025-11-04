@@ -660,7 +660,7 @@ def save_figure(
     output_dir: str | None = None,
     filename: str = "plot",
     dpi: int = 300,
-    formats: tuple[str, ...] = ("png", "pdf"),
+    formats: tuple[str, ...] = ("png", "pdf", "svg"),
     **kwargs,
 ) -> list[str]:
     """Save a matplotlib Figure with standardized naming.
@@ -670,7 +670,7 @@ def save_figure(
         output_dir: Directory to save into; defaults to this script directory.
         filename: The filename without extension.
         dpi: Resolution for raster formats (e.g., PNG).
-        formats: File formats to save, e.g., ("png", "pdf").
+        formats: File formats to save, e.g., ("png", "pdf", "svg").
 
     Returns:
         List of saved file paths in the same order as formats.

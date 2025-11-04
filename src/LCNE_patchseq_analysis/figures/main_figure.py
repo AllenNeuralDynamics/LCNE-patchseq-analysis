@@ -31,7 +31,7 @@ def generate_main_figure(
     ax1_0 = fig.add_subplot(gs0_1[0, 0])  # 3b left
     ax1_1 = fig.add_subplot(gs0_1[0, 1])  # 3b right
     ax2_0 = fig.add_subplot(gs0_2[0, 0])  # 3c left
-    ax2_1 = fig.add_subplot(gs0_2[0, 1])  # 3c right
+    # ax2_1 = fig.add_subplot(gs0_2[0, 1])  # 3c right
 
     figure_3a_ccf_sagittal(df_meta, global_filter, ax=ax0_0, if_save_figure=False)
     ax0_0.set_title("")
@@ -47,14 +47,14 @@ def generate_main_figure(
 
     _, ax2_0 = figure_3c_tau_comparison(df_meta, global_filter, ax=ax2_0, if_save_figure=False)
     ax2_0.get_legend().remove()
-    _, ax2_1 = figure_3c_latency_comparison(df_meta, global_filter, ax=ax2_1, if_save_figure=False)
-    ax2_1.get_legend().remove()
+    # _, ax2_1 = figure_3c_latency_comparison(df_meta, global_filter, ax=ax2_1, if_save_figure=False)
+    # ax2_1.get_legend().remove()
 
     if if_save_figure:
         save_figure(
-            fig, filename="main_figure", dpi=300, formats=("png", "pdf"), bbox_inches="tight"
+            fig, filename="main_figure", dpi=300, formats=("png", "svg"), bbox_inches="tight"
         )
-        print("Figure saved as main_figure.png/.pdf")
+        print("Figure saved as main_figure.png/.svg")
     return fig
 
 

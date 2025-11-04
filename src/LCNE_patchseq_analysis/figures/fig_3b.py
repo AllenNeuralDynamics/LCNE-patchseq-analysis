@@ -46,7 +46,7 @@ def figure_3b_imputed_scRNAseq(
             fig,
             filename="fig_3b_scatter_imp_pseudoclusters_vs_y",
             dpi=300,
-            formats=("png", "pdf"),
+            formats=("png", "svg"),
         )
     return fig, ax
 
@@ -93,7 +93,7 @@ def figure_3b_imputed_MERFISH(
             fig,
             filename="fig_3b_scatter_imp_MERFISH_vs_y",
             dpi=300,
-            formats=("png", "pdf"),
+            formats=("png", "svg"),
         )
     return fig, ax
 
