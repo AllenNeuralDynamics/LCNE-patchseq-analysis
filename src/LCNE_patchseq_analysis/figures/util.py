@@ -242,6 +242,7 @@ def generate_scatter_plot(
     color_col: str,
     color_palette: Mapping[str, str] | None = None,
     plot_linear_regression: bool = True,
+    regression_type: str = "type1",
     point_size: int = 40,
     alpha: float = 0.8,
     figsize: tuple = (4, 4),
@@ -265,7 +266,8 @@ def generate_scatter_plot(
         color_col: Column that defines groups / colors.
         color_palette: Mapping from group value to color.
           If None and color_col is 'injection region' uses REGION_COLOR_MAPPER.
-        plot_linear_regression: If True overlay OLS line across all points and annotate p and R^2.
+        plot_linear_regression: If True overlay regression line across all points and annotate p and R^2.
+        regression_type: "type1" (OLS) or "type2" (RMA). Use type2 when both variables have measurement error.
         point_size: Scatter marker size.
         alpha: Point transparency.
         figsize: Figure size.
@@ -329,20 +331,56 @@ def generate_scatter_plot(
     if plot_linear_regression:
         from scipy.stats import linregress, t  # type: ignore
 
-        res = linregress(df_plot[x_col], df_plot[y_col])
-        x_vals = pd.Series(sorted(df_plot[x_col].values))
-        y_fit = res.intercept + res.slope * x_vals
-        
-        # Calculate confidence interval
-        n = len(df_plot)
-        residuals = df_plot[y_col] - (res.intercept + res.slope * df_plot[x_col])
-        mse = np.sum(residuals**2) / (n - 2)
-        x_mean = df_plot[x_col].mean()
-        sxx = np.sum((df_plot[x_col] - x_mean)**2)
-        se_fit = np.sqrt(mse * (1/n + (x_vals - x_mean)**2 / sxx))
-        t_val = t.ppf(0.975, n - 2)  # 95% CI
-        ci_lower = y_fit - t_val * se_fit
-        ci_upper = y_fit + t_val * se_fit
+        if regression_type == "type1":
+            # Type I regression (OLS)
+            res = linregress(df_plot[x_col], df_plot[y_col])
+            slope = res.slope
+            intercept = res.intercept
+            pvalue = res.pvalue
+            rvalue = res.rvalue
+            
+            # Calculate confidence interval for Type I
+            n = len(df_plot)
+            residuals = df_plot[y_col] - (intercept + slope * df_plot[x_col])
+            mse = np.sum(residuals**2) / (n - 2)
+            x_mean = df_plot[x_col].mean()
+            sxx = np.sum((df_plot[x_col] - x_mean)**2)
+            x_vals = pd.Series(sorted(df_plot[x_col].values))
+            y_fit = intercept + slope * x_vals
+            se_fit = np.sqrt(mse * (1/n + (x_vals - x_mean)**2 / sxx))
+            t_val = t.ppf(0.975, n - 2)
+            ci_lower = y_fit - t_val * se_fit
+            ci_upper = y_fit + t_val * se_fit
+            
+        elif regression_type == "type2":
+            # Type II (RMA) regression
+            x = df_plot[x_col].to_numpy()
+            y = df_plot[y_col].to_numpy()
+            n = len(x)
+            rvalue = np.corrcoef(x, y)[0, 1]
+            t_stat = rvalue * np.sqrt((n - 2) / (1 - rvalue**2))
+            pvalue = 2 * (1 - t.cdf(abs(t_stat), n - 2))
+
+            slope = np.sign(rvalue) * np.std(y, ddof=1) / np.std(x, ddof=1)
+            intercept = y.mean() - slope * x.mean()
+
+            # Approximate CI for slope using Fisher z transform
+            se_r = (1 - rvalue**2) / np.sqrt(n - 3)
+            se_slope = np.std(y, ddof=1) / np.std(x, ddof=1) * se_r / abs(rvalue)
+            t_val = t.ppf(0.975, n - 2)
+
+            slope_ci = slope + np.array([-1, 1]) * t_val * se_slope
+            intercept_ci = y.mean() - slope_ci * x.mean()
+
+            # Fitted line
+            x_vals = np.sort(x)
+            y_fit = intercept + slope * x_vals
+
+            # Confidence band (approx linear propagation)
+            ci_lower = intercept_ci[0] + slope_ci[0] * x_vals
+            ci_upper = intercept_ci[1] + slope_ci[1] * x_vals
+        else:
+            raise ValueError(f"regression_type must be 'type1' or 'type2', got '{regression_type}'")
         
         # Plot confidence band
         ax.fill_between(
@@ -359,13 +397,13 @@ def generate_scatter_plot(
             x_vals,
             y_fit,
             color="black",
-            linewidth=2 if res.pvalue < 0.05 else 1,
-            linestyle="-" if res.pvalue < 0.05 else ":",
+            linewidth=2 if pvalue < 0.05 else 1,
+            linestyle="-" if pvalue < 0.05 else ":",
             zorder=5,
-            label="Linear fit",
+            label=f"{regression_type.upper()} fit",
         )
         # Annotation: p-value and R
-        annotation = f"p={res.pvalue:.2e}, r={res.rvalue:.2f}"
+        annotation = f"p={pvalue:.2e}, r={rvalue:.2f}"
         ax.text(
             0.95,
             0.05,
