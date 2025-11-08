@@ -2,6 +2,9 @@
 
 import matplotlib as mpl
 
+mpl.rcParams['svg.fonttype'] = 'none'
+mpl.rcParams['font.family'] = 'Helvetica'
+
 GLOBAL_FILTER = (
     "(`jem-status_reporter` == 'Positive') & "
     "(`injection region` != 'Non-Retro') & "
@@ -81,7 +84,7 @@ def sort_region(region):
     return sorted(region, key=_region_sort_key)
 
 
-def set_plot_style(base_size: int = 11, font_family: str = "Arial"):
+def set_plot_style(base_size: int = 11, font_family: str = "Helvetica"):
     # Seaborn first (it may overwrite some rcParams)
     # sns.set_theme(context="paper", style="white", font_scale=1.0)
     mpl.rcParams.update(
