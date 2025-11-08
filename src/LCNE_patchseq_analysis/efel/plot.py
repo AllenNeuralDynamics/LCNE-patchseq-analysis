@@ -528,7 +528,7 @@ def plot_cell_summary(
     fig.tight_layout()
     fig.savefig("./tmp.png")
 
-    fig.savefig(f"{RESULTS_DIRECTORY}/cell_stats/{ephys_roi_id}_cell_summary.png", dpi=500)
+    fig.savefig(f"{RESULTS_DIRECTORY}/cell_stats/{ephys_roi_id}_cell_summary.svg", dpi=500)
     plt.close(fig)
 
     return fig
