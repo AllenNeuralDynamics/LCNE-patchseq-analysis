@@ -327,11 +327,34 @@ def generate_scatter_plot(
         )
 
     if plot_linear_regression:
-        from scipy.stats import linregress  # type: ignore
+        from scipy.stats import linregress, t  # type: ignore
 
         res = linregress(df_plot[x_col], df_plot[y_col])
         x_vals = pd.Series(sorted(df_plot[x_col].values))
         y_fit = res.intercept + res.slope * x_vals
+        
+        # Calculate confidence interval
+        n = len(df_plot)
+        residuals = df_plot[y_col] - (res.intercept + res.slope * df_plot[x_col])
+        mse = np.sum(residuals**2) / (n - 2)
+        x_mean = df_plot[x_col].mean()
+        sxx = np.sum((df_plot[x_col] - x_mean)**2)
+        se_fit = np.sqrt(mse * (1/n + (x_vals - x_mean)**2 / sxx))
+        t_val = t.ppf(0.975, n - 2)  # 95% CI
+        ci_lower = y_fit - t_val * se_fit
+        ci_upper = y_fit + t_val * se_fit
+        
+        # Plot confidence band
+        ax.fill_between(
+            x_vals,
+            ci_lower,
+            ci_upper,
+            color="lightgray",
+            alpha=0.3,
+            zorder=3,
+            label="95% CI"
+        )
+        
         ax.plot(
             x_vals,
             y_fit,
