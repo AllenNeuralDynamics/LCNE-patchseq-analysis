@@ -549,6 +549,7 @@ def generate_ccf_plot(  # NoQA: C901
 
     # Ensure equal aspect ratio is maintained
     ax.set_aspect("equal")
+    sns.despine(trim=True, ax=ax)
 
     # Optional marginal distributions (x = AP or LR axis; y = DV) using same color grouping
     if show_marginal_x or show_marginal_y:
