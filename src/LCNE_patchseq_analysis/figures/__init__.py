@@ -2,8 +2,8 @@
 
 import matplotlib as mpl
 
-mpl.rcParams['svg.fonttype'] = 'none'
-mpl.rcParams['font.family'] = 'Helvetica'
+mpl.rcParams["svg.fonttype"] = "none"
+mpl.rcParams["font.family"] = "Helvetica"
 
 GLOBAL_FILTER = (
     "(`jem-status_reporter` == 'Positive') & "

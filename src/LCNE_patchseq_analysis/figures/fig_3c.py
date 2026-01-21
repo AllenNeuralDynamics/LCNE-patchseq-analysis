@@ -8,7 +8,7 @@ from LCNE_patchseq_analysis.figures.util import generate_scatter_plot, save_figu
 from LCNE_patchseq_analysis.population_analysis.anova import anova_features
 
 
-def _generate_multi_feature_scatter_plots(
+def _generate_multi_feature_scatter_plots(  # noqa: C901
     df_meta: pd.DataFrame,
     features: list,
     df_anova: pd.DataFrame,
@@ -113,7 +113,7 @@ def _generate_multi_feature_scatter_plots(
         ax.text(
             0.5,
             1.2,
-            feature_name.replace('@', '\n@'),
+            feature_name.replace("@", "\n@"),
             transform=ax.transAxes,
             ha="center",
             va="bottom",

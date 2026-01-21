@@ -1,20 +1,19 @@
 import matplotlib.pyplot as plt
 
-from LCNE_patchseq_analysis.figures.fig_3a import figure_3a_ccf_sagittal
+from LCNE_patchseq_analysis.figures import set_plot_style
+from LCNE_patchseq_analysis.figures.fig_3a import (
+    figure_3a_ccf_sagittal,
+    sup_figure_3a_ccf_coronal,
+)
 from LCNE_patchseq_analysis.figures.fig_3b import (
     figure_3b_imputed_MERFISH,
     figure_3b_imputed_scRNAseq,
 )
-from LCNE_patchseq_analysis.figures.fig_3c import (
-    figure_3c_latency_comparison,
-    figure_3c_tau_comparison,
-)
-
-from LCNE_patchseq_analysis.figures.fig_3a import sup_figure_3a_ccf_coronal
+from LCNE_patchseq_analysis.figures.fig_3c import figure_3c_tau_comparison
 from LCNE_patchseq_analysis.figures.util import save_figure
 
-from LCNE_patchseq_analysis.figures import set_plot_style
 set_plot_style(base_size=12, font_family="Helvetica")
+
 
 def generate_main_figure(
     df_meta,
@@ -24,7 +23,13 @@ def generate_main_figure(
 ):
     # --- Layout ---
     fig = plt.figure(constrained_layout=False, figsize=(10, 13))
-    gs0 = fig.add_gridspec(3, 1, height_ratios=[1.5, 1, 1], width_ratios=[1], hspace=0.3,)
+    gs0 = fig.add_gridspec(
+        3,
+        1,
+        height_ratios=[1.5, 1, 1],
+        width_ratios=[1],
+        hspace=0.3,
+    )
 
     gs0_0 = gs0[0].subgridspec(1, 2, width_ratios=[1, 1.7], wspace=0.3)
     gs0_1 = gs0[1].subgridspec(1, 2, width_ratios=[1, 1], wspace=0.5)
@@ -59,8 +64,6 @@ def generate_main_figure(
 
     _, ax2_0 = figure_3c_tau_comparison(df_meta, global_filter, ax=ax2_0, if_save_figure=False)
     ax2_0.get_legend().remove()
-    # _, ax2_1 = figure_3c_latency_comparison(df_meta, global_filter, ax=ax2_1, if_save_figure=False)
-    # ax2_1.get_legend().remove()
 
     if if_save_figure:
         save_figure(

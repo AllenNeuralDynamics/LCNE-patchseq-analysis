@@ -21,7 +21,6 @@ import statsmodels.api as sm
 from statsmodels.formula.api import ols
 from statsmodels.stats.multitest import multipletests
 
-
 logger = logging.getLogger(__name__)
 
 

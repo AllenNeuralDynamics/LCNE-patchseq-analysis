@@ -11,7 +11,6 @@ from LCNE_patchseq_analysis.efel.core import extract_efel_one
 from LCNE_patchseq_analysis.efel.plot import generate_sweep_plots_one
 from LCNE_patchseq_analysis.efel.population import extract_cell_level_stats_one
 from LCNE_patchseq_analysis.efel.util import run_parallel_processing
-from LCNE_patchseq_analysis.pipeline_util.s3 import S3_PATH_BASE, sync_directory
 
 logger = logging.getLogger(__name__)
 

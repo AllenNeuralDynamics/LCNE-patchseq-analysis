@@ -109,7 +109,7 @@ def _overlay_group_stats_on_axis(
         axis.set_ylim(dens_ylim[0], seg_end * 1.2)
 
 
-def add_marginal_distributions(    # NoQA: C901
+def add_marginal_distributions(  # NoQA: C901
     ax: Axes,
     df: pd.DataFrame,
     x_col: str,
@@ -266,8 +266,10 @@ def generate_scatter_plot(
         color_col: Column that defines groups / colors.
         color_palette: Mapping from group value to color.
           If None and color_col is 'injection region' uses REGION_COLOR_MAPPER.
-        plot_linear_regression: If True overlay regression line across all points and annotate p and R^2.
-        regression_type: "type1" (OLS) or "type2" (RMA). Use type2 when both variables have measurement error.
+        plot_linear_regression: If True overlay regression line across all points and
+            annotate p and R^2.
+        regression_type: "type1" (OLS) or "type2" (RMA). Use type2 when both
+            variables have measurement error.
         point_size: Scatter marker size.
         alpha: Point transparency.
         figsize: Figure size.
@@ -338,20 +340,20 @@ def generate_scatter_plot(
             intercept = res.intercept
             pvalue = res.pvalue
             rvalue = res.rvalue
-            
+
             # Calculate confidence interval for Type I
             n = len(df_plot)
             residuals = df_plot[y_col] - (intercept + slope * df_plot[x_col])
             mse = np.sum(residuals**2) / (n - 2)
             x_mean = df_plot[x_col].mean()
-            sxx = np.sum((df_plot[x_col] - x_mean)**2)
+            sxx = np.sum((df_plot[x_col] - x_mean) ** 2)
             x_vals = pd.Series(sorted(df_plot[x_col].values))
             y_fit = intercept + slope * x_vals
-            se_fit = np.sqrt(mse * (1/n + (x_vals - x_mean)**2 / sxx))
+            se_fit = np.sqrt(mse * (1 / n + (x_vals - x_mean) ** 2 / sxx))
             t_val = t.ppf(0.975, n - 2)
             ci_lower = y_fit - t_val * se_fit
             ci_upper = y_fit + t_val * se_fit
-            
+
         elif regression_type == "type2":
             # Type II (RMA) regression
             x = df_plot[x_col].to_numpy()
@@ -381,18 +383,12 @@ def generate_scatter_plot(
             ci_upper = intercept_ci[1] + slope_ci[1] * x_vals
         else:
             raise ValueError(f"regression_type must be 'type1' or 'type2', got '{regression_type}'")
-        
+
         # Plot confidence band
         ax.fill_between(
-            x_vals,
-            ci_lower,
-            ci_upper,
-            color="lightgray",
-            alpha=0.3,
-            zorder=3,
-            label="95% CI"
+            x_vals, ci_lower, ci_upper, color="lightgray", alpha=0.3, zorder=3, label="95% CI"
         )
-        
+
         ax.plot(
             x_vals,
             y_fit,
