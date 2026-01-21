@@ -11,7 +11,6 @@ from LCNE_patchseq_analysis.efel.core import extract_efel_one
 from LCNE_patchseq_analysis.efel.plot import generate_sweep_plots_one
 from LCNE_patchseq_analysis.efel.population import extract_cell_level_stats_one
 from LCNE_patchseq_analysis.efel.util import run_parallel_processing
-from LCNE_patchseq_analysis.pipeline_util.s3 import S3_PATH_BASE, sync_directory
 
 logger = logging.getLogger(__name__)
 
@@ -112,20 +111,20 @@ def extract_cell_level_stats_in_parallel(skip_errors: bool = True, if_generate_p
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
-    logger.info("-" * 80)
-    logger.info("Extracting features in parallel...")
-    extract_efel_features_in_parallel(skip_existing=True, skip_errors=True)
+    # logger.info("-" * 80)
+    # logger.info("Extracting features in parallel...")
+    # extract_efel_features_in_parallel(skip_existing=True, skip_errors=True)
 
-    logger.info("-" * 80)
-    logger.info("Generating sweep plots in parallel...")
-    generate_sweep_plots_in_parallel(skip_existing=True, skip_errors=True)
+    # logger.info("-" * 80)
+    # logger.info("Generating sweep plots in parallel...")
+    # generate_sweep_plots_in_parallel(skip_existing=True, skip_errors=True)
 
     logger.info("-" * 80)
     logger.info("Extracting cell-level statistics...")
     extract_cell_level_stats_in_parallel(skip_errors=False, if_generate_plots=True)
 
     # Sync the whole results directory to S3
-    sync_directory(RESULTS_DIRECTORY, S3_PATH_BASE + "/efel", if_copy=False)  # sync only
+    # sync_directory(RESULTS_DIRECTORY, S3_PATH_BASE + "/efel", if_copy=False)  # sync only
 
     # ================================
     # For debugging

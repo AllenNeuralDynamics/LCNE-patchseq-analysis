@@ -34,7 +34,7 @@ def figure_3a_ccf_sagittal(
         save_figure(
             fig=fig,
             filename="fig_3a_ccf_sagittal_by_projection",
-            formats=("png", "pdf"),
+            formats=("png", "svg"),
         )
     return fig, ax
 
@@ -61,7 +61,7 @@ def sup_figure_3a_ccf_coronal(
             fig=fig,
             filename="sup_fig_3a_ccf_sagittal_coronal_by_slicing",
             dpi=300,
-            formats=("png", "pdf"),
+            formats=("png", "svg"),
             bbox_inches="tight",
         )
     return fig, ax
@@ -105,9 +105,9 @@ def figure_3a_ycoord_violin(
             fig,
             filename="fig_3a_violinplot_ycoord_by_injection_region",
             dpi=300,
-            formats=("png", "pdf"),
+            formats=("png", "svg"),
         )
-        print("Figure saved as fig_3a_violinplot_ycoord_by_injection_region.png/.pdf")
+        print("Figure saved as fig_3a_violinplot_ycoord_by_injection_region.png/.svg")
     return fig, ax
 
 

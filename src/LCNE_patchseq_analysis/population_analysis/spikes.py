@@ -60,6 +60,7 @@ def extract_representative_spikes(
     if_normalize_dvdt: bool = True,
     normalize_window_dvdt: tuple = (-2, 0),
     if_smooth_dvdt: bool = True,
+    if_align_dvdt_peaks: bool = True,
     filtered_df_meta: pd.DataFrame = None,
 ):
     """Extract and process representative spike waveforms.
@@ -80,6 +81,8 @@ def extract_representative_spikes(
         Time window for dV/dt normalization
     if_smooth_dvdt : bool, default=True
         Whether to smooth dV/dt traces
+    if_align_dvdt_peaks : bool, default=True
+        Whether to align dV/dt peaks across traces. Set to False for phase plots.
     filtered_df_meta : pd.DataFrame, optional
         Metadata filter to apply
 
@@ -114,20 +117,26 @@ def extract_representative_spikes(
     if if_smooth_dvdt:
         dvdt = savgol_filter(dvdt, window_length=5, polyorder=3, axis=1)
 
-    dvdt_max_idx = np.argmax(dvdt, axis=1)
-    max_shift_right = dvdt_max_idx.max() - dvdt_max_idx.min()
+    # Align dV/dt peaks if requested (useful for time-series plots, but not for phase plots)
+    if if_align_dvdt_peaks:
+        dvdt_max_idx = np.argmax(dvdt, axis=1)
+        max_shift_right = dvdt_max_idx.max() - dvdt_max_idx.min()
 
-    # Calculate new time array that spans all possible shifts
-    dt = t[1] - t[0]
-    t_dvdt = -dvdt_max_idx.max() * dt + np.arange(len(t) + max_shift_right) * dt
+        # Calculate new time array that spans all possible shifts
+        dt = t[1] - t[0]
+        t_dvdt = -dvdt_max_idx.max() * dt + np.arange(len(t) + max_shift_right) * dt
 
-    # Create new dvdt array with NaN padding
-    new_dvdt = np.full((dvdt.shape[0], len(t_dvdt)), np.nan)
+        # Create new dvdt array with NaN padding
+        new_dvdt = np.full((dvdt.shape[0], len(t_dvdt)), np.nan)
 
-    # For each cell, place its dvdt trace in the correct position
-    for i, (row, peak_idx) in enumerate(zip(dvdt, dvdt_max_idx)):
-        start_idx = dvdt_max_idx.max() - peak_idx  # Align the max_index
-        new_dvdt[i, start_idx : start_idx + len(row)] = row
+        # For each cell, place its dvdt trace in the correct position
+        for i, (row, peak_idx) in enumerate(zip(dvdt, dvdt_max_idx)):
+            start_idx = dvdt_max_idx.max() - peak_idx  # Align the max_index
+            new_dvdt[i, start_idx : start_idx + len(row)] = row
+    else:
+        # No alignment - use original dvdt with original time axis
+        new_dvdt = dvdt
+        t_dvdt = t
 
     # Normalize the v
     if if_normalize_v:

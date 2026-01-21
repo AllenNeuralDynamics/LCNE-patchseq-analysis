@@ -8,7 +8,7 @@ from LCNE_patchseq_analysis.figures.util import generate_scatter_plot, save_figu
 from LCNE_patchseq_analysis.population_analysis.anova import anova_features
 
 
-def _generate_multi_feature_scatter_plots(
+def _generate_multi_feature_scatter_plots(  # noqa: C901
     df_meta: pd.DataFrame,
     features: list,
     df_anova: pd.DataFrame,
@@ -76,6 +76,11 @@ def _generate_multi_feature_scatter_plots(
                 )
 
         # Get p-value and adjusted p-value
+        # If col_name not in df_anova, skip
+        if col_name not in df_anova["feature"].values:
+            print(f"Warning: {col_name} not found in ANOVA results, skipping.")
+            continue
+
         p_val_projection = df_anova.query(
             f'feature == "{col_name}" and term.str.contains("injection region")'
         )["p"].values[0]
@@ -97,6 +102,7 @@ def _generate_multi_feature_scatter_plots(
             color_col="injection region",
             color_palette=REGION_COLOR_MAPPER,
             plot_linear_regression=True,
+            regression_type="type1",
             show_marginal_y=True,
             marginal_kind="kde",
             ax=ax,
@@ -107,7 +113,7 @@ def _generate_multi_feature_scatter_plots(
         ax.text(
             0.5,
             1.2,
-            f"{feature_name}",
+            feature_name.replace("@", "\n@"),
             transform=ax.transAxes,
             ha="center",
             va="bottom",
@@ -146,8 +152,8 @@ def _generate_multi_feature_scatter_plots(
         axes[i // n_cols][i % n_cols].set_visible(False)
 
     if if_save_figure:
-        save_figure(fig, filename=filename, dpi=300, formats=("png", "pdf"))
-        print(f"Figure saved as {filename}.png/.pdf")
+        save_figure(fig, filename=filename, dpi=300, formats=("png", "svg"))
+        print(f"Figure saved as {filename}.png/.svg")
 
     return fig, axes
 
@@ -183,6 +189,7 @@ def figure_3c_tau_comparison(
         color_col="injection region",
         color_palette=REGION_COLOR_MAPPER,
         plot_linear_regression=True,
+        regression_type="type1",
         show_marginal_y=True,
         marginal_kind="kde",
         ax=ax,
@@ -192,8 +199,8 @@ def figure_3c_tau_comparison(
     ax.set_ylabel("Time constant (ms)")
 
     if if_save_figure:
-        save_figure(fig, filename="fig_3c_violinplot_ipfx_tau", dpi=300, formats=("png", "pdf"))
-        print("Figure saved as fig_3c_violinplot_ipfx_tau.png/.pdf")
+        save_figure(fig, filename="fig_3c_violinplot_ipfx_tau", dpi=300, formats=("png", "svg"))
+        print("Figure saved as fig_3c_violinplot_ipfx_tau.png/.svg")
     return fig, ax
 
 
@@ -223,6 +230,7 @@ def figure_3c_latency_comparison(
         color_col="injection region",
         color_palette=REGION_COLOR_MAPPER,
         plot_linear_regression=True,
+        regression_type="type1",
         show_marginal_y=True,
         marginal_kind="kde",
         ax=ax,
@@ -232,8 +240,8 @@ def figure_3c_latency_comparison(
     ax.set_ylabel("Latency to first spike\nat rheobase (s)")
 
     if if_save_figure:
-        save_figure(fig, filename="fig_3c_violinplot_ipfx_latency", dpi=300, formats=("png", "pdf"))
-        print("Figure saved as fig_3c_violinplot_ipfx_latency.png/.pdf")
+        save_figure(fig, filename="fig_3c_violinplot_ipfx_latency", dpi=300, formats=("png", "svg"))
+        print("Figure saved as fig_3c_violinplot_ipfx_latency.png/.svg")
     return fig, ax
 
 
@@ -249,6 +257,8 @@ def sup_figure_3c_all_ipfx_features(
         df_meta = df_meta.query(filter_query).copy()
 
     ephys_features = [list(col.keys())[0] for col in DEFAULT_EPHYS_FEATURES]
+    # ephys_features = [col for col in df_meta.columns if col.startswith("efel_")]
+    # ephys_features = [col for col in df_meta.columns if col.startswith("ipfx_")]
 
     # Get ANOVA results
     df_anova = anova_features(
