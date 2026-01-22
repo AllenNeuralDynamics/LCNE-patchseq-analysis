@@ -15,7 +15,9 @@ logger = logging.getLogger(__name__)
 
 s3 = s3fs.S3FileSystem(anon=True)  # All on public bucket
 
-S3_PUBLIC_URL_BASE = "https://aind-scratch-data.s3.us-west-2.amazonaws.com/aind-patchseq-data"
+S3_PUBLIC_URL_BASE = (
+    "https://aind-scratch-data.s3.us-west-2.amazonaws.com/aind-patchseq-data"
+)
 S3_PATH_BASE = "aind-scratch-data/aind-patchseq-data"
 
 
@@ -31,12 +33,16 @@ def sync_directory(local_dir, destination, if_copy=False):
         if if_copy:
             # Run aws s3 cp command and capture the output
             result = subprocess.run(
-                ["aws", "s3", "cp", local_dir, destination], capture_output=True, text=True
+                ["aws", "s3", "cp", local_dir, destination],
+                capture_output=True,
+                text=True,
             )
         else:
             # Run aws s3 sync command and capture the output
             result = subprocess.run(
-                ["aws", "s3", "sync", local_dir, destination], capture_output=True, text=True
+                ["aws", "s3", "sync", local_dir, destination],
+                capture_output=True,
+                text=True,
             )
         output = result.stdout + result.stderr
 
@@ -62,9 +68,7 @@ def check_s3_public_url_exists(s3_url: str) -> bool:
 def get_public_url_sweep(ephys_roi_id: str, sweep_number: int) -> str:
     """Get the public URL for a sweep."""
 
-    s3_sweep = (
-        f"{S3_PUBLIC_URL_BASE}/efel/plots/{ephys_roi_id}/{ephys_roi_id}_sweep_{sweep_number}.png"
-    )
+    s3_sweep = f"{S3_PUBLIC_URL_BASE}/efel/plots/{ephys_roi_id}/{ephys_roi_id}_sweep_{sweep_number}.png"
     s3_spikes = (
         f"{S3_PUBLIC_URL_BASE}/efel/plots/{ephys_roi_id}/"
         f"{ephys_roi_id}_sweep_{sweep_number}_spikes.png"
@@ -100,9 +104,27 @@ def get_public_url_cell_summary(ephys_roi_id: str, if_check_exists: bool = True)
         return s3_url
 
 
-def get_public_representative_spikes() -> pd.DataFrame:
-    """Get the representative spikes for a cell."""
-    s3_url = f"{S3_PUBLIC_URL_BASE}/efel/cell_stats/cell_level_spike_waveforms.pkl"
+def get_public_representative_spikes(
+    spike_type: str = "average",
+) -> pd.DataFrame:
+    """Get spike waveforms for each cell.
+
+    Args:
+        spike_type: One of "average", "first", "second", or "last".
+    """
+    spike_map = {
+        "average": "cell_level_spike_waveforms.pkl",
+        "first": "cell_level_first_spike_waveforms.pkl",
+        "second": "cell_level_second_spike_waveforms.pkl",
+        "last": "cell_level_last_spike_waveforms.pkl",
+    }
+    filename = spike_map.get(spike_type)
+    if filename is None:
+        valid_types = ", ".join(sorted(spike_map))
+        raise ValueError(
+            f"Unknown spike_type '{spike_type}'. Valid options: {valid_types}."
+        )
+    s3_url = f"{S3_PUBLIC_URL_BASE}/efel/cell_stats/{filename}"
     if check_s3_public_url_exists(s3_url):
         return pd.read_pickle(s3_url)
     else:
@@ -138,7 +160,9 @@ def get_public_mapmycells(filename="mapmycells_20250618.csv"):
 
             # Add a new column "subclass_category" based on if "subclass_name" == "251 NTS Dbh Glut"
             df["subclass_category"] = df["subclass_name"].apply(
-                lambda x: "251 NTS Dbh Glut" if x == "251 NTS Dbh Glut" else "Non-Dbh cells"
+                lambda x: "251 NTS Dbh Glut"
+                if x == "251 NTS Dbh Glut"
+                else "Non-Dbh cells"
             )
             return df
     except Exception as e:
