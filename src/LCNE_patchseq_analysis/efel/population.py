@@ -102,13 +102,20 @@ def extract_cell_level_stats_one(ephys_roi_id: str, if_generate_plots: bool = Tr
         )
 
         df_raw_spikes = features_dict["df_spike_waveforms"]
+        df_last_spike_waveforms = features_dict.get("df_last_spike_waveforms", pd.DataFrame())
 
         cell_stats_dict = {}
         cell_representative_spike_waveforms = []
+        cell_representative_last_spike_waveforms = []
+
+        last_spike_features = [
+            feature.replace("first_spike_", "last_spike_") for feature in EXTRACT_SPIKE_FEATURES
+        ]
+        spike_features_to_extract = EXTRACT_SPIKE_FEATURES + last_spike_features
 
         # Loop over spike and sag features
         for feature_type, features_to_extract in [
-            (EXTRACT_SPIKE_FROMS, EXTRACT_SPIKE_FEATURES),
+            (EXTRACT_SPIKE_FROMS, spike_features_to_extract),
             (EXTRACT_SAG_FROMS, EXTRACT_SAG_FEATURES),
         ]:
             for key, value in feature_type.items():
@@ -135,6 +142,19 @@ def extract_cell_level_stats_one(ephys_roi_id: str, if_generate_plots: bool = Tr
                         )
                         cell_representative_spike_waveforms.append(averaged_spike_waveforms)
 
+                    if feature_type is EXTRACT_SPIKE_FROMS and not df_last_spike_waveforms.empty:
+                        df_last_spikes = df_last_spike_waveforms.query(
+                            "sweep_number in @df_sweep.sweep_number.values"
+                        )
+                        if not df_last_spikes.empty:
+                            averaged_last_spike_waveforms = pd.DataFrame(df_last_spikes.mean()).T
+                            averaged_last_spike_waveforms.index = pd.MultiIndex.from_tuples(
+                                [(ephys_roi_id, key)], names=["ephys_roi_id", "extract_from"]
+                            )
+                            cell_representative_last_spike_waveforms.append(
+                                averaged_last_spike_waveforms
+                            )
+
         df_cell_stats = pd.DataFrame(
             cell_stats_dict, index=pd.Index([ephys_roi_id], name="ephys_roi_id")
         )
@@ -143,6 +163,13 @@ def extract_cell_level_stats_one(ephys_roi_id: str, if_generate_plots: bool = Tr
         else:
             df_cell_representative_spike_waveforms = pd.DataFrame()
 
+        if cell_representative_last_spike_waveforms:
+            df_cell_representative_last_spike_waveforms = pd.concat(
+                cell_representative_last_spike_waveforms
+            )
+        else:
+            df_cell_representative_last_spike_waveforms = pd.DataFrame()
+
         logger.info(f"Successfully extracted cell-level stats for {ephys_roi_id}!")
 
         # --- Generate cell-level summary plots ---
@@ -150,6 +177,7 @@ def extract_cell_level_stats_one(ephys_roi_id: str, if_generate_plots: bool = Tr
             return "Success", {
                 "df_cell_stats": df_cell_stats,
                 "df_cell_representative_spike_waveforms": df_cell_representative_spike_waveforms,
+                "df_cell_representative_last_spike_waveforms": df_cell_representative_last_spike_waveforms,
             }
 
         # Get info string for cell summary plot
@@ -196,6 +224,7 @@ def extract_cell_level_stats_one(ephys_roi_id: str, if_generate_plots: bool = Tr
         return "Success", {
             "df_cell_stats": df_cell_stats,
             "df_cell_representative_spike_waveforms": df_cell_representative_spike_waveforms,
+            "df_cell_representative_last_spike_waveforms": df_cell_representative_last_spike_waveforms,
         }
     except Exception as e:
         import traceback

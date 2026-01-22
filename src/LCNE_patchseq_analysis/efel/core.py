@@ -94,6 +94,9 @@ def reformat_features(
             dict_features_per_sweep[f"first_spike_{col}"] = df_features[col].apply(
                 lambda x: x[0] if x is not None and len(x) > 0 else None
             )
+            dict_features_per_sweep[f"last_spike_{col}"] = df_features[col].apply(
+                lambda x: x[-1] if x is not None and len(x) > 1 else None
+            )
 
             # 2. Expand to per-spike DataFrame
             for sweep_idx, sweep_values in df_features[col].items():
@@ -275,6 +278,21 @@ def extract_features_using_efel(
     # -- Extract spike waveforms --
     df_spike_waveforms = extract_spike_waveforms(raw_traces, features_dict)
 
+    # -- Extract last spike waveforms (exclude single-spike sweeps) --
+    spike_index = features_dict["df_features_per_spike"].reset_index()[
+        ["sweep_number", "spike_idx"]
+    ]
+    last_spike_idx = spike_index.groupby("sweep_number")["spike_idx"].max()
+    last_spike_idx = last_spike_idx[last_spike_idx > 0]
+    if last_spike_idx.empty:
+        df_last_spike_waveforms = df_spike_waveforms.iloc[0:0].copy()
+    else:
+        last_spike_index = pd.MultiIndex.from_arrays(
+            [last_spike_idx.index, last_spike_idx.values],
+            names=df_spike_waveforms.index.names,
+        )
+        df_last_spike_waveforms = df_spike_waveforms.loc[last_spike_index].copy()
+
     # -- Extract peri-stimulus raw traces --
     # Append stimulus to raw_traces (doing here because eFEL cannot handle it)
     for raw_trace in raw_traces:
@@ -296,6 +314,7 @@ def extract_features_using_efel(
     # Add metadata to features_dict
     features_dict["df_sweeps"] = df_sweeps
     features_dict["df_spike_waveforms"] = df_spike_waveforms
+    features_dict["df_last_spike_waveforms"] = df_last_spike_waveforms
     features_dict["df_peri_stimulus_raw_traces"] = df_peri_stimulus_raw_traces
     features_dict["efel_settings"] = pd.DataFrame([efel.get_settings().__dict__])
 

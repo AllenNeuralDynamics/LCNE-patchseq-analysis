@@ -74,6 +74,14 @@ def extract_cell_level_stats_in_parallel(skip_errors: bool = True, if_generate_p
         ],
         axis=0,
     )
+    df_cell_representative_last_spike_waveforms = pd.concat(
+        [
+            result[1]["df_cell_representative_last_spike_waveforms"]
+            for result in results
+            if result[0] == "Success"
+        ],
+        axis=0,
+    )
 
     # ---- Merge into Brian's spreadsheet ----
     df_ephys_metadata = load_ephys_metadata(if_from_s3=False, combine_roi_ids=True).rename(
@@ -101,6 +109,9 @@ def extract_cell_level_stats_in_parallel(skip_errors: bool = True, if_generate_p
     # ---- Save the representative spike waveforms to disk ----
     save_path = f"{RESULTS_DIRECTORY}/cell_stats/cell_level_spike_waveforms.pkl"
     df_cell_representative_spike_waveforms.to_pickle(save_path)
+
+    save_path = f"{RESULTS_DIRECTORY}/cell_stats/cell_level_last_spike_waveforms.pkl"
+    df_cell_representative_last_spike_waveforms.to_pickle(save_path)
 
     logger.info(f"Successfully extracted cell-level stats for {len(df_cell_stats)} cells!")
     logger.info(f"Summary table saved to {save_path}")
