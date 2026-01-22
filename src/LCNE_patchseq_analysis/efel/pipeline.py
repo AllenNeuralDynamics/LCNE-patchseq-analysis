@@ -15,7 +15,9 @@ from LCNE_patchseq_analysis.efel.util import run_parallel_processing
 logger = logging.getLogger(__name__)
 
 
-def extract_efel_features_in_parallel(skip_existing: bool = True, skip_errors: bool = True):
+def extract_efel_features_in_parallel(
+    skip_existing: bool = True, skip_errors: bool = True
+):
     """Extract eFEL features in parallel."""
 
     def get_roi_ids():
@@ -23,7 +25,9 @@ def extract_efel_features_in_parallel(skip_existing: bool = True, skip_errors: b
         return df_meta["ephys_roi_id_tab_master"]
 
     def check_existing(ephys_roi_id):
-        return os.path.exists(f"{RESULTS_DIRECTORY}/features/{int(ephys_roi_id)}_efel.h5")
+        return os.path.exists(
+            f"{RESULTS_DIRECTORY}/features/{int(ephys_roi_id)}_efel.h5"
+        )
 
     return run_parallel_processing(
         process_func=extract_efel_one,
@@ -35,11 +39,15 @@ def extract_efel_features_in_parallel(skip_existing: bool = True, skip_errors: b
     )
 
 
-def generate_sweep_plots_in_parallel(skip_existing: bool = True, skip_errors: bool = True):
+def generate_sweep_plots_in_parallel(
+    skip_existing: bool = True, skip_errors: bool = True
+):
     """Generate sweep plots in parallel."""
 
     def check_existing(ephys_roi_id):
-        return os.path.exists(f"{RESULTS_DIRECTORY}/plots/{int(ephys_roi_id)}/all_success")
+        return os.path.exists(
+            f"{RESULTS_DIRECTORY}/plots/{int(ephys_roi_id)}/all_success"
+        )
 
     return run_parallel_processing(
         process_func=generate_sweep_plots_one,
@@ -50,7 +58,9 @@ def generate_sweep_plots_in_parallel(skip_existing: bool = True, skip_errors: bo
     )
 
 
-def extract_cell_level_stats_in_parallel(skip_errors: bool = True, if_generate_plots: bool = True):
+def extract_cell_level_stats_in_parallel(
+    skip_errors: bool = True, if_generate_plots: bool = True
+):
     """Extract cell-level statistics from all available eFEL features files in parallel."""
 
     # ---- Extract cell-level stats ----
@@ -64,7 +74,8 @@ def extract_cell_level_stats_in_parallel(skip_errors: bool = True, if_generate_p
 
     # Filter out None results (errors)
     df_cell_stats = pd.concat(
-        [result[1]["df_cell_stats"] for result in results if result[0] == "Success"], axis=0
+        [result[1]["df_cell_stats"] for result in results if result[0] == "Success"],
+        axis=0,
     )
     df_cell_representative_spike_waveforms = pd.concat(
         [
@@ -74,11 +85,35 @@ def extract_cell_level_stats_in_parallel(skip_errors: bool = True, if_generate_p
         ],
         axis=0,
     )
+    df_cell_representative_first_spike_waveforms = pd.concat(
+        [
+            result[1]["df_cell_representative_first_spike_waveforms"]
+            for result in results
+            if result[0] == "Success"
+        ],
+        axis=0,
+    )
+    df_cell_representative_second_spike_waveforms = pd.concat(
+        [
+            result[1]["df_cell_representative_second_spike_waveforms"]
+            for result in results
+            if result[0] == "Success"
+        ],
+        axis=0,
+    )
+    df_cell_representative_last_spike_waveforms = pd.concat(
+        [
+            result[1]["df_cell_representative_last_spike_waveforms"]
+            for result in results
+            if result[0] == "Success"
+        ],
+        axis=0,
+    )
 
     # ---- Merge into Brian's spreadsheet ----
-    df_ephys_metadata = load_ephys_metadata(if_from_s3=False, combine_roi_ids=True).rename(
-        columns={"ephys_roi_id_tab_master": "ephys_roi_id"}
-    )
+    df_ephys_metadata = load_ephys_metadata(
+        if_from_s3=False, combine_roi_ids=True
+    ).rename(columns={"ephys_roi_id_tab_master": "ephys_roi_id"})
     df_merged = df_ephys_metadata.merge(df_cell_stats, on="ephys_roi_id", how="left")
 
     # ---- Post-processing ----
@@ -92,7 +127,9 @@ def extract_cell_level_stats_in_parallel(skip_errors: bool = True, if_generate_p
     # Remove "first_spike_" in all column names
     df_merged.columns = [col.replace("first_spike_", "") for col in df_merged.columns]
     # Add EFEL_prefix to all columns that has @ in its name
-    df_merged.columns = [f"efel_{col}" if "@" in col else col for col in df_merged.columns]
+    df_merged.columns = [
+        f"efel_{col}" if "@" in col else col for col in df_merged.columns
+    ]
 
     # ---- Save the summary table to disk ----
     save_path = f"{RESULTS_DIRECTORY}/cell_stats/cell_level_stats.csv"
@@ -102,7 +139,18 @@ def extract_cell_level_stats_in_parallel(skip_errors: bool = True, if_generate_p
     save_path = f"{RESULTS_DIRECTORY}/cell_stats/cell_level_spike_waveforms.pkl"
     df_cell_representative_spike_waveforms.to_pickle(save_path)
 
-    logger.info(f"Successfully extracted cell-level stats for {len(df_cell_stats)} cells!")
+    save_path = f"{RESULTS_DIRECTORY}/cell_stats/cell_level_first_spike_waveforms.pkl"
+    df_cell_representative_first_spike_waveforms.to_pickle(save_path)
+
+    save_path = f"{RESULTS_DIRECTORY}/cell_stats/cell_level_second_spike_waveforms.pkl"
+    df_cell_representative_second_spike_waveforms.to_pickle(save_path)
+
+    save_path = f"{RESULTS_DIRECTORY}/cell_stats/cell_level_last_spike_waveforms.pkl"
+    df_cell_representative_last_spike_waveforms.to_pickle(save_path)
+
+    logger.info(
+        f"Successfully extracted cell-level stats for {len(df_cell_stats)} cells!"
+    )
     logger.info(f"Summary table saved to {save_path}")
 
     return df_merged

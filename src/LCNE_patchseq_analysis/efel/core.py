@@ -94,6 +94,12 @@ def reformat_features(
             dict_features_per_sweep[f"first_spike_{col}"] = df_features[col].apply(
                 lambda x: x[0] if x is not None and len(x) > 0 else None
             )
+            dict_features_per_sweep[f"second_spike_{col}"] = df_features[col].apply(
+                lambda x: x[1] if x is not None and len(x) > 1 else None
+            )
+            dict_features_per_sweep[f"last_spike_{col}"] = df_features[col].apply(
+                lambda x: x[-1] if x is not None and len(x) > 1 else None
+            )
 
             # 2. Expand to per-spike DataFrame
             for sweep_idx, sweep_values in df_features[col].items():
@@ -153,7 +159,9 @@ def extract_spike_waveforms(
         DataFrame containing spike waveforms
     """
     peak_times = (
-        features_dict["df_features_per_spike"].reset_index().set_index("sweep_number")["peak_time"]
+        features_dict["df_features_per_spike"]
+        .reset_index()
+        .set_index("sweep_number")["peak_time"]
     )
 
     # Time can be determined by the sampling rate
@@ -168,9 +176,9 @@ def extract_spike_waveforms(
         v = raw_trace["V"]
 
         for peak_time in peak_times_this_sweep:
-            idx = np.where((t >= peak_time + spike_window[0]) & (t < peak_time + spike_window[1]))[
-                0
-            ]
+            idx = np.where(
+                (t >= peak_time + spike_window[0]) & (t < peak_time + spike_window[1])
+            )[0]
             v_this = v[idx]
             vs.append(v_this)
 
@@ -275,11 +283,38 @@ def extract_features_using_efel(
     # -- Extract spike waveforms --
     df_spike_waveforms = extract_spike_waveforms(raw_traces, features_dict)
 
+    # -- Extract last spike waveforms (exclude single-spike sweeps) --
+    spike_index = features_dict["df_features_per_spike"].reset_index()[
+        ["sweep_number", "spike_idx"]
+    ]
+    last_spike_idx = spike_index.groupby("sweep_number")["spike_idx"].max()
+    last_spike_idx = last_spike_idx[last_spike_idx > 0]
+    second_spike_idx = spike_index.groupby("sweep_number")["spike_idx"].max()
+    second_spike_idx = second_spike_idx[second_spike_idx > 0]
+    if last_spike_idx.empty:
+        df_last_spike_waveforms = df_spike_waveforms.iloc[0:0].copy()
+    else:
+        last_spike_index = pd.MultiIndex.from_arrays(
+            [last_spike_idx.index, last_spike_idx.values],
+            names=df_spike_waveforms.index.names,
+        )
+        df_last_spike_waveforms = df_spike_waveforms.loc[last_spike_index].copy()
+    if second_spike_idx.empty:
+        df_second_spike_waveforms = df_spike_waveforms.iloc[0:0].copy()
+    else:
+        second_spike_index = pd.MultiIndex.from_arrays(
+            [second_spike_idx.index, np.ones(len(second_spike_idx), dtype=int)],
+            names=df_spike_waveforms.index.names,
+        )
+        df_second_spike_waveforms = df_spike_waveforms.loc[second_spike_index].copy()
+
     # -- Extract peri-stimulus raw traces --
     # Append stimulus to raw_traces (doing here because eFEL cannot handle it)
     for raw_trace in raw_traces:
         raw_trace["stimulus"] = raw.get_stimulus(raw_trace["sweep_number"][0])
-    df_peri_stimulus_raw_traces = extract_peri_stimulus_raw_traces(raw_traces, features_dict)
+    df_peri_stimulus_raw_traces = extract_peri_stimulus_raw_traces(
+        raw_traces, features_dict
+    )
 
     # -- Enrich df_sweeps --
     df_sweeps = raw.df_sweeps.copy()
@@ -288,14 +323,16 @@ def extract_features_using_efel(
         "spike_count": "efel_num_spikes",
         "first_spike_AP_width": "efel_first_spike_AP_width",
     }
-    _df_to_df_sweeps = features_dict["df_features_per_sweep"][list(col_to_df_sweeps.keys())].rename(
-        columns=col_to_df_sweeps
-    )
+    _df_to_df_sweeps = features_dict["df_features_per_sweep"][
+        list(col_to_df_sweeps.keys())
+    ].rename(columns=col_to_df_sweeps)
     df_sweeps = df_sweeps.merge(_df_to_df_sweeps, on="sweep_number", how="left")
 
     # Add metadata to features_dict
     features_dict["df_sweeps"] = df_sweeps
     features_dict["df_spike_waveforms"] = df_spike_waveforms
+    features_dict["df_second_spike_waveforms"] = df_second_spike_waveforms
+    features_dict["df_last_spike_waveforms"] = df_last_spike_waveforms
     features_dict["df_peri_stimulus_raw_traces"] = df_peri_stimulus_raw_traces
     features_dict["efel_settings"] = pd.DataFrame([efel.get_settings().__dict__])
 
@@ -340,7 +377,9 @@ def extract_efel_one(
     except Exception as e:
         import traceback
 
-        error_message = f"Error processing {ephys_roi_id}: {str(e)}\n{traceback.format_exc()}"
+        error_message = (
+            f"Error processing {ephys_roi_id}: {str(e)}\n{traceback.format_exc()}"
+        )
         logger.error(error_message)
         return error_message
 

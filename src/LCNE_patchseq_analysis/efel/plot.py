@@ -53,7 +53,12 @@ def plot_sweep_raw(
     ax_stimulus = fig.add_subplot(gs[1, 0], sharex=ax)
 
     ax.plot(time, trace, "k-", lw=2)
-    ax.axhline(df_sweep_feature["voltage_base"], color="k", linestyle="--", label="voltage_base")
+    ax.axhline(
+        df_sweep_feature["voltage_base"],
+        color="k",
+        linestyle="--",
+        label="voltage_base",
+    )
 
     if df_sweep_feature["spike_count"] > 0:
         ax.plot(
@@ -62,7 +67,12 @@ def plot_sweep_raw(
             "go",
             label="AP_begin",
         )
-        ax.plot(df_spike_feature["peak_time"], df_spike_feature["peak_voltage"], "ro", label="peak")
+        ax.plot(
+            df_spike_feature["peak_time"],
+            df_spike_feature["peak_voltage"],
+            "ro",
+            label="peak",
+        )
 
         # Plot min_AHP (if in the peri-stimulus period)
         min_AHP_time = df_spike_feature["min_AHP_indices"] * TIME_STEP
@@ -118,7 +128,10 @@ def plot_sweep_raw(
         voltage_deflection = df_sweep_feature["voltage_deflection"]
         ax.plot(
             [stim_start, stim_start],
-            [steady_state_voltage_stimend, steady_state_voltage_stimend + (-voltage_deflection)],
+            [
+                steady_state_voltage_stimend,
+                steady_state_voltage_stimend + (-voltage_deflection),
+            ],
             color="red",
             ls="-",
             label=f"voltage_deflection = {voltage_deflection:.2f}",
@@ -272,7 +285,9 @@ def plot_overlaid_spikes(
                     + df_spike_feature["peak_voltage"].loc[i]
                 ) / 2
 
-                AP_duration_half_width = df_spike_feature["AP_duration_half_width"].loc[i]
+                AP_duration_half_width = df_spike_feature["AP_duration_half_width"].loc[
+                    i
+                ]
                 ax_v.plot(half_rise_time, half_voltage, "mo", ms=10)
                 ax_v.plot(
                     [half_rise_time, half_rise_time + AP_duration_half_width],
@@ -292,7 +307,9 @@ def plot_overlaid_spikes(
             _t_after_begin = np.where(t >= t_begin)[0]
             if len(_t_after_begin) > 0:  # Sometimes t_begin is None
                 begin_ind = _t_after_begin[0]
-                ax_phase.plot(v[begin_ind], dvdt[begin_ind], "go", ms=10, label="AP_begin")
+                ax_phase.plot(
+                    v[begin_ind], dvdt[begin_ind], "go", ms=10, label="AP_begin"
+                )
                 ax_phase.axhline(
                     efel_settings["DerivativeThreshold"],
                     color="g",
@@ -308,11 +325,16 @@ def plot_overlaid_spikes(
                 ax_phase.plot(xx, yy, "g--", label="AP_phaseslope")
 
             # Phase plot: AP_peak_upstroke
-            ax_phase.axhline(peak_upstroke, color="c", linestyle="--", label="AP_peak_upstroke")
+            ax_phase.axhline(
+                peak_upstroke, color="c", linestyle="--", label="AP_peak_upstroke"
+            )
 
             # Phase plot: AP_peak_downstroke
             ax_phase.axhline(
-                peak_downstroke, color="darkblue", linestyle="--", label="AP_peak_downstroke"
+                peak_downstroke,
+                color="darkblue",
+                linestyle="--",
+                label="AP_peak_downstroke",
             )
 
     # Set labels and title
@@ -326,7 +348,9 @@ def plot_overlaid_spikes(
     ax_phase.set_xlabel("Voltage (mV)")
     ax_phase.set_ylabel("dv/dt (mV/ms)")
     ax_phase.set_title("Phase Plots")
-    ax_phase.legend(loc="best", fontsize=12, title="1st spike features", title_fontsize=13)
+    ax_phase.legend(
+        loc="best", fontsize=12, title="1st spike features", title_fontsize=13
+    )
     ax_phase.grid(True)
 
     fig.tight_layout()
@@ -350,9 +374,13 @@ def plot_sweep_summary(features_dict: Dict[str, Any], save_dir: str) -> None:
         has_spikes = df_sweep_feature["spike_count"] > 0
 
         df_spike_feature = (
-            features_dict["df_features_per_spike"].loc[sweep_number] if has_spikes else None
+            features_dict["df_features_per_spike"].loc[sweep_number]
+            if has_spikes
+            else None
         )
-        df_sweep_meta = features_dict["df_sweeps"].query("sweep_number == @sweep_number")
+        df_sweep_meta = features_dict["df_sweeps"].query(
+            "sweep_number == @sweep_number"
+        )
         sweep_this = (
             features_dict["df_peri_stimulus_raw_traces"]
             .query("sweep_number == @sweep_number")
@@ -360,15 +388,20 @@ def plot_sweep_summary(features_dict: Dict[str, Any], save_dir: str) -> None:
         )
 
         # Plot raw sweep
-        fig_sweep = plot_sweep_raw(sweep_this, df_sweep_meta, df_sweep_feature, df_spike_feature)
+        fig_sweep = plot_sweep_raw(
+            sweep_this, df_sweep_meta, df_sweep_feature, df_spike_feature
+        )
         fig_sweep.savefig(
-            f"{save_dir}/{ephys_roi_id}/{ephys_roi_id}_sweep_{sweep_number}.png", dpi=400
+            f"{save_dir}/{ephys_roi_id}/{ephys_roi_id}_sweep_{sweep_number}.png",
+            dpi=400,
         )
         plt.close(fig_sweep)
 
         # Plot spikes if present
         if has_spikes:
-            spike_this = features_dict["df_spike_waveforms"].query("sweep_number == @sweep_number")
+            spike_this = features_dict["df_spike_waveforms"].query(
+                "sweep_number == @sweep_number"
+            )
             fig_spikes = plot_overlaid_spikes(
                 spike_this,
                 sweep_this,
@@ -398,12 +431,14 @@ def generate_sweep_plots_one(ephys_roi_id: str):
     except Exception as e:
         import traceback
 
-        error_message = f"Error processing {ephys_roi_id}: {str(e)}\n{traceback.format_exc()}"
+        error_message = (
+            f"Error processing {ephys_roi_id}: {str(e)}\n{traceback.format_exc()}"
+        )
         logger.error(error_message)
         return error_message
 
 
-def plot_cell_summary(
+def plot_cell_summary(  # noqa: C901
     features_dict: Dict[str, Any],
     sweeps_to_show: Dict[str, Any],
     spikes_to_show: Dict[str, Any],
@@ -470,6 +505,13 @@ def plot_cell_summary(
 
     # -- Spikes --
     color_used = []
+    df_second_spike_waveforms = features_dict.get(
+        "df_second_spike_waveforms", pd.DataFrame()
+    )
+    df_last_spike_waveforms = features_dict.get(
+        "df_last_spike_waveforms", pd.DataFrame()
+    )
+
     for label, settings in spikes_to_show.items():
         sweep_number = settings["sweep_number"]  # noqa: F841
         color = settings["color"]
@@ -481,6 +523,7 @@ def plot_cell_summary(
             "sweep_number == @sweep_number and spike_idx == 0"
         )  # First spike
 
+        base_label = label
         if len(df_spikes_raw) > 0:
             v_spike = df_spikes_raw.values[0]
             t_spike = df_spikes_raw.columns.values
@@ -493,14 +536,105 @@ def plot_cell_summary(
                     .query("sweep_number == @sweep_number")["stimulus_amplitude"]
                     .values[0]
                 )
-                label = (
-                    f"{label.split(',')[0]} ({i_amp:.0f} pA)\n    half width = "
-                    f"{df_spike_feature['AP_duration_half_width'].values[0]:.2f} ms"
+                width_values = []
+                if "AP_duration_half_width" in df_spike_feature.columns:
+                    width_values.append(
+                        df_spike_feature["AP_duration_half_width"].values[0]
+                    )
+
+                df_second_spike_feature = features_dict["df_features_per_spike"].query(
+                    "sweep_number == @sweep_number and spike_idx == 1"
                 )
+                if (
+                    not df_second_spike_feature.empty
+                    and "AP_duration_half_width" in df_second_spike_feature.columns
+                ):
+                    width_values.append(
+                        df_second_spike_feature["AP_duration_half_width"].values[0]
+                    )
+
+                df_last_spike_feature = pd.DataFrame()
+                if not df_last_spike_waveforms.empty:
+                    df_last_spikes_raw = df_last_spike_waveforms.query(
+                        "sweep_number == @sweep_number"
+                    )
+                    if len(df_last_spikes_raw) > 0:
+                        last_spike_idx = df_last_spikes_raw.index.get_level_values(
+                            "spike_idx"
+                        )[0]
+                        df_last_spike_feature = features_dict[
+                            "df_features_per_spike"
+                        ].loc[(sweep_number, last_spike_idx)]
+                        if isinstance(df_last_spike_feature, pd.Series):
+                            df_last_spike_feature = df_last_spike_feature.to_frame().T
+                if (
+                    not df_last_spike_feature.empty
+                    and "AP_duration_half_width" in df_last_spike_feature.columns
+                ):
+                    width_values.append(
+                        df_last_spike_feature["AP_duration_half_width"].values[0]
+                    )
+
+                if width_values:
+                    width_text = ", ".join([f"{value:.2f}" for value in width_values])
+                    base_label = (
+                        f"{label.split(',')[0]} ({i_amp:.0f} pA)\n    half width = "
+                        f"{width_text} ms"
+                    )
+                else:
+                    base_label = f"{label.split(',')[0]} ({i_amp:.0f} pA)"
 
             color_used.append(color)
-            ax_spike.plot(t_spike, v_spike, color, lw=linewidth * 1.5, label=label)
+            ax_spike.plot(t_spike, v_spike, color, lw=linewidth * 1.5, label=base_label)
             ax_phase.plot(v_spike, dvdt_spike, color, lw=linewidth * 1.5)
+
+            if not df_second_spike_waveforms.empty:
+                df_second_spikes_raw = df_second_spike_waveforms.query(
+                    "sweep_number == @sweep_number"
+                )
+                if len(df_second_spikes_raw) > 0:
+                    v_second_spike = df_second_spikes_raw.values[0]
+                    t_second_spike = df_second_spikes_raw.columns.values
+                    dvdt_second_spike = np.gradient(v_second_spike, t_second_spike)
+                    ax_spike.plot(
+                        t_second_spike,
+                        v_second_spike,
+                        color,
+                        lw=linewidth * 1.5,
+                        linestyle="--",
+                        label="_nolegend_",
+                    )
+                    ax_phase.plot(
+                        v_second_spike,
+                        dvdt_second_spike,
+                        color,
+                        lw=linewidth * 1.5,
+                        linestyle="--",
+                    )
+
+            if not df_last_spike_waveforms.empty:
+                df_last_spikes_raw = df_last_spike_waveforms.query(
+                    "sweep_number == @sweep_number"
+                )
+                if len(df_last_spikes_raw) > 0:
+                    v_last_spike = df_last_spikes_raw.values[0]
+                    t_last_spike = df_last_spikes_raw.columns.values
+                    dvdt_last_spike = np.gradient(v_last_spike, t_last_spike)
+                    ax_spike.plot(
+                        t_last_spike,
+                        v_last_spike,
+                        color,
+                        lw=linewidth * 1.5,
+                        linestyle=":",
+                        label="_nolegend_",
+                    )
+                    ax_phase.plot(
+                        v_last_spike,
+                        dvdt_last_spike,
+                        color,
+                        lw=linewidth * 1.5,
+                        linestyle=":",
+                    )
 
     ax_spike.set(xlim=(-2.5, 5.5))
     ax_spike.set_xlabel("Time (ms)")
@@ -514,7 +648,11 @@ def plot_cell_summary(
 
     if color_used:
         legend = ax_spike.legend(
-            loc="best", fontsize=10, title="1st spike", title_fontsize=11, handlelength=0
+            loc="upper right",
+            fontsize=10,
+            title="solid=first, dashed=second, dotted=last",
+            title_fontsize=11,
+            handlelength=0,
         )
         for text, color in zip(legend.get_texts(), color_used):
             text.set_color(color)
@@ -528,7 +666,12 @@ def plot_cell_summary(
     fig.tight_layout()
     fig.savefig("./tmp.png")
 
-    fig.savefig(f"{RESULTS_DIRECTORY}/cell_stats/{ephys_roi_id}_cell_summary.svg", dpi=500)
+    fig.savefig(
+        f"{RESULTS_DIRECTORY}/cell_stats/{ephys_roi_id}_cell_summary.svg", dpi=500
+    )
+    fig.savefig(
+        f"{RESULTS_DIRECTORY}/cell_stats/{ephys_roi_id}_cell_summary.png", dpi=500
+    )
     plt.close(fig)
 
     return fig
