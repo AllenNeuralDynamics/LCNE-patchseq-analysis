@@ -536,10 +536,53 @@ def plot_cell_summary(
                     .query("sweep_number == @sweep_number")["stimulus_amplitude"]
                     .values[0]
                 )
-                base_label = (
-                    f"{label.split(',')[0]} ({i_amp:.0f} pA)\n    half width = "
-                    f"{df_spike_feature['AP_duration_half_width'].values[0]:.2f} ms"
+                width_values = []
+                if "AP_duration_half_width" in df_spike_feature.columns:
+                    width_values.append(
+                        df_spike_feature["AP_duration_half_width"].values[0]
+                    )
+
+                df_second_spike_feature = features_dict["df_features_per_spike"].query(
+                    "sweep_number == @sweep_number and spike_idx == 1"
                 )
+                if (
+                    not df_second_spike_feature.empty
+                    and "AP_duration_half_width" in df_second_spike_feature.columns
+                ):
+                    width_values.append(
+                        df_second_spike_feature["AP_duration_half_width"].values[0]
+                    )
+
+                df_last_spike_feature = pd.DataFrame()
+                if not df_last_spike_waveforms.empty:
+                    df_last_spikes_raw = df_last_spike_waveforms.query(
+                        "sweep_number == @sweep_number"
+                    )
+                    if len(df_last_spikes_raw) > 0:
+                        last_spike_idx = df_last_spikes_raw.index.get_level_values(
+                            "spike_idx"
+                        )[0]
+                        df_last_spike_feature = features_dict[
+                            "df_features_per_spike"
+                        ].query(
+                            "sweep_number == @sweep_number and spike_idx == @last_spike_idx"
+                        )
+                if (
+                    not df_last_spike_feature.empty
+                    and "AP_duration_half_width" in df_last_spike_feature.columns
+                ):
+                    width_values.append(
+                        df_last_spike_feature["AP_duration_half_width"].values[0]
+                    )
+
+                if width_values:
+                    width_text = ", ".join([f"{value:.2f}" for value in width_values])
+                    base_label = (
+                        f"{label.split(',')[0]} ({i_amp:.0f} pA)\n    half width = "
+                        f"{width_text} ms"
+                    )
+                else:
+                    base_label = f"{label.split(',')[0]} ({i_amp:.0f} pA)"
 
             color_used.append(color)
             ax_spike.plot(t_spike, v_spike, color, lw=linewidth * 1.5, label=base_label)
@@ -553,30 +596,14 @@ def plot_cell_summary(
                     v_second_spike = df_second_spikes_raw.values[0]
                     t_second_spike = df_second_spikes_raw.columns.values
                     dvdt_second_spike = np.gradient(v_second_spike, t_second_spike)
-                    second_spike_idx = df_second_spikes_raw.index.get_level_values(
-                        "spike_idx"
-                    )[0]
-                    df_second_spike_feature = features_dict[
-                        "df_features_per_spike"
-                    ].query(
-                        "sweep_number == @sweep_number and spike_idx == @second_spike_idx"
-                    )
-                    second_label = f"{base_label.splitlines()[0]} (second spike)"
-                    if "AP_duration_half_width" in df_second_spike_feature.columns:
-                        second_label = (
-                            f"{second_label}\n    half width = "
-                            f"{df_second_spike_feature['AP_duration_half_width'].values[0]:.2f} ms"
-                        )
-
                     ax_spike.plot(
                         t_second_spike,
                         v_second_spike,
                         color,
                         lw=linewidth * 1.5,
                         linestyle="--",
-                        label=second_label,
+                        label="_nolegend_",
                     )
-                    color_used.append(color)
                     ax_phase.plot(
                         v_second_spike,
                         dvdt_second_spike,
@@ -593,30 +620,14 @@ def plot_cell_summary(
                     v_last_spike = df_last_spikes_raw.values[0]
                     t_last_spike = df_last_spikes_raw.columns.values
                     dvdt_last_spike = np.gradient(v_last_spike, t_last_spike)
-                    last_spike_idx = df_last_spikes_raw.index.get_level_values(
-                        "spike_idx"
-                    )[0]
-                    df_last_spike_feature = features_dict[
-                        "df_features_per_spike"
-                    ].query(
-                        "sweep_number == @sweep_number and spike_idx == @last_spike_idx"
-                    )
-                    last_label = f"{base_label.splitlines()[0]} (last spike)"
-                    if "AP_duration_half_width" in df_last_spike_feature.columns:
-                        last_label = (
-                            f"{last_label}\n    half width = "
-                            f"{df_last_spike_feature['AP_duration_half_width'].values[0]:.2f} ms"
-                        )
-
                     ax_spike.plot(
                         t_last_spike,
                         v_last_spike,
                         color,
                         lw=linewidth * 1.5,
                         linestyle=":",
-                        label=last_label,
+                        label="_nolegend_",
                     )
-                    color_used.append(color)
                     ax_phase.plot(
                         v_last_spike,
                         dvdt_last_spike,
@@ -637,9 +648,9 @@ def plot_cell_summary(
 
     if color_used:
         legend = ax_spike.legend(
-            loc="best",
+            loc="upper right",
             fontsize=10,
-            title="Spike (solid=first, dashed=second, dotted=last)",
+            title="solid=first, dashed=second, dotted=last",
             title_fontsize=11,
             handlelength=0,
         )
