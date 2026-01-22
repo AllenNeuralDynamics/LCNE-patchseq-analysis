@@ -438,7 +438,7 @@ def generate_sweep_plots_one(ephys_roi_id: str):
         return error_message
 
 
-def plot_cell_summary(
+def plot_cell_summary(  # noqa: C901
     features_dict: Dict[str, Any],
     sweeps_to_show: Dict[str, Any],
     spikes_to_show: Dict[str, Any],
@@ -564,9 +564,9 @@ def plot_cell_summary(
                         )[0]
                         df_last_spike_feature = features_dict[
                             "df_features_per_spike"
-                        ].query(
-                            "sweep_number == @sweep_number and spike_idx == @last_spike_idx"
-                        )
+                        ].loc[(sweep_number, last_spike_idx)]
+                        if isinstance(df_last_spike_feature, pd.Series):
+                            df_last_spike_feature = df_last_spike_feature.to_frame().T
                 if (
                     not df_last_spike_feature.empty
                     and "AP_duration_half_width" in df_last_spike_feature.columns

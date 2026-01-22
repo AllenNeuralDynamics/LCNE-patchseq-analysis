@@ -258,10 +258,18 @@ def extract_cell_level_stats_one(ephys_roi_id: str, if_generate_plots: bool = Tr
         if not if_generate_plots:
             return "Success", {
                 "df_cell_stats": df_cell_stats,
-                "df_cell_representative_spike_waveforms": df_cell_representative_spike_waveforms,
-                "df_cell_representative_first_spike_waveforms": df_cell_representative_first_spike_waveforms,
-                "df_cell_representative_second_spike_waveforms": df_cell_representative_second_spike_waveforms,
-                "df_cell_representative_last_spike_waveforms": df_cell_representative_last_spike_waveforms,
+                "df_cell_representative_spike_waveforms": (
+                    df_cell_representative_spike_waveforms
+                ),
+                "df_cell_representative_first_spike_waveforms": (
+                    df_cell_representative_first_spike_waveforms
+                ),
+                "df_cell_representative_second_spike_waveforms": (
+                    df_cell_representative_second_spike_waveforms
+                ),
+                "df_cell_representative_last_spike_waveforms": (
+                    df_cell_representative_last_spike_waveforms
+                ),
             }
 
         # Get info string for cell summary plot
@@ -313,10 +321,18 @@ def extract_cell_level_stats_one(ephys_roi_id: str, if_generate_plots: bool = Tr
 
         return "Success", {
             "df_cell_stats": df_cell_stats,
-            "df_cell_representative_spike_waveforms": df_cell_representative_spike_waveforms,
-            "df_cell_representative_first_spike_waveforms": df_cell_representative_first_spike_waveforms,
-            "df_cell_representative_second_spike_waveforms": df_cell_representative_second_spike_waveforms,
-            "df_cell_representative_last_spike_waveforms": df_cell_representative_last_spike_waveforms,
+            "df_cell_representative_spike_waveforms": (
+                df_cell_representative_spike_waveforms
+            ),
+            "df_cell_representative_first_spike_waveforms": (
+                df_cell_representative_first_spike_waveforms
+            ),
+            "df_cell_representative_second_spike_waveforms": (
+                df_cell_representative_second_spike_waveforms
+            ),
+            "df_cell_representative_last_spike_waveforms": (
+                df_cell_representative_last_spike_waveforms
+            ),
         }
     except Exception as e:
         import traceback
