@@ -208,7 +208,8 @@ def plot_example_spike(
         return
     voltage = df_spikes.loc[key].to_numpy(dtype=float)
     metrics = df_metrics.query(
-        "ephys_roi_id == @ephys_roi_id and extract_from == @extract_from and spike_type == @spike_type"
+        "ephys_roi_id == @ephys_roi_id and extract_from == @extract_from "
+        "and spike_type == @spike_type"
     )
     if metrics.empty:
         return
