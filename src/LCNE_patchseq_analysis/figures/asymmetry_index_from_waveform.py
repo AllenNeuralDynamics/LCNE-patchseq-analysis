@@ -24,12 +24,15 @@ logger = logging.getLogger(__name__)
 
 
 def find_local_maxima(values: np.ndarray) -> np.ndarray:
+    """Return indices of local maxima in a 1D array."""
     if values.size < 3:
         return np.array([], dtype=int)
     return np.where((values[1:-1] > values[:-2]) & (values[1:-1] > values[2:]))[0] + 1
 
 
 def compute_spike_metrics(times_ms: np.ndarray, voltages: np.ndarray) -> dict:
+    """Compute dv/dt-based timing metrics for a single spike waveform."""
+    # Compute rise/fall timing from dv/dt features.
     dv = np.gradient(voltages, times_ms)
     peak_deriv_idx = int(np.argmax(dv))
     post_peak_slice = dv[peak_deriv_idx + 1 :]
@@ -99,6 +102,7 @@ def compute_spike_metrics(times_ms: np.ndarray, voltages: np.ndarray) -> dict:
 
 
 def compute_metrics_for_table(df_spikes: pd.DataFrame, spike_type: str):
+    """Compute timing metrics and keep waveform vectors for PCA."""
     df_spikes = df_spikes.copy()
     df_spikes.index = df_spikes.index.set_levels(
         df_spikes.index.levels[0].astype(str), level=0
@@ -129,6 +133,7 @@ def compute_metrics_for_table(df_spikes: pd.DataFrame, spike_type: str):
 
 
 def drop_subthreshold(df_spikes: pd.DataFrame) -> pd.DataFrame:
+    """Remove subthreshold stimulus rows based on extract_from label."""
     if not isinstance(df_spikes.index, pd.MultiIndex):
         return df_spikes
     extract_from = df_spikes.index.get_level_values(1).astype(str)
@@ -136,6 +141,8 @@ def drop_subthreshold(df_spikes: pd.DataFrame) -> pd.DataFrame:
 
 
 def compute_pc1(features: np.ndarray) -> np.ndarray:
+    """Compute a whitened PC1 score for each row in a feature matrix."""
+    # Standardize features then compute whitened PC1.
     valid_mask = np.isfinite(features).all(axis=1)
     pc1 = np.full(features.shape[0], np.nan)
     if valid_mask.sum() > 2:
@@ -148,6 +155,8 @@ def compute_pc1(features: np.ndarray) -> np.ndarray:
 
 
 def add_pca_variants(df_metrics: pd.DataFrame, ephys_cols: list[str]) -> pd.DataFrame:
+    """Add multiple PCA projections to the metrics table."""
+    # Generate PCA variants across spike types.
     df_metrics = df_metrics.copy()
     for spike_type, df_group in df_metrics.groupby("spike_type"):
         idx = df_group.index
@@ -193,6 +202,7 @@ def plot_example_spike(
     spike_type: str,
     output_dir: str,
 ):
+    """Plot waveform and dv/dt diagnostics for a single example."""
     key = (str(ephys_roi_id), extract_from)
     if key not in df_spikes.index:
         return
@@ -267,10 +277,12 @@ def plot_example_spike(
 
 
 def sanitize_filename(text: str) -> str:
+    """Normalize text for file-friendly names."""
     return text.replace(",", "").replace(" ", "_").replace("/", "-").replace("\\", "-")
 
 
 def plot_summary_by_region(df_metrics: pd.DataFrame, output_dir: str) -> None:
+    """Summarize time asymmetry and PC1 by injection region."""
     os.makedirs(output_dir, exist_ok=True)
     for (spike_type, extract_from), df_group in df_metrics.groupby(
         ["spike_type", "extract_from"]
@@ -308,6 +320,8 @@ def plot_summary_by_region(df_metrics: pd.DataFrame, output_dir: str) -> None:
 
 
 def plot_pc_on_mesh(df_metrics: pd.DataFrame, output_dir: str) -> None:
+    """Plot PC projections on the LC mesh for each spike type."""
+    # Plot PC1 projections on the LC mesh for each spike type.
     os.makedirs(output_dir, exist_ok=True)
     mesh = load_mesh_from_s3()
     pc_variants = [
@@ -379,6 +393,7 @@ def plot_pc_on_mesh(df_metrics: pd.DataFrame, output_dir: str) -> None:
 
 
 def run_anova_by_group(df_metrics: pd.DataFrame) -> pd.DataFrame:
+    """Run ANCOVA for time asymmetry and PC1 across groups."""
     results = []
     for (spike_type, extract_from), df_group in df_metrics.groupby(
         ["spike_type", "extract_from"]
@@ -403,9 +418,11 @@ def run_anova_by_group(df_metrics: pd.DataFrame) -> pd.DataFrame:
 
 
 def main():
+    """Entry point for waveform-derived asymmetry analysis."""
     logging.basicConfig(level=logging.INFO)
     set_plot_style(base_size=12, font_family="Helvetica")
 
+    # 1) Load representative spikes per spike type and compute dv/dt timing metrics.
     example_count = 20
     spike_types = ["average", "first", "second", "last"]
     metrics_all = []
@@ -417,6 +434,7 @@ def main():
         df_metrics, times_ms = compute_metrics_for_table(df_spikes, spike_type)
         metrics_all.append(df_metrics)
 
+        # 2) Render a subset of diagnostic examples for manual inspection.
         example_pool = df_metrics.dropna(
             subset=["kick_idx", "peak_deriv_idx", "trough_deriv_idx"]
         )
@@ -440,6 +458,7 @@ def main():
                 output_dir,
             )
 
+    # 3) Merge all spike types into a single table and drop subthreshold stimuli.
     df_metrics_all = pd.concat(metrics_all, ignore_index=True)
     df_metrics_all = df_metrics_all[
         ~df_metrics_all["extract_from"].str.contains("subthreshold", case=False)
@@ -448,6 +467,7 @@ def main():
     df_meta = df_meta.query(GLOBAL_FILTER).copy()
     default_ephys_cols = [list(item.keys())[0] for item in DEFAULT_EPHYS_FEATURES]
     ephys_cols = [col for col in default_ephys_cols if col in df_meta.columns]
+    # 4) Join injection region metadata and default ephys features.
     df_metrics_all = df_metrics_all.merge(
         df_meta[["ephys_roi_id", "injection region", "y", "x", *ephys_cols]],
         on="ephys_roi_id",
@@ -455,9 +475,12 @@ def main():
     )
     df_metrics_all["extract_from"] = df_metrics_all["extract_from"].astype(str)
 
+    # 5) Compute PCA variants and run ANCOVA per stimulus/spike type.
     df_metrics_all = df_metrics_all.dropna(subset=["injection region", "y"])
     df_metrics_all = add_pca_variants(df_metrics_all, ephys_cols)
     df_anova = run_anova_by_group(df_metrics_all)
+
+    # 6) Generate summary plots and mesh projections.
     plot_summary_by_region(
         df_metrics_all,
         output_dir=os.path.join(
@@ -468,6 +491,8 @@ def main():
         df_metrics_all,
         output_dir=os.path.join(RESULTS_DIRECTORY, "figures", "asymmetry_pc_mesh"),
     )
+
+    # 7) Save metrics and ANCOVA results.
     output_dir = os.path.join(RESULTS_DIRECTORY, "analysis")
     os.makedirs(output_dir, exist_ok=True)
     df_metrics_all.to_csv(

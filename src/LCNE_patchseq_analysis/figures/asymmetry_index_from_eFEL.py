@@ -13,6 +13,8 @@ from LCNE_patchseq_analysis.population_analysis.anova import anova_features
 
 
 def add_efel_asymmetry_columns(df_meta: pd.DataFrame) -> None:
+    """Add eFEL rise/fall asymmetry columns in-place."""
+    # Find rise/fall pairs for each eFEL metric and compute asymmetry.
     rise_cols = {}
     fall_cols = {}
 
@@ -41,6 +43,8 @@ def add_efel_asymmetry_columns(df_meta: pd.DataFrame) -> None:
 
 
 def format_asymmetry_name(col_name: str) -> str:
+    """Convert raw column names into readable plot labels."""
+    # Convert raw column names into readable plot labels.
     display = col_name.replace("efel_", "")
     display = display.replace("AP_asymmetry_index", "asymmetry_index")
     display = display.replace("first_spike_", "first_spike ")
@@ -52,17 +56,21 @@ def format_asymmetry_name(col_name: str) -> str:
 
 
 def main(if_save_figure: bool = True):
+    """Run the eFEL asymmetry analysis and plot the summary figure."""
+    # 1) Load metadata and apply the global filter used by other figures.
     set_plot_style(base_size=12, font_family="Helvetica")
 
     df_meta = load_ephys_metadata(if_from_s3=True, if_with_seq=True)
     df_meta_filtered = df_meta.query(GLOBAL_FILTER).copy()
 
+    # 2) Compute asymmetry columns from all available rise/fall eFEL pairs.
     add_efel_asymmetry_columns(df_meta_filtered)
     asymmetry_cols = sorted(
         [col for col in df_meta_filtered.columns if "_asymmetry @" in col]
     )
     asymmetry_features = [{col: format_asymmetry_name(col)} for col in asymmetry_cols]
 
+    # 3) Run ANCOVA to test projection effects while controlling for y.
     df_anova = anova_features(
         df_meta_filtered,
         features=asymmetry_cols,
@@ -72,6 +80,7 @@ def main(if_save_figure: bool = True):
         anova_typ=2,
     )
 
+    # 4) Generate scatter plots and optionally save them.
     fig, axes = _generate_multi_feature_scatter_plots(
         df_meta=df_meta_filtered,
         features=asymmetry_features,
