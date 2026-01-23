@@ -8,10 +8,16 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
 from LCNE_patchseq_analysis import REGION_COLOR_MAPPER, RESULTS_DIRECTORY
+from LCNE_patchseq_analysis.data_util.mesh import plot_mesh
 from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
-from LCNE_patchseq_analysis.figures import GLOBAL_FILTER, set_plot_style
+from LCNE_patchseq_analysis.figures import (
+    DEFAULT_EPHYS_FEATURES,
+    GLOBAL_FILTER,
+    set_plot_style,
+)
 from LCNE_patchseq_analysis.figures.util import generate_violin_plot, save_figure
 from LCNE_patchseq_analysis.pipeline_util.s3 import get_public_representative_spikes
+from LCNE_patchseq_analysis.pipeline_util.s3 import load_mesh_from_s3
 from LCNE_patchseq_analysis.population_analysis.anova import anova_features
 
 logger = logging.getLogger(__name__)
@@ -117,27 +123,64 @@ def compute_metrics_for_table(df_spikes: pd.DataFrame, spike_type: str):
         )
 
     df_metrics = pd.DataFrame.from_records(records)
-    return df_metrics, np.vstack(waveforms), np.vstack(derivatives), times_ms
+    df_metrics["waveform_vector"] = list(waveforms)
+    df_metrics["dvdt_vector"] = list(derivatives)
+    return df_metrics, times_ms
 
 
-def add_pca_projection(
-    df_metrics: pd.DataFrame,
-    waveforms: np.ndarray,
-    derivatives: np.ndarray,
-) -> pd.DataFrame:
-    metric_cols = ["rise_time_ms", "fall_time_ms", "time_asymmetry"]
-    metric_values = df_metrics[metric_cols].to_numpy(dtype=float)
-    features = np.column_stack([waveforms, derivatives, metric_values])
+def drop_subthreshold(df_spikes: pd.DataFrame) -> pd.DataFrame:
+    if not isinstance(df_spikes.index, pd.MultiIndex):
+        return df_spikes
+    extract_from = df_spikes.index.get_level_values(1).astype(str)
+    return df_spikes.loc[~extract_from.str.contains("subthreshold", case=False)]
+
+
+def compute_pc1(features: np.ndarray) -> np.ndarray:
     valid_mask = np.isfinite(features).all(axis=1)
-
-    pc1 = np.full(len(df_metrics), np.nan)
+    pc1 = np.full(features.shape[0], np.nan)
     if valid_mask.sum() > 2:
         scaler = StandardScaler()
         features_scaled = scaler.fit_transform(features[valid_mask])
-        pca = PCA(n_components=1)
+        pca = PCA(n_components=1, whiten=True)
         pc1_vals = pca.fit_transform(features_scaled).ravel()
         pc1[valid_mask] = pc1_vals
-    df_metrics["pc1"] = pc1
+    return pc1
+
+
+def add_pca_variants(df_metrics: pd.DataFrame, ephys_cols: list[str]) -> pd.DataFrame:
+    df_metrics = df_metrics.copy()
+    for spike_type, df_group in df_metrics.groupby("spike_type"):
+        idx = df_group.index
+        waveforms = np.vstack(df_group["waveform_vector"].to_numpy())
+        derivatives = np.vstack(df_group["dvdt_vector"].to_numpy())
+        derived = df_group[["rise_time_ms", "fall_time_ms", "time_asymmetry"]].to_numpy(
+            dtype=float
+        )
+        if ephys_cols:
+            ephys_values = (
+                df_group[ephys_cols]
+                .apply(pd.to_numeric, errors="coerce")
+                .to_numpy(dtype=float)
+            )
+        else:
+            ephys_values = None
+        df_metrics.loc[idx, "pc1_waveform"] = compute_pc1(waveforms)
+        df_metrics.loc[idx, "pc1_dvdt"] = compute_pc1(derivatives)
+
+        derived_ephys = (
+            np.column_stack([derived, ephys_values])
+            if ephys_values is not None
+            else derived
+        )
+        df_metrics.loc[idx, "pc1_derived_ephys"] = compute_pc1(derived_ephys)
+
+        all_features = (
+            np.column_stack([waveforms, derivatives, derived, ephys_values])
+            if ephys_values is not None
+            else np.column_stack([waveforms, derivatives, derived])
+        )
+        df_metrics.loc[idx, "pc1_all"] = compute_pc1(all_features)
+
     return df_metrics
 
 
@@ -190,7 +233,7 @@ def plot_example_spike(
             times_ms[int(metrics.kick_idx)],
             dv[int(metrics.kick_idx)],
             color="green",
-            label="kick",
+            label="start?",
             zorder=5,
         )
     ax_dv.scatter(
@@ -220,6 +263,7 @@ def plot_example_spike(
         formats=("png",),
         bbox_inches="tight",
     )
+    plt.close(fig)
 
 
 def sanitize_filename(text: str) -> str:
@@ -245,12 +289,12 @@ def plot_summary_by_region(df_metrics: pd.DataFrame, output_dir: str) -> None:
         axes[0].set_title("Time asymmetry")
         generate_violin_plot(
             df_group,
-            y_col="pc1",
+            y_col="pc1_all",
             color_col="injection region",
             color_palette_dict=REGION_COLOR_MAPPER,
             ax=axes[1],
         )
-        axes[1].set_title("PC1 projection")
+        axes[1].set_title("PC1 projection (all)")
         fig.suptitle(f"{spike_type} | {extract_from}")
         filename = f"asymmetry_summary_{sanitize_filename(extract_from)}_{spike_type}"
         save_figure(
@@ -263,12 +307,83 @@ def plot_summary_by_region(df_metrics: pd.DataFrame, output_dir: str) -> None:
         plt.close(fig)
 
 
+def plot_pc_on_mesh(df_metrics: pd.DataFrame, output_dir: str) -> None:
+    os.makedirs(output_dir, exist_ok=True)
+    mesh = load_mesh_from_s3()
+    pc_variants = [
+        ("pc1_waveform", "PC1 waveform"),
+        ("pc1_dvdt", "PC1 dV/dt"),
+        ("pc1_derived_ephys", "PC1 derived + ephys"),
+        ("pc1_all", "PC1 all"),
+    ]
+
+    for spike_type, df_spike in df_metrics.groupby("spike_type"):
+        extract_from_values = sorted(df_spike["extract_from"].dropna().unique())
+        for pc_col, pc_label in pc_variants:
+            df_variant = df_spike.dropna(subset=["x", "y", pc_col, "extract_from"])
+            if df_variant.empty:
+                continue
+            n_panels = len(extract_from_values)
+            n_cols = min(3, n_panels)
+            n_rows = int(np.ceil(n_panels / n_cols))
+            vmax = float(np.nanmax(np.abs(df_variant[pc_col])) or 1.0)
+
+            fig, axes = plt.subplots(
+                n_rows, n_cols, figsize=(4.5 * n_cols, 4.5 * n_rows), squeeze=False
+            )
+            sc = None
+            for ax, extract_from in zip(axes.flat, extract_from_values):
+                df_group = df_variant[df_variant["extract_from"] == extract_from]
+                if df_group.empty:
+                    ax.axis("off")
+                    continue
+                plot_mesh(ax, mesh, direction="sagittal", meshcol="lightgray")
+                sc = ax.scatter(
+                    df_group["x"],
+                    df_group["y"],
+                    c=df_group[pc_col],
+                    cmap="RdBu_r",
+                    vmin=-vmax,
+                    vmax=vmax,
+                    s=30,
+                    edgecolor="black",
+                    linewidth=0.3,
+                    alpha=0.85,
+                )
+                ax.set_title(extract_from)
+                ax.set_xlabel("Anterior-posterior (μm)")
+                ax.set_ylabel("Dorsal-ventral (μm)")
+                ax.set_aspect("equal")
+                y_bottom, y_top = ax.get_ylim()
+                ax.set_ylim(max(y_bottom, y_top), min(y_bottom, y_top))
+
+            for ax in axes.flat[n_panels:]:
+                ax.axis("off")
+
+            fig.suptitle(
+                f"{pc_label} on LC mesh | {spike_type}"
+                "\nDerived = rise/fall/asymmetry + DEFAULT_EPHYS_FEATURES",
+                fontsize=14,
+            )
+            if sc is not None:
+                fig.colorbar(sc, ax=axes.ravel().tolist(), label=pc_label)
+            filename = f"{pc_col}_mesh_grid_{spike_type}"
+            save_figure(
+                fig,
+                output_dir=output_dir,
+                filename=filename,
+                formats=("png",),
+                bbox_inches="tight",
+            )
+            plt.close(fig)
+
+
 def run_anova_by_group(df_metrics: pd.DataFrame) -> pd.DataFrame:
     results = []
     for (spike_type, extract_from), df_group in df_metrics.groupby(
         ["spike_type", "extract_from"]
     ):
-        features = ["time_asymmetry", "pc1"]
+        features = ["time_asymmetry", "pc1_all"]
         df_anova = anova_features(
             df_group,
             features=features,
@@ -298,10 +413,8 @@ def main():
     for spike_type in spike_types:
         logger.info("Loading spikes: %s", spike_type)
         df_spikes = get_public_representative_spikes(spike_type=spike_type)
-        df_metrics, waveforms, derivatives, times_ms = compute_metrics_for_table(
-            df_spikes, spike_type
-        )
-        df_metrics = add_pca_projection(df_metrics, waveforms, derivatives)
+        df_spikes = drop_subthreshold(df_spikes)
+        df_metrics, times_ms = compute_metrics_for_table(df_spikes, spike_type)
         metrics_all.append(df_metrics)
 
         example_pool = df_metrics.dropna(
@@ -321,29 +434,39 @@ def main():
                 df_spikes,
                 df_metrics,
                 times_ms,
-                row["ephys_roi_id"],
-                row["extract_from"],
+                str(row["ephys_roi_id"]),
+                str(row["extract_from"]),
                 spike_type,
                 output_dir,
             )
 
     df_metrics_all = pd.concat(metrics_all, ignore_index=True)
+    df_metrics_all = df_metrics_all[
+        ~df_metrics_all["extract_from"].str.contains("subthreshold", case=False)
+    ]
     df_meta = load_ephys_metadata(if_from_s3=True, if_with_seq=True)
     df_meta = df_meta.query(GLOBAL_FILTER).copy()
+    default_ephys_cols = [list(item.keys())[0] for item in DEFAULT_EPHYS_FEATURES]
+    ephys_cols = [col for col in default_ephys_cols if col in df_meta.columns]
     df_metrics_all = df_metrics_all.merge(
-        df_meta[["ephys_roi_id", "injection region", "y"]],
+        df_meta[["ephys_roi_id", "injection region", "y", "x", *ephys_cols]],
         on="ephys_roi_id",
         how="left",
     )
     df_metrics_all["extract_from"] = df_metrics_all["extract_from"].astype(str)
 
     df_metrics_all = df_metrics_all.dropna(subset=["injection region", "y"])
+    df_metrics_all = add_pca_variants(df_metrics_all, ephys_cols)
     df_anova = run_anova_by_group(df_metrics_all)
     plot_summary_by_region(
         df_metrics_all,
         output_dir=os.path.join(
             RESULTS_DIRECTORY, "figures", "asymmetry_waveform_summary"
         ),
+    )
+    plot_pc_on_mesh(
+        df_metrics_all,
+        output_dir=os.path.join(RESULTS_DIRECTORY, "figures", "asymmetry_pc_mesh"),
     )
     output_dir = os.path.join(RESULTS_DIRECTORY, "analysis")
     os.makedirs(output_dir, exist_ok=True)
