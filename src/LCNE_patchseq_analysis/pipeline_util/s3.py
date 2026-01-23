@@ -68,7 +68,10 @@ def check_s3_public_url_exists(s3_url: str) -> bool:
 def get_public_url_sweep(ephys_roi_id: str, sweep_number: int) -> str:
     """Get the public URL for a sweep."""
 
-    s3_sweep = f"{S3_PUBLIC_URL_BASE}/efel/plots/{ephys_roi_id}/{ephys_roi_id}_sweep_{sweep_number}.png"
+    s3_sweep = (
+        f"{S3_PUBLIC_URL_BASE}/efel/plots/{ephys_roi_id}/"
+        f"{ephys_roi_id}_sweep_{sweep_number}.png"
+    )
     s3_spikes = (
         f"{S3_PUBLIC_URL_BASE}/efel/plots/{ephys_roi_id}/"
         f"{ephys_roi_id}_sweep_{sweep_number}_spikes.png"
