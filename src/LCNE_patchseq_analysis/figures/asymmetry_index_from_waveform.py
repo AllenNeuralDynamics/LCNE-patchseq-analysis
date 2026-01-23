@@ -16,6 +16,7 @@ from LCNE_patchseq_analysis.figures import (
     set_plot_style,
 )
 from LCNE_patchseq_analysis.figures.util import generate_violin_plot, save_figure
+from LCNE_patchseq_analysis.figures.fig_3c import _generate_multi_feature_scatter_plots
 from LCNE_patchseq_analysis.pipeline_util.s3 import get_public_representative_spikes
 from LCNE_patchseq_analysis.pipeline_util.s3 import load_mesh_from_s3
 from LCNE_patchseq_analysis.population_analysis.anova import anova_features
@@ -320,6 +321,72 @@ def plot_summary_by_region(df_metrics: pd.DataFrame, output_dir: str) -> None:
         plt.close(fig)
 
 
+def format_waveform_feature_name(col_name: str) -> str:
+    """Format waveform asymmetry column names for display."""
+    display = col_name.replace("waveform_time_asymmetry @ ", "")
+    parts = display.split(" | ")
+    extract_from = parts[0] if parts else display
+    spike_type = parts[1] if len(parts) > 1 else ""
+
+    spike_label = {
+        "average": "average spike",
+        "first": "first spike",
+        "second": "second spike",
+        "last": "last spike",
+    }.get(spike_type, spike_type)
+    header = f"{spike_label} dv/dt time asymmetry".strip()
+    return f"{header} @ {extract_from}"
+
+
+def plot_waveform_asymmetry_grid(df_metrics: pd.DataFrame, output_dir: str) -> None:
+    """Generate a multi-panel scatter grid for waveform time asymmetry."""
+    df_base = df_metrics[["ephys_roi_id", "injection region", "y"]].drop_duplicates(
+        "ephys_roi_id"
+    )
+    df_features = df_metrics[
+        ["ephys_roi_id", "extract_from", "spike_type", "time_asymmetry"]
+    ].copy()
+    df_features["feature_col"] = (
+        "waveform_time_asymmetry @ "
+        + df_features["extract_from"].astype(str)
+        + " | "
+        + df_features["spike_type"].astype(str)
+    )
+    df_wide = df_features.pivot_table(
+        index="ephys_roi_id",
+        columns="feature_col",
+        values="time_asymmetry",
+        aggfunc="first",
+    )
+    df_meta = df_base.merge(df_wide, on="ephys_roi_id", how="left")
+
+    feature_cols = [col for col in df_wide.columns if col in df_meta.columns]
+    features = [{col: format_waveform_feature_name(col)} for col in feature_cols]
+    df_anova = anova_features(
+        df_meta,
+        features=feature_cols,
+        cat_col="injection region",
+        cont_col="y",
+        adjust_p=True,
+        anova_typ=2,
+    )
+    fig, _ = _generate_multi_feature_scatter_plots(
+        df_meta=df_meta,
+        features=features,
+        df_anova=df_anova,
+        filename="sup_fig_waveform_time_asymmetry",
+        if_save_figure=False,
+        n_cols=4,
+    )
+    save_figure(
+        fig,
+        output_dir=output_dir,
+        filename="sup_fig_waveform_time_asymmetry",
+        dpi=300,
+        formats=("png", "svg"),
+    )
+
+
 def plot_pc_on_mesh(df_metrics: pd.DataFrame, output_dir: str) -> None:
     """Plot PC projections on the LC mesh for each spike type."""
     # Plot PC1 projections on the LC mesh for each spike type.
@@ -481,7 +548,7 @@ def main():
     df_metrics_all = add_pca_variants(df_metrics_all, ephys_cols)
     df_anova = run_anova_by_group(df_metrics_all)
 
-    # 6) Generate summary plots and mesh projections.
+    # 6) Generate summary plots, mesh projections, and a large asymmetry grid.
     plot_summary_by_region(
         df_metrics_all,
         output_dir=os.path.join(
@@ -491,6 +558,12 @@ def main():
     plot_pc_on_mesh(
         df_metrics_all,
         output_dir=os.path.join(RESULTS_DIRECTORY, "figures", "asymmetry_pc_mesh"),
+    )
+    plot_waveform_asymmetry_grid(
+        df_metrics_all,
+        output_dir=os.path.join(
+            RESULTS_DIRECTORY, "figures", "asymmetry_waveform_summary"
+        ),
     )
 
     # 7) Save metrics and ANCOVA results.
