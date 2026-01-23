@@ -26,7 +26,8 @@ dependencies = [
     's3fs',
     'requests',
     'trimesh',
-    'statsmodels'
+    'statsmodels',
+    'matplotlib_venn'
 ]
 
 [project.optional-dependencies]
