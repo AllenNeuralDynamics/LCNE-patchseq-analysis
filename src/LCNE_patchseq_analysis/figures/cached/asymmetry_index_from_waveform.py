@@ -1,9 +1,9 @@
 import logging
 import os
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
@@ -15,12 +15,14 @@ from LCNE_patchseq_analysis.figures import (
     GLOBAL_FILTER,
     set_plot_style,
 )
-from LCNE_patchseq_analysis.figures.util import generate_violin_plot, save_figure
 from LCNE_patchseq_analysis.figures.cached.fig_3c import (
     _generate_multi_feature_scatter_plots,
 )
-from LCNE_patchseq_analysis.pipeline_util.s3 import get_public_representative_spikes
-from LCNE_patchseq_analysis.pipeline_util.s3 import load_mesh_from_s3
+from LCNE_patchseq_analysis.figures.util import generate_violin_plot, save_figure
+from LCNE_patchseq_analysis.pipeline_util.s3 import (
+    get_public_representative_spikes,
+    load_mesh_from_s3,
+)
 from LCNE_patchseq_analysis.population_analysis.anova import anova_features
 
 logger = logging.getLogger(__name__)
