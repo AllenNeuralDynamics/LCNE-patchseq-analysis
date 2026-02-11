@@ -17,7 +17,7 @@ from sklearn.decomposition import PCA
 
 from LCNE_patchseq_analysis import REGION_COLOR_MAPPER
 from LCNE_patchseq_analysis.data_util.mesh import plot_mesh
-from LCNE_patchseq_analysis.figures import set_plot_style
+from LCNE_patchseq_analysis.figures import set_plot_style, sort_region
 from LCNE_patchseq_analysis.figures.util import save_figure
 from LCNE_patchseq_analysis.pipeline_util.s3 import (
     get_public_representative_spikes,
@@ -127,7 +127,10 @@ def spike_pca_analysis(
 
     # ipfx_tau is in seconds; convert to milliseconds for plotting.
     tau_ms_col = "membrane_time_constant_ms"
-    df_v_proj[tau_ms_col] = pd.to_numeric(df_v_proj[tau_col], errors="coerce") * 1000
+    tau_vals = np.asarray(
+        pd.to_numeric(df_v_proj[tau_col], errors="coerce"), dtype=float
+    )
+    df_v_proj[tau_ms_col] = tau_vals * 1000.0
 
     return {
         "df_v_proj": df_v_proj,
@@ -164,16 +167,65 @@ def _plot_pca_scatter(ax, df_v_proj, marker_size=50):
     sns.despine(ax=ax, trim=True)
 
 
-def _plot_box_strip(ax, groups, marker_size=15, alpha=0.5, seed=42):
-    """Jittered strip plot with violin overlay.
+def _plot_group_hist(ax, groups, bins=18, alpha=1.0):
+    """Overlayed histograms for each projection group.
 
     Parameters
     ----------
     groups : list of (label, data_array, color) tuples
     """
+    all_values = np.concatenate([data for _, data, _ in groups])
+    shared_bins = np.linspace(all_values.min(), all_values.max(), bins + 1)
+    bin_width = shared_bins[1] - shared_bins[0]
+    centers = (shared_bins[:-1] + shared_bins[1:]) / 2
+
+    n_groups = len(groups)
+    bar_width = bin_width * 0.3
+    offsets = (np.arange(n_groups) - (n_groups - 1) / 2) * (bar_width * 1.15)
+
+    for i, (label, data, color) in enumerate(groups):
+        counts, _ = np.histogram(data, bins=shared_bins)
+        ax.bar(
+            centers + offsets[i],
+            counts,
+            width=bar_width,
+            alpha=alpha,
+            color=color,
+            edgecolor="none",
+            label=f"{label} (n={len(data)})",
+            align="center",
+        )
+
+    ax.set_ylabel("Count")
+    ax.legend(loc="best", framealpha=0.6)
+    sns.despine(ax=ax, trim=True)
+
+
+def _plot_group_cdf(ax, groups):
+    """Separate cumulative distribution plot for each projection group."""
+    for label, data, color in groups:
+        sorted_data = np.sort(data)
+        cdf = np.arange(1, len(sorted_data) + 1) / len(sorted_data)
+        ax.step(
+            sorted_data,
+            cdf,
+            where="post",
+            color=color,
+            linewidth=1.6,
+            alpha=1.0,
+            label=f"{label} (n={len(data)})",
+        )
+
+    ax.set_ylim(0, 1)
+    ax.set_ylabel("Cumulative fraction")
+    ax.legend(loc="best", framealpha=0.6)
+    sns.despine(ax=ax, trim=True)
+
+
+def _plot_violin_strip(ax, groups, marker_size=15, alpha=0.5, seed=42):
+    """Violin with jittered points for each projection group."""
     rng = np.random.default_rng(seed)
     for idx, (_, data, color) in enumerate(groups):
-        # Violin body
         vp = ax.violinplot(
             dataset=[data],
             positions=[idx],
@@ -187,11 +239,9 @@ def _plot_box_strip(ax, groups, marker_size=15, alpha=0.5, seed=42):
             body.set_edgecolor("black")
             body.set_alpha(0.25)
 
-        # Median marker
         median = np.median(data)
         ax.hlines(median, idx - 0.2, idx + 0.2, color="black", linewidth=2, zorder=4)
 
-        # Jittered observations on top
         jitter = rng.uniform(-0.15, 0.15, len(data))
         ax.scatter(
             np.full(len(data), idx) + jitter,
@@ -210,28 +260,67 @@ def _plot_box_strip(ax, groups, marker_size=15, alpha=0.5, seed=42):
     sns.despine(ax=ax, trim=True)
 
 
-def _plot_spatial_map(ax, df_v_proj, color_col, cmap, label, marker_size=50):
-    """Scatter on LC mesh (sagittal view) coloured by a continuous variable."""
+def _plot_spatial_map(
+    ax,
+    df_v_proj,
+    color_col,
+    cmap=None,
+    label=None,
+    marker_size=50,
+    use_projection_edgecolor=False,
+    reserve_colorbar_space=False,
+):
+    """Scatter on LC mesh (sagittal view).
+
+    - Continuous mode: color_col is numeric -> use colormap + colorbar.
+    - Categorical mode: color_col == 'injection region' -> use REGION_COLOR_MAPPER + legend.
+    """
     mesh = load_mesh_from_s3()
     plot_mesh(ax, mesh, direction="sagittal", meshcol="lightgray")
 
-    vals = pd.to_numeric(df_v_proj[color_col], errors="coerce")
+    if color_col == "injection region":
+        regions = sort_region(df_v_proj["injection region"].dropna().unique())
+        for region in regions:
+            sub = df_v_proj[df_v_proj["injection region"] == region]
+            color = REGION_COLOR_MAPPER.get(region, "gray")
+            ax.scatter(
+                sub["X (A --> P)"],
+                sub["Y (D --> V)"],
+                c=color,
+                s=marker_size,
+                edgecolors="black",
+                linewidths=1,
+                alpha=0.7,
+                label=f"{region} (n={len(sub)})",
+            )
+        ax.legend(fontsize=6, loc="best", framealpha=0.6)
+        if reserve_colorbar_space:
+            dummy = plt.cm.ScalarMappable(cmap="Greys")
+            cbar = plt.colorbar(dummy, ax=ax, shrink=0.7)
+            cbar.set_ticks([])
+            cbar.ax.set_ylabel("")
+    else:
+        vals = pd.to_numeric(df_v_proj[color_col], errors="coerce")
+        edgecolors = (
+            [REGION_COLOR_MAPPER.get(r, "black") for r in df_v_proj["injection region"]]
+            if use_projection_edgecolor
+            else "black"
+        )
+        sc = ax.scatter(
+            df_v_proj["X (A --> P)"],
+            df_v_proj["Y (D --> V)"],
+            c=vals,
+            cmap=cmap,
+            s=marker_size,
+            edgecolors=edgecolors,
+            linewidths=1,
+            alpha=0.7,
+        )
+        plt.colorbar(sc, ax=ax, shrink=0.7, label=label)
 
-    sc = ax.scatter(
-        df_v_proj["X (A --> P)"],
-        df_v_proj["Y (D --> V)"],
-        c=vals,
-        cmap=cmap,
-        s=marker_size,
-        edgecolors=[
-            REGION_COLOR_MAPPER.get(r, "black") for r in df_v_proj["injection region"]
-        ],
-        linewidths=1,
-        alpha=0.7,
-    )
-    plt.colorbar(sc, ax=ax, shrink=0.7, label=label)
     ax.set_xlabel("Anterior-posterior (μm)")
     ax.set_ylabel("Dorsal-ventral (μm)")
+    ax.locator_params(axis="x", nbins=4)
     ax.set_aspect("equal")
     sns.despine(ax=ax, trim=True)
 
@@ -250,13 +339,16 @@ def figure_spike_pca(
     normalize_window_v: tuple = DEFAULT_NORMALIZE_WINDOW_V,
     normalize_window_dvdt: tuple = DEFAULT_NORMALIZE_WINDOW_DVDT,
     filtered_df_meta: pd.DataFrame | None = None,
+    use_projection_edgecolor: bool = False,
     if_save_figure: bool = True,
-    figsize: tuple = (18, 10),
+    figsize: tuple = (15, 20),
 ):
-    """Generate the spike PCA figure (2 rows, 5 panels).
+    """Generate the spike PCA figure (4 rows, 10 panels).
 
-    Top row: PCA scatter | PC1 violin plot | membrane time constant violin plot
-    Bottom row: PC1 spatial | membrane time constant spatial
+    Row 1: PCA scatter
+    Row 2: PC1 violin | PC1 histogram | PC1 CDF
+    Row 3: membrane time constant violin | membrane time constant histogram | membrane time constant CDF
+    Row 4: PC1 spatial | membrane time constant spatial | projection target spatial
 
     Parameters
     ----------
@@ -269,6 +361,8 @@ def figure_spike_pca(
         Analysis parameters (see spike_pca_analysis).
     filtered_df_meta : pd.DataFrame, optional
         Cell-level filter.
+    use_projection_edgecolor : bool
+        Whether to use projection-target color on marker edges in CCF plots.
     if_save_figure : bool
         Whether to save figure to results/figures/.
     figsize : tuple
@@ -295,15 +389,23 @@ def figure_spike_pca(
 
     # --- Build figure ---
     fig = plt.figure(figsize=figsize)
-    gs = fig.add_gridspec(2, 1, height_ratios=[1, 1], hspace=0.35)
-    gs_top = gs[0].subgridspec(1, 3, width_ratios=[3, 1, 1], wspace=0.35)
-    gs_bottom = gs[1].subgridspec(1, 2, width_ratios=[1, 1], wspace=0.3)
+    gs = fig.add_gridspec(4, 1, height_ratios=[1.2, 1, 1, 1.5], hspace=0.5)
+    gs_row1 = gs[0].subgridspec(1, 1)
+    # Narrower middle rows with side spacers.
+    gs_row2 = gs[1].subgridspec(1, 4, width_ratios=[0.4, 0.55, 0.55, 0.6], wspace=0.35)
+    gs_row3 = gs[2].subgridspec(1, 4, width_ratios=[0.4, 0.55, 0.55, 0.6], wspace=0.35)
+    gs_row4 = gs[3].subgridspec(1, 3, width_ratios=[1, 1, 1], wspace=0.3)
     axes = [
-        fig.add_subplot(gs_top[0, 0]),
-        fig.add_subplot(gs_top[0, 1]),
-        fig.add_subplot(gs_top[0, 2]),
-        fig.add_subplot(gs_bottom[0, 0]),
-        fig.add_subplot(gs_bottom[0, 1]),
+        fig.add_subplot(gs_row1[0, 0]),
+        fig.add_subplot(gs_row2[0, 0]),
+        fig.add_subplot(gs_row2[0, 1]),
+        fig.add_subplot(gs_row2[0, 2]),
+        fig.add_subplot(gs_row3[0, 0]),
+        fig.add_subplot(gs_row3[0, 1]),
+        fig.add_subplot(gs_row3[0, 2]),
+        fig.add_subplot(gs_row4[0, 0]),
+        fig.add_subplot(gs_row4[0, 1]),
+        fig.add_subplot(gs_row4[0, 2]),
     ]
     axes_dict = {}
 
@@ -311,35 +413,84 @@ def figure_spike_pca(
     ax = axes[0]
     axes_dict["pca_scatter"] = ax
     _plot_pca_scatter(ax, df_v_proj)
-    ax.set_title("PC1 vs PC2")
+    ax.set_title("PC1 vs PC2 from normalized spike waveforms")
 
-    # Panel 2: PC1 violin plot by projection target
-    ax = axes[1]
-    axes_dict["pca1_box"] = ax
     pc1_groups = _build_projection_groups(df_v_proj, "PCA1")
-    _plot_box_strip(ax, pc1_groups)
-    ax.set_title("PC1 (norm. V)")
+    tau_groups = _build_projection_groups(df_v_proj, tau_col)
+
+    # Panel 2: PC1 violin by projection target
+    ax = axes[1]
+    axes_dict["pca1_violin"] = ax
+    _plot_violin_strip(ax, pc1_groups)
+    ax.set_title("PC1")
     ax.set_ylabel("PC1")
 
-    # Panel 3: membrane time constant violin plot by projection target
+    # Panel 3: PC1 histogram by projection target
     ax = axes[2]
-    axes_dict["tau_box"] = ax
-    tau_groups = _build_projection_groups(df_v_proj, tau_col)
-    _plot_box_strip(ax, tau_groups)
-    ax.set_title("Membrane time constant (ms)")
+    axes_dict["pca1_hist"] = ax
+    _plot_group_hist(ax, pc1_groups)
+    ax.set_title("PC1")
+    ax.set_xlabel("PC1")
+
+    # Panel 4: PC1 cumulative distribution by projection target
+    ax = axes[3]
+    axes_dict["pca1_cdf"] = ax
+    _plot_group_cdf(ax, pc1_groups)
+    ax.set_title("PC1")
+    ax.set_xlabel("PC1")
+
+    # Panel 5: membrane time constant violin by projection target
+    ax = axes[4]
+    axes_dict["tau_violin"] = ax
+    _plot_violin_strip(ax, tau_groups)
+    ax.set_title("Membrane time constant")
     ax.set_ylabel("Membrane time constant (ms)")
 
-    # Panel 4: PC1 in X/Y space with LC mesh
-    ax = axes[3]
+    # Panel 6: membrane time constant histogram by projection target
+    ax = axes[5]
+    axes_dict["tau_hist"] = ax
+    _plot_group_hist(ax, tau_groups)
+    ax.set_title("Membrane time constant")
+    ax.set_xlabel("Membrane time constant (ms)")
+
+    # Panel 7: membrane time constant cumulative distribution by projection target
+    ax = axes[6]
+    axes_dict["tau_cdf"] = ax
+    _plot_group_cdf(ax, tau_groups)
+    ax.set_title("Membrane time constant")
+    ax.set_xlabel("Membrane time constant (ms)")
+
+    # Panel 8: PC1 in X/Y space with LC mesh
+    ax = axes[7]
     axes_dict["pca1_spatial"] = ax
-    _plot_spatial_map(ax, df_v_proj, "PCA1", "RdBu_r", "PC1")
+    _plot_spatial_map(
+        ax,
+        df_v_proj,
+        "PCA1",
+        "RdBu_r",
+        "PC1",
+        use_projection_edgecolor=use_projection_edgecolor,
+    )
     ax.set_title("PC1 in CCF space")
 
-    # Panel 5: membrane time constant in X/Y space with LC mesh
-    ax = axes[4]
+    # Panel 9: membrane time constant in X/Y space with LC mesh
+    ax = axes[8]
     axes_dict["tau_spatial"] = ax
-    _plot_spatial_map(ax, df_v_proj, tau_col, "inferno", "Membrane time constant (ms)")
+    _plot_spatial_map(
+        ax,
+        df_v_proj,
+        tau_col,
+        "inferno",
+        "Membrane time constant (ms)",
+        use_projection_edgecolor=use_projection_edgecolor,
+    )
     ax.set_title("Membrane time constant (ms) in CCF space")
+
+    # Panel 10: projection target in X/Y space with LC mesh
+    ax = axes[9]
+    axes_dict["projection_spatial"] = ax
+    _plot_spatial_map(ax, df_v_proj, "injection region", reserve_colorbar_space=True)
+    ax.set_title("Projection target in CCF space")
 
     fig.tight_layout()
 
@@ -357,7 +508,7 @@ def _build_projection_groups(df_v_proj, value_col):
     for grp_label, region_set, color in [
         ("Spinal cord", SPINAL_REGIONS, REGION_COLOR_MAPPER["Spinal cord"]),
         ("Cortex", CORTEX_REGIONS, REGION_COLOR_MAPPER["Cortex"]),
-        ("CB", CB_REGIONS, REGION_COLOR_MAPPER["Cerebellum"]),
+        ("Cerebellum", CB_REGIONS, REGION_COLOR_MAPPER["Cerebellum"]),
     ]:
         mask = df_v_proj["injection region"].isin(region_set)
         vals_series = pd.Series(
