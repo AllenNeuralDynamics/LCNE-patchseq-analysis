@@ -335,6 +335,7 @@ def _plot_violin_strip(ax, groups, marker_size=15, alpha=0.5, seed=42):
 
     ax.set_xticks(range(len(groups)))
     ax.set_xticklabels([f"{lbl}\n(n={len(d)})" for lbl, d, _ in groups])
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
     ax.set_xlim(-0.6, len(groups) - 0.4)
     sns.despine(ax=ax, trim=True)
 
