@@ -7,7 +7,9 @@ import pandas as pd
 from LCNE_patchseq_analysis import RESULTS_DIRECTORY
 from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
 from LCNE_patchseq_analysis.figures import GLOBAL_FILTER, set_plot_style
-from LCNE_patchseq_analysis.figures.fig_3c import _generate_multi_feature_scatter_plots
+from LCNE_patchseq_analysis.figures.cached.fig_3c import (
+    _generate_multi_feature_scatter_plots,
+)
 from LCNE_patchseq_analysis.figures.util import save_figure
 from LCNE_patchseq_analysis.population_analysis.anova import anova_features
 
@@ -65,9 +67,7 @@ def main(if_save_figure: bool = True):
 
     # 2) Compute asymmetry columns from all available rise/fall eFEL pairs.
     add_efel_asymmetry_columns(df_meta_filtered)
-    asymmetry_cols = sorted(
-        [col for col in df_meta_filtered.columns if "_asymmetry @" in col]
-    )
+    asymmetry_cols = sorted([col for col in df_meta_filtered.columns if "_asymmetry @" in col])
     asymmetry_features = [{col: format_asymmetry_name(col)} for col in asymmetry_cols]
 
     # 3) Run ANCOVA to test projection effects while controlling for y.
@@ -90,9 +90,7 @@ def main(if_save_figure: bool = True):
         n_cols=4,
     )
     if if_save_figure:
-        output_dir = os.path.join(
-            RESULTS_DIRECTORY, "figures", "asymmetry_eFEL_summary"
-        )
+        output_dir = os.path.join(RESULTS_DIRECTORY, "figures", "asymmetry_eFEL_summary")
         save_figure(
             fig,
             output_dir=output_dir,

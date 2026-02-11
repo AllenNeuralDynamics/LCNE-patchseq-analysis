@@ -1,9 +1,24 @@
 """Init figures package"""
 
+from pathlib import Path
+
 import matplotlib as mpl
+from matplotlib import font_manager
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+FONT_CANDIDATES = [
+    Path("/data/fonts/Helvetica.ttf"),
+    REPO_ROOT / "assets" / "fonts" / "Helvetica.ttf",
+]
+for font_path in FONT_CANDIDATES:
+    if font_path.exists():
+        font_manager.fontManager.addfont(str(font_path))
+        break
+
+DEFAULT_FONT_FAMILY = "Helvetica"
 
 mpl.rcParams["svg.fonttype"] = "none"
-mpl.rcParams["font.family"] = "Helvetica"
+mpl.rcParams["font.family"] = DEFAULT_FONT_FAMILY
 
 GLOBAL_FILTER = (
     "(`jem-status_reporter` == 'Positive') & "
@@ -84,7 +99,7 @@ def sort_region(region):
     return sorted(region, key=_region_sort_key)
 
 
-def set_plot_style(base_size: int = 11, font_family: str = "Helvetica"):
+def set_plot_style(base_size: int = 11, font_family: str = DEFAULT_FONT_FAMILY):
     # Seaborn first (it may overwrite some rcParams)
     # sns.set_theme(context="paper", style="white", font_scale=1.0)
     mpl.rcParams.update(

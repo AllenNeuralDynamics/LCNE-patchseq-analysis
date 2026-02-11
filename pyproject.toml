@@ -27,7 +27,9 @@ dependencies = [
     'requests',
     'trimesh',
     'statsmodels',
-    'matplotlib_venn'
+    'matplotlib_venn',
+    'scipy',
+    'scikit-learn',
 ]
 
 [project.optional-dependencies]

@@ -4,7 +4,11 @@ import pandas as pd
 
 from LCNE_patchseq_analysis import REGION_COLOR_MAPPER
 from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
-from LCNE_patchseq_analysis.figures.util import generate_ccf_plot, generate_violin_plot, save_figure
+from LCNE_patchseq_analysis.figures.util import (
+    generate_ccf_plot,
+    generate_violin_plot,
+    save_figure,
+)
 
 # Configure logging
 logger = logging.getLogger()
@@ -27,7 +31,12 @@ def figure_3a_ccf_sagittal(
     """
 
     fig, ax = generate_ccf_plot(
-        df_meta, filter_query, view="sagittal", ax=ax, show_marginal_x=True, show_marginal_y=True
+        df_meta,
+        filter_query,
+        view="sagittal",
+        ax=ax,
+        show_marginal_x=True,
+        show_marginal_y=True,
     )
 
     if if_save_figure:

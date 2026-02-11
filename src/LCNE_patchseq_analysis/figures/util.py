@@ -386,7 +386,13 @@ def generate_scatter_plot(
 
         # Plot confidence band
         ax.fill_between(
-            x_vals, ci_lower, ci_upper, color="lightgray", alpha=0.3, zorder=3, label="95% CI"
+            x_vals,
+            ci_lower,
+            ci_upper,
+            color="lightgray",
+            alpha=0.3,
+            zorder=3,
+            label="95% CI",
         )
 
         ax.plot(
@@ -458,7 +464,12 @@ def generate_ccf_plot(  # NoQA: C901
 
     view = (view or "").strip().lower()
     if view == "sagittal":
-        x_key, y_key, mesh_direction, x_label = "x", "y", "sagittal", "Anterior-posterior (μm)"
+        x_key, y_key, mesh_direction, x_label = (
+            "x",
+            "y",
+            "sagittal",
+            "Anterior-posterior (μm)",
+        )
     elif view == "coronal":
         x_key, y_key, mesh_direction, x_label = "z", "y", "coronal", "Left-right (μm)"
     else:
@@ -518,7 +529,7 @@ def generate_ccf_plot(  # NoQA: C901
     for region in sorted_regions:
         color_key = region if region in REGION_COLOR_MAPPER else region.lower()
         color = REGION_COLOR_MAPPER.get(color_key, "gray")
-        label_text = f"{region} (n={sum(df_filtered['injection region']==region)})"  # noqa: E225
+        label_text = f"{region} (n={sum(df_filtered['injection region'] == region)})"  # noqa: E225
         legend_elements.append(
             Line2D(
                 [0],
@@ -583,7 +594,11 @@ def generate_ccf_plot(  # NoQA: C901
 
 
 def generate_violin_plot(
-    df_to_use: pd.DataFrame, y_col: str, color_col: str, color_palette_dict: dict, ax=None
+    df_to_use: pd.DataFrame,
+    y_col: str,
+    color_col: str,
+    color_palette_dict: dict,
+    ax=None,
 ):
     """
     Create a violin plot to compare data distributions across groups using matplotlib/seaborn.
@@ -734,7 +749,10 @@ def save_figure(
         List of saved file paths in the same order as formats.
     """
     if output_dir is None:
-        output_dir = os.path.dirname(os.path.abspath(__file__)) + "/../../../results/figures"
+        if os.getenv("CO_CAPSULE_ID"):
+            output_dir = "/results"
+        else:
+            output_dir = os.path.dirname(os.path.abspath(__file__)) + "/../../../results/figures"
 
     os.makedirs(output_dir, exist_ok=True)
 

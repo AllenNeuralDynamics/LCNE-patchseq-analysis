@@ -159,7 +159,10 @@ def _generate_multi_feature_scatter_plots(  # noqa: C901
 
 
 def figure_3c_tau_comparison(
-    df_meta: pd.DataFrame, filter_query: str | None = None, if_save_figure: bool = True, ax=None
+    df_meta: pd.DataFrame,
+    filter_query: str | None = None,
+    if_save_figure: bool = True,
+    ax=None,
 ):
     """
     Generate and save violin plot for ipfx_tau grouped by injection region (Figure 3B).
@@ -205,7 +208,10 @@ def figure_3c_tau_comparison(
 
 
 def figure_3c_latency_comparison(
-    df_meta: pd.DataFrame, filter_query: str | None = None, if_save_figure: bool = True, ax=None
+    df_meta: pd.DataFrame,
+    filter_query: str | None = None,
+    if_save_figure: bool = True,
+    ax=None,
 ):
     """
     Generate and save violin plot for ipfx_latency grouped by injection region (Figure 3B).
@@ -240,13 +246,21 @@ def figure_3c_latency_comparison(
     ax.set_ylabel("Latency to first spike\nat rheobase (s)")
 
     if if_save_figure:
-        save_figure(fig, filename="fig_3c_violinplot_ipfx_latency", dpi=300, formats=("png", "svg"))
+        save_figure(
+            fig,
+            filename="fig_3c_violinplot_ipfx_latency",
+            dpi=300,
+            formats=("png", "svg"),
+        )
         print("Figure saved as fig_3c_violinplot_ipfx_latency.png/.svg")
     return fig, ax
 
 
 def sup_figure_3c_all_ipfx_features(
-    df_meta: pd.DataFrame, filter_query: str | None = None, if_save_figure: bool = True, ax=None
+    df_meta: pd.DataFrame,
+    filter_query: str | None = None,
+    if_save_figure: bool = True,
+    ax=None,
 ):
     """
     Generate and save scatter plots for all ipfx features vs anatomical y coordinate.
@@ -280,7 +294,10 @@ def sup_figure_3c_all_ipfx_features(
 
 
 def sup_figure_3b_all_gene_features(
-    df_meta: pd.DataFrame, filter_query: str | None = None, if_save_figure: bool = True, ax=None
+    df_meta: pd.DataFrame,
+    filter_query: str | None = None,
+    if_save_figure: bool = True,
+    ax=None,
 ):
     """
     Generate and save scatter plots for all gene features vs anatomical y coordinate.
@@ -313,7 +330,10 @@ def sup_figure_3b_all_gene_features(
 
 
 def sup_figure_3d_morphology(
-    df_meta: pd.DataFrame, filter_query: str | None = None, if_save_figure: bool = True, ax=None
+    df_meta: pd.DataFrame,
+    filter_query: str | None = None,
+    if_save_figure: bool = True,
+    ax=None,
 ):
     """
     Generate and save scatter plots for all morphology features vs anatomical y coordinate.
