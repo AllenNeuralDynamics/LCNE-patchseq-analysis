@@ -95,9 +95,13 @@ def spike_pca_analysis(
     )
 
     # Filter to spike_range (cast columns to numeric for static type checkers)
-    time_cols = np.asarray(pd.to_numeric(df_v_norm.columns, errors="coerce"), dtype=float)
+    time_cols = np.asarray(
+        pd.to_numeric(df_v_norm.columns, errors="coerce"), dtype=float
+    )
     in_window = (
-        np.isfinite(time_cols) & (time_cols >= spike_range[0]) & (time_cols <= spike_range[1])
+        np.isfinite(time_cols)
+        & (time_cols >= spike_range[0])
+        & (time_cols <= spike_range[1])
     )
     df_v_norm = df_v_norm.loc[:, in_window]
 
@@ -124,7 +128,9 @@ def spike_pca_analysis(
 
     # ipfx_tau is in seconds; convert to milliseconds for plotting.
     tau_ms_col = "membrane_time_constant_ms"
-    tau_vals = np.asarray(pd.to_numeric(df_v_proj[tau_col], errors="coerce"), dtype=float)
+    tau_vals = np.asarray(
+        pd.to_numeric(df_v_proj[tau_col], errors="coerce"), dtype=float
+    )
     df_v_proj[tau_ms_col] = tau_vals * 1000.0
 
     return {
@@ -173,7 +179,11 @@ def _plot_waveform_overlay(ax, df_v_norm, df_v_proj):
         ("Cerebellum", CB_REGIONS, REGION_COLOR_MAPPER["Cerebellum"]),
     ]:
         mask = df_v_proj["injection region"].isin(region_set)
-        ids = df_v_proj.loc[mask, id_col].to_numpy() if id_col else df_v_proj.index.to_numpy()
+        ids = (
+            df_v_proj.loc[mask, id_col].to_numpy()
+            if id_col
+            else df_v_proj.index.to_numpy()
+        )
         traces = df_v_norm.loc[df_v_norm.index.isin(ids)]
         y = traces.to_numpy(dtype=float)
 
@@ -417,7 +427,8 @@ def figure_spike_pca(
 
     Row 1: PCA scatter | normalized waveform overlays
     Row 2: PC1 violin | PC1 histogram | PC1 CDF | PC1 pairwise stats
-    Row 3: membrane time constant violin | membrane time constant histogram | membrane time constant CDF | membrane time constant pairwise stats
+    Row 3: membrane time constant violin | membrane time constant histogram |
+    membrane time constant CDF | membrane time constant pairwise stats
     Row 4: PC1 spatial | membrane time constant spatial | projection target spatial
 
     Parameters
@@ -585,7 +596,9 @@ def figure_spike_pca(
     fig.tight_layout()
 
     if if_save_figure:
-        save_figure(fig, filename="main_pca_tau", formats=("png", "svg"), bbox_inches="tight")
+        save_figure(
+            fig, filename="main_pca_tau", formats=("png", "svg"), bbox_inches="tight"
+        )
 
     return fig, axes_dict, results
 
@@ -599,7 +612,9 @@ def _build_projection_groups(df_v_proj, value_col):
         ("Cerebellum", CB_REGIONS, REGION_COLOR_MAPPER["Cerebellum"]),
     ]:
         mask = df_v_proj["injection region"].isin(region_set)
-        vals_series = pd.Series(pd.to_numeric(df_v_proj.loc[mask, value_col], errors="coerce"))
+        vals_series = pd.Series(
+            pd.to_numeric(df_v_proj.loc[mask, value_col], errors="coerce")
+        )
         vals = vals_series.dropna().to_numpy()
         groups.append((grp_label, vals, color))
     return groups
@@ -619,4 +634,6 @@ if __name__ == "__main__":
     df_spikes = get_public_representative_spikes("average")
 
     logger.info("Generating spike PCA figure...")
-    fig, axes_dict, results = figure_spike_pca(df_meta, df_spikes, filtered_df_meta=df_meta)
+    fig, axes_dict, results = figure_spike_pca(
+        df_meta, df_spikes, filtered_df_meta=df_meta
+    )
