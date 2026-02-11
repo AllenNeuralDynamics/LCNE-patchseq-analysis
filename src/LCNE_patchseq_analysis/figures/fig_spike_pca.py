@@ -167,6 +167,44 @@ def _plot_pca_scatter(ax, df_v_proj, marker_size=50):
     sns.despine(ax=ax, trim=True)
 
 
+def _plot_waveform_overlay(ax, df_v_norm, df_v_proj):
+    """Overlay normalized waveforms for the three projection targets."""
+    x = np.asarray(pd.to_numeric(df_v_norm.columns, errors="coerce"), dtype=float)
+    id_col = "ephys_roi_id" if "ephys_roi_id" in df_v_proj.columns else None
+
+    for label, region_set, color in [
+        ("Spinal cord", SPINAL_REGIONS, REGION_COLOR_MAPPER["Spinal cord"]),
+        ("Cortex", CORTEX_REGIONS, REGION_COLOR_MAPPER["Cortex"]),
+        ("Cerebellum", CB_REGIONS, REGION_COLOR_MAPPER["Cerebellum"]),
+    ]:
+        mask = df_v_proj["injection region"].isin(region_set)
+        ids = (
+            df_v_proj.loc[mask, id_col].to_numpy()
+            if id_col
+            else df_v_proj.index.to_numpy()
+        )
+        traces = df_v_norm.loc[df_v_norm.index.isin(ids)]
+        y = traces.to_numpy(dtype=float)
+
+        for trace in y:
+            ax.plot(x, trace, color=color, alpha=0.2, linewidth=1)
+
+        if len(y) > 0:
+            ax.plot(
+                x,
+                np.nanmean(y, axis=0),
+                color=color,
+                linewidth=2,
+                label=f"{label} (n={len(y)})",
+            )
+
+    ax.set_xlabel("Time to peak (ms)")
+    ax.set_ylabel("")
+    ax.set_yticks([])
+    ax.legend(fontsize=6, loc="best", framealpha=0.6)
+    sns.despine(ax=ax, trim=True)
+
+
 def _plot_group_hist(ax, groups, bins=18, alpha=1.0):
     """Overlayed histograms for each projection group.
 
@@ -343,9 +381,9 @@ def figure_spike_pca(
     if_save_figure: bool = True,
     figsize: tuple = (15, 20),
 ):
-    """Generate the spike PCA figure (4 rows, 10 panels).
+    """Generate the spike PCA figure (4 rows, 11 panels).
 
-    Row 1: PCA scatter
+    Row 1: PCA scatter | normalized waveform overlays
     Row 2: PC1 violin | PC1 histogram | PC1 CDF
     Row 3: membrane time constant violin | membrane time constant histogram | membrane time constant CDF
     Row 4: PC1 spatial | membrane time constant spatial | projection target spatial
@@ -385,18 +423,20 @@ def figure_spike_pca(
         filtered_df_meta=filtered_df_meta,
     )
     df_v_proj = results["df_v_proj"]
+    df_v_norm = results["df_v_norm"]
     tau_col = results["tau_col"]
 
     # --- Build figure ---
     fig = plt.figure(figsize=figsize)
     gs = fig.add_gridspec(4, 1, height_ratios=[1.2, 1, 1, 1.5], hspace=0.5)
-    gs_row1 = gs[0].subgridspec(1, 1)
+    gs_row1 = gs[0].subgridspec(1, 3, width_ratios=[0.7, 1, 1], wspace=0.3)
     # Narrower middle rows with side spacers.
     gs_row2 = gs[1].subgridspec(1, 4, width_ratios=[0.4, 0.55, 0.55, 0.6], wspace=0.35)
     gs_row3 = gs[2].subgridspec(1, 4, width_ratios=[0.4, 0.55, 0.55, 0.6], wspace=0.35)
     gs_row4 = gs[3].subgridspec(1, 3, width_ratios=[1, 1, 1], wspace=0.3)
     axes = [
         fig.add_subplot(gs_row1[0, 0]),
+        fig.add_subplot(gs_row1[0, 1]),
         fig.add_subplot(gs_row2[0, 0]),
         fig.add_subplot(gs_row2[0, 1]),
         fig.add_subplot(gs_row2[0, 2]),
@@ -409,8 +449,14 @@ def figure_spike_pca(
     ]
     axes_dict = {}
 
-    # Panel 1: PCA scatter
+    # Panel 1: overlaid normalized waveforms by projection target
     ax = axes[0]
+    axes_dict["waveform_overlay"] = ax
+    _plot_waveform_overlay(ax, df_v_norm, df_v_proj)
+    ax.set_title("Normalized spike waveforms")
+
+    # Panel 2: PCA scatter
+    ax = axes[1]
     axes_dict["pca_scatter"] = ax
     _plot_pca_scatter(ax, df_v_proj)
     ax.set_title("PC1 vs PC2 from normalized spike waveforms")
@@ -418,50 +464,50 @@ def figure_spike_pca(
     pc1_groups = _build_projection_groups(df_v_proj, "PCA1")
     tau_groups = _build_projection_groups(df_v_proj, tau_col)
 
-    # Panel 2: PC1 violin by projection target
-    ax = axes[1]
+    # Panel 3: PC1 violin by projection target
+    ax = axes[2]
     axes_dict["pca1_violin"] = ax
     _plot_violin_strip(ax, pc1_groups)
     ax.set_title("PC1")
     ax.set_ylabel("PC1")
 
-    # Panel 3: PC1 histogram by projection target
-    ax = axes[2]
+    # Panel 4: PC1 histogram by projection target
+    ax = axes[3]
     axes_dict["pca1_hist"] = ax
     _plot_group_hist(ax, pc1_groups)
     ax.set_title("PC1")
     ax.set_xlabel("PC1")
 
-    # Panel 4: PC1 cumulative distribution by projection target
-    ax = axes[3]
+    # Panel 5: PC1 cumulative distribution by projection target
+    ax = axes[4]
     axes_dict["pca1_cdf"] = ax
     _plot_group_cdf(ax, pc1_groups)
     ax.set_title("PC1")
     ax.set_xlabel("PC1")
 
-    # Panel 5: membrane time constant violin by projection target
-    ax = axes[4]
+    # Panel 6: membrane time constant violin by projection target
+    ax = axes[5]
     axes_dict["tau_violin"] = ax
     _plot_violin_strip(ax, tau_groups)
     ax.set_title("Membrane time constant")
     ax.set_ylabel("Membrane time constant (ms)")
 
-    # Panel 6: membrane time constant histogram by projection target
-    ax = axes[5]
+    # Panel 7: membrane time constant histogram by projection target
+    ax = axes[6]
     axes_dict["tau_hist"] = ax
     _plot_group_hist(ax, tau_groups)
     ax.set_title("Membrane time constant")
     ax.set_xlabel("Membrane time constant (ms)")
 
-    # Panel 7: membrane time constant cumulative distribution by projection target
-    ax = axes[6]
+    # Panel 8: membrane time constant cumulative distribution by projection target
+    ax = axes[7]
     axes_dict["tau_cdf"] = ax
     _plot_group_cdf(ax, tau_groups)
     ax.set_title("Membrane time constant")
     ax.set_xlabel("Membrane time constant (ms)")
 
-    # Panel 8: PC1 in X/Y space with LC mesh
-    ax = axes[7]
+    # Panel 9: PC1 in X/Y space with LC mesh
+    ax = axes[8]
     axes_dict["pca1_spatial"] = ax
     _plot_spatial_map(
         ax,
@@ -473,8 +519,8 @@ def figure_spike_pca(
     )
     ax.set_title("PC1 in CCF space")
 
-    # Panel 9: membrane time constant in X/Y space with LC mesh
-    ax = axes[8]
+    # Panel 10: membrane time constant in X/Y space with LC mesh
+    ax = axes[9]
     axes_dict["tau_spatial"] = ax
     _plot_spatial_map(
         ax,
@@ -486,8 +532,8 @@ def figure_spike_pca(
     )
     ax.set_title("Membrane time constant (ms) in CCF space")
 
-    # Panel 10: projection target in X/Y space with LC mesh
-    ax = axes[9]
+    # Panel 11: projection target in X/Y space with LC mesh
+    ax = axes[10]
     axes_dict["projection_spatial"] = ax
     _plot_spatial_map(ax, df_v_proj, "injection region", reserve_colorbar_space=True)
     ax.set_title("Projection target in CCF space")
