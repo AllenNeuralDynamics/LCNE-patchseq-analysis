@@ -35,8 +35,7 @@ def imputed_scRNAseq(
         color_palette=REGION_COLOR_MAPPER,
         plot_linear_regression=plot_linear_regression,
         regression_type="type1",
-        show_marginal_y=True,
-        marginal_kind="kde",
+        show_marginal_y=False,
         ax=ax,
     )
     ax.set_xlabel("Dorsal-ventral (μm)")
@@ -81,8 +80,7 @@ def imputed_MERFISH(
         color_palette=REGION_COLOR_MAPPER,
         plot_linear_regression=plot_linear_regression,
         regression_type="type1",
-        show_marginal_y=True,
-        marginal_kind="kde",
+        show_marginal_y=False,
         if_trim=False,
         if_same_xy=True,
         ax=ax,
@@ -104,7 +102,7 @@ def main_imputation(
     df_meta: pd.DataFrame,
     filter_query: str | None = None,
     if_save_figure: bool = True,
-    figsize: tuple = (10, 4.5),
+    figsize: tuple = (8, 4),
 ):
     """Generate both imputation scatters as a single 1x2 figure."""
     fig, axes = plt.subplots(1, 2, figsize=figsize)
