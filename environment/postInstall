@@ -1,2 +1,17 @@
 #!/usr/bin/env bash
 set -e
+
+HOME_DIR="${HOME:-/root}"
+BASHRC="${HOME_DIR}/.bashrc"
+
+cat >> "$BASHRC" <<'EOF'
+
+# LCNE editable install (runs once on first login, src/ only available at runtime)
+if [ ! -f "$HOME/.lcne_editable_setup_done" ]; then
+    echo "Installing local package in editable mode from /root/capsule..."
+    pip install -e /root/capsule
+    echo "Editable install complete"
+
+    touch "$HOME/.lcne_editable_setup_done"
+fi
+EOF
