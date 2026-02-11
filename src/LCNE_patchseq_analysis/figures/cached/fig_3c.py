@@ -72,7 +72,9 @@ def _generate_multi_feature_scatter_plots(  # noqa: C901
             else:
                 # Default: strip common prefixes
                 feature_name = (
-                    col_name.replace("gene_", "").replace("morphology_", "").replace("ipfx_", "")
+                    col_name.replace("gene_", "")
+                    .replace("morphology_", "")
+                    .replace("ipfx_", "")
                 )
 
         # Get p-value and adjusted p-value
@@ -87,12 +89,12 @@ def _generate_multi_feature_scatter_plots(  # noqa: C901
         p_adj_projection = df_anova.query(
             f'feature == "{col_name}" and term.str.contains("injection region")'
         )["p_adj"].values[0]
-        p_val_dv = df_anova.query(f'feature == "{col_name}" and term.str.contains("y")')[
-            "p"
-        ].values[0]
-        p_adj_dv = df_anova.query(f'feature == "{col_name}" and term.str.contains("y")')[
-            "p_adj"
-        ].values[0]
+        p_val_dv = df_anova.query(
+            f'feature == "{col_name}" and term.str.contains("y")'
+        )["p"].values[0]
+        p_adj_dv = df_anova.query(
+            f'feature == "{col_name}" and term.str.contains("y")'
+        )["p_adj"].values[0]
 
         ax = axes[i // n_cols][i % n_cols]
         generate_scatter_plot(
@@ -119,7 +121,9 @@ def _generate_multi_feature_scatter_plots(  # noqa: C901
             va="bottom",
             fontsize=12,
             fontweight="bold",
-            color="royalblue" if (p_adj_projection < 0.05 or p_adj_dv < 0.05) else "black",
+            color="royalblue"
+            if (p_adj_projection < 0.05 or p_adj_dv < 0.05)
+            else "black",
         )
 
         ax.text(
@@ -159,7 +163,10 @@ def _generate_multi_feature_scatter_plots(  # noqa: C901
 
 
 def figure_3c_tau_comparison(
-    df_meta: pd.DataFrame, filter_query: str | None = None, if_save_figure: bool = True, ax=None
+    df_meta: pd.DataFrame,
+    filter_query: str | None = None,
+    if_save_figure: bool = True,
+    ax=None,
 ):
     """
     Generate and save violin plot for ipfx_tau grouped by injection region (Figure 3B).
@@ -199,13 +206,18 @@ def figure_3c_tau_comparison(
     ax.set_ylabel("Time constant (ms)")
 
     if if_save_figure:
-        save_figure(fig, filename="fig_3c_violinplot_ipfx_tau", dpi=300, formats=("png", "svg"))
+        save_figure(
+            fig, filename="fig_3c_violinplot_ipfx_tau", dpi=300, formats=("png", "svg")
+        )
         print("Figure saved as fig_3c_violinplot_ipfx_tau.png/.svg")
     return fig, ax
 
 
 def figure_3c_latency_comparison(
-    df_meta: pd.DataFrame, filter_query: str | None = None, if_save_figure: bool = True, ax=None
+    df_meta: pd.DataFrame,
+    filter_query: str | None = None,
+    if_save_figure: bool = True,
+    ax=None,
 ):
     """
     Generate and save violin plot for ipfx_latency grouped by injection region (Figure 3B).
@@ -240,13 +252,21 @@ def figure_3c_latency_comparison(
     ax.set_ylabel("Latency to first spike\nat rheobase (s)")
 
     if if_save_figure:
-        save_figure(fig, filename="fig_3c_violinplot_ipfx_latency", dpi=300, formats=("png", "svg"))
+        save_figure(
+            fig,
+            filename="fig_3c_violinplot_ipfx_latency",
+            dpi=300,
+            formats=("png", "svg"),
+        )
         print("Figure saved as fig_3c_violinplot_ipfx_latency.png/.svg")
     return fig, ax
 
 
 def sup_figure_3c_all_ipfx_features(
-    df_meta: pd.DataFrame, filter_query: str | None = None, if_save_figure: bool = True, ax=None
+    df_meta: pd.DataFrame,
+    filter_query: str | None = None,
+    if_save_figure: bool = True,
+    ax=None,
 ):
     """
     Generate and save scatter plots for all ipfx features vs anatomical y coordinate.
@@ -280,7 +300,10 @@ def sup_figure_3c_all_ipfx_features(
 
 
 def sup_figure_3b_all_gene_features(
-    df_meta: pd.DataFrame, filter_query: str | None = None, if_save_figure: bool = True, ax=None
+    df_meta: pd.DataFrame,
+    filter_query: str | None = None,
+    if_save_figure: bool = True,
+    ax=None,
 ):
     """
     Generate and save scatter plots for all gene features vs anatomical y coordinate.
@@ -292,7 +315,9 @@ def sup_figure_3b_all_gene_features(
 
     # Get ANOVA results
     gene_features = [
-        col for col in df_meta.columns if col.startswith("gene_") and "RNA_QC" not in col
+        col
+        for col in df_meta.columns
+        if col.startswith("gene_") and "RNA_QC" not in col
     ]
     df_anova = anova_features(
         df_meta,
@@ -313,7 +338,10 @@ def sup_figure_3b_all_gene_features(
 
 
 def sup_figure_3d_morphology(
-    df_meta: pd.DataFrame, filter_query: str | None = None, if_save_figure: bool = True, ax=None
+    df_meta: pd.DataFrame,
+    filter_query: str | None = None,
+    if_save_figure: bool = True,
+    ax=None,
 ):
     """
     Generate and save scatter plots for all morphology features vs anatomical y coordinate.
@@ -324,7 +352,9 @@ def sup_figure_3d_morphology(
         df_meta = df_meta.query(filter_query).copy()
 
     # Get all morphology columns
-    morphology_features = [col for col in df_meta.columns if col.startswith("morphology_")]
+    morphology_features = [
+        col for col in df_meta.columns if col.startswith("morphology_")
+    ]
 
     # Get ANOVA results
     df_anova = anova_features(

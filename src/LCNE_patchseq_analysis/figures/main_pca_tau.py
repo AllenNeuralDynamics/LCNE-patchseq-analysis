@@ -596,7 +596,7 @@ def figure_spike_pca(
 
     if if_save_figure:
         save_figure(
-            fig, filename="fig_spike_pca", formats=("png", "svg"), bbox_inches="tight"
+            fig, filename="main_pca_tau", formats=("png", "svg"), bbox_inches="tight"
         )
 
     return fig, axes_dict, results

@@ -7,7 +7,9 @@ import pandas as pd
 from LCNE_patchseq_analysis import RESULTS_DIRECTORY
 from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
 from LCNE_patchseq_analysis.figures import GLOBAL_FILTER, set_plot_style
-from LCNE_patchseq_analysis.figures.fig_3c import _generate_multi_feature_scatter_plots
+from LCNE_patchseq_analysis.figures.cached.fig_3c import (
+    _generate_multi_feature_scatter_plots,
+)
 from LCNE_patchseq_analysis.figures.util import save_figure
 from LCNE_patchseq_analysis.population_analysis.anova import anova_features
 
