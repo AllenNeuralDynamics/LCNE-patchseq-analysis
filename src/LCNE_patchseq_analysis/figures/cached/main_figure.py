@@ -5,9 +5,9 @@ from LCNE_patchseq_analysis.figures.cached.fig_3a import (
     figure_3a_ccf_sagittal,
     sup_figure_3a_ccf_coronal,
 )
-from LCNE_patchseq_analysis.figures.cached.fig_3b import (
-    figure_3b_imputed_MERFISH,
-    figure_3b_imputed_scRNAseq,
+from LCNE_patchseq_analysis.figures.main_imputation import (
+    imputed_MERFISH,
+    imputed_scRNAseq,
 )
 from LCNE_patchseq_analysis.figures.cached.fig_3c import figure_3c_tau_comparison
 from LCNE_patchseq_analysis.figures.util import save_figure
@@ -57,12 +57,14 @@ def generate_main_figure(
     ax0_1.set_yticks(y_ticks)
     ax0_1.set_title("")
 
-    _, ax1_0 = figure_3b_imputed_scRNAseq(df_meta, gene_filter, ax=ax1_0, if_save_figure=False)
+    _, ax1_0 = imputed_scRNAseq(df_meta, gene_filter, ax=ax1_0, if_save_figure=False)
     ax1_0.get_legend().remove()
-    _, ax1_1 = figure_3b_imputed_MERFISH(df_meta, gene_filter, ax=ax1_1, if_save_figure=False)
+    _, ax1_1 = imputed_MERFISH(df_meta, gene_filter, ax=ax1_1, if_save_figure=False)
     ax1_1.get_legend().remove()
 
-    _, ax2_0 = figure_3c_tau_comparison(df_meta, global_filter, ax=ax2_0, if_save_figure=False)
+    _, ax2_0 = figure_3c_tau_comparison(
+        df_meta, global_filter, ax=ax2_0, if_save_figure=False
+    )
     ax2_0.get_legend().remove()
 
     if if_save_figure:

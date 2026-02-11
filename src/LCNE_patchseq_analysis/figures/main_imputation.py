@@ -1,5 +1,6 @@
 import logging
 
+import matplotlib.pyplot as plt
 import pandas as pd
 
 from LCNE_patchseq_analysis import REGION_COLOR_MAPPER
@@ -8,7 +9,7 @@ from LCNE_patchseq_analysis.figures.util import generate_scatter_plot, save_figu
 logger = logging.getLogger(__name__)
 
 
-def figure_3b_imputed_scRNAseq(
+def imputed_scRNAseq(
     df_meta: pd.DataFrame,
     filter_query: str | None = None,
     if_save_figure: bool = True,
@@ -34,11 +35,9 @@ def figure_3b_imputed_scRNAseq(
         color_palette=REGION_COLOR_MAPPER,
         plot_linear_regression=plot_linear_regression,
         regression_type="type1",
-        show_marginal_y=True,
-        marginal_kind="kde",
+        show_marginal_y=False,
         ax=ax,
     )
-    # ax.invert_yaxis()
     ax.set_xlabel("Dorsal-ventral (μm)")
     ax.set_ylabel("Imputed pseudocluster\nfrom scRNA-seq")
 
@@ -52,7 +51,7 @@ def figure_3b_imputed_scRNAseq(
     return fig, ax
 
 
-def figure_3b_imputed_MERFISH(
+def imputed_MERFISH(
     df_meta: pd.DataFrame,
     filter_query: str | None = None,
     if_save_figure: bool = True,
@@ -81,8 +80,7 @@ def figure_3b_imputed_MERFISH(
         color_palette=REGION_COLOR_MAPPER,
         plot_linear_regression=plot_linear_regression,
         regression_type="type1",
-        show_marginal_y=True,
-        marginal_kind="kde",
+        show_marginal_y=False,
         if_trim=False,
         if_same_xy=True,
         ax=ax,
@@ -100,12 +98,53 @@ def figure_3b_imputed_MERFISH(
     return fig, ax
 
 
+def main_imputation(
+    df_meta: pd.DataFrame,
+    filter_query: str | None = None,
+    if_save_figure: bool = True,
+    figsize: tuple = (8, 4),
+):
+    """Generate both imputation scatters as a single 1x2 figure."""
+    fig, axes = plt.subplots(1, 2, figsize=figsize)
+
+    _, ax_left = imputed_scRNAseq(
+        df_meta=df_meta,
+        filter_query=filter_query,
+        if_save_figure=False,
+        ax=axes[0],
+    )
+    _, ax_right = imputed_MERFISH(
+        df_meta=df_meta,
+        filter_query=filter_query,
+        if_save_figure=False,
+        ax=axes[1],
+    )
+
+    ax_left.set_title("Imputed pseudocluster from scRNA-seq")
+    ax_right.set_title("Imputed dorsal-ventral from MERFISH")
+
+    if ax_left.get_legend() is not None:
+        ax_left.get_legend().remove()
+    if ax_right.get_legend() is not None:
+        ax_right.get_legend().remove()
+
+    fig.tight_layout()
+
+    if if_save_figure:
+        save_figure(
+            fig,
+            filename="main_imputation",
+            dpi=300,
+            formats=("png", "svg"),
+            bbox_inches="tight",
+        )
+
+    return fig, (ax_left, ax_right)
+
+
 if __name__ == "__main__":
     from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
     from LCNE_patchseq_analysis.figures import GENE_FILTER
 
     df_meta = load_ephys_metadata(if_from_s3=True, if_with_seq=True)
-
-    # For gene data, apply additional filtering
-    figure_3b_imputed_scRNAseq(df_meta, GENE_FILTER)
-    figure_3b_imputed_MERFISH(df_meta, GENE_FILTER)
+    main_imputation(df_meta, GENE_FILTER)
