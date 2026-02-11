@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from scipy.stats import mannwhitneyu, ttest_ind
 from sklearn.decomposition import PCA
 
 from LCNE_patchseq_analysis import REGION_COLOR_MAPPER
@@ -155,7 +156,7 @@ def _plot_pca_scatter(ax, df_v_proj, marker_size=50):
             sub["PCA2"],
             c=color,
             s=marker_size,
-            alpha=0.6,
+            alpha=0.8,
             label=f"{region} (n={len(sub)})",
             edgecolors="none",
         )
@@ -194,7 +195,7 @@ def _plot_waveform_overlay(ax, df_v_norm, df_v_proj):
                 x,
                 np.nanmean(y, axis=0),
                 color=color,
-                linewidth=2,
+                linewidth=3,
                 label=f"{label} (n={len(y)})",
             )
 
@@ -258,6 +259,46 @@ def _plot_group_cdf(ax, groups):
     ax.set_ylabel("Cumulative fraction")
     ax.legend(loc="best", framealpha=0.6)
     sns.despine(ax=ax, trim=True)
+
+
+def _fmt_pval(p):
+    if pd.isna(p):
+        return "n/a"
+    stars = "***" if p < 1e-3 else "**" if p < 1e-2 else "*" if p < 5e-2 else ""
+    p_txt = f"{p:.2e}" if p < 1e-3 else f"{p:.3f}"
+    return f"{p_txt}{stars}"
+
+
+def _plot_pairwise_stats_table(ax, groups, title):
+    """Pairwise rank-sum and t-test p-values table."""
+    rows = []
+    for i in range(len(groups)):
+        for j in range(i + 1, len(groups)):
+            label_i, data_i, _ = groups[i]
+            label_j, data_j, _ = groups[j]
+
+            if len(data_i) < 2 or len(data_j) < 2:
+                mw_p = np.nan
+                tt_p = np.nan
+            else:
+                _, mw_p = mannwhitneyu(data_i, data_j, alternative="two-sided")
+                _, tt_p = ttest_ind(data_i, data_j, equal_var=False)
+
+            rows.append([f"{label_i} vs {label_j}", _fmt_pval(mw_p), _fmt_pval(tt_p)])
+
+    ax.axis("off")
+    table = ax.table(
+        cellText=rows,
+        colLabels=["Pair", "Ranksum p", "t-test p"],
+        loc="center",
+        cellLoc="left",
+        colLoc="left",
+        colWidths=[0.55, 0.19, 0.19],
+    )
+    table.auto_set_font_size(False)
+    table.set_fontsize(7)
+    table.scale(1.0, 1.15)
+    ax.set_title(title)
 
 
 def _plot_violin_strip(ax, groups, marker_size=15, alpha=0.5, seed=42):
@@ -381,11 +422,11 @@ def figure_spike_pca(
     if_save_figure: bool = True,
     figsize: tuple = (15, 20),
 ):
-    """Generate the spike PCA figure (4 rows, 11 panels).
+    """Generate the spike PCA figure (4 rows, 13 panels).
 
     Row 1: PCA scatter | normalized waveform overlays
-    Row 2: PC1 violin | PC1 histogram | PC1 CDF
-    Row 3: membrane time constant violin | membrane time constant histogram | membrane time constant CDF
+    Row 2: PC1 violin | PC1 histogram | PC1 CDF | PC1 pairwise stats
+    Row 3: membrane time constant violin | membrane time constant histogram | membrane time constant CDF | membrane time constant pairwise stats
     Row 4: PC1 spatial | membrane time constant spatial | projection target spatial
 
     Parameters
@@ -431,8 +472,8 @@ def figure_spike_pca(
     gs = fig.add_gridspec(4, 1, height_ratios=[1.2, 1, 1, 1.5], hspace=0.5)
     gs_row1 = gs[0].subgridspec(1, 3, width_ratios=[0.7, 1, 1], wspace=0.3)
     # Narrower middle rows with side spacers.
-    gs_row2 = gs[1].subgridspec(1, 4, width_ratios=[0.4, 0.55, 0.55, 0.6], wspace=0.35)
-    gs_row3 = gs[2].subgridspec(1, 4, width_ratios=[0.4, 0.55, 0.55, 0.6], wspace=0.35)
+    gs_row2 = gs[1].subgridspec(1, 4, width_ratios=[0.4, 0.55, 0.55, 0.7], wspace=0.35)
+    gs_row3 = gs[2].subgridspec(1, 4, width_ratios=[0.4, 0.55, 0.55, 0.7], wspace=0.35)
     gs_row4 = gs[3].subgridspec(1, 3, width_ratios=[1, 1, 1], wspace=0.3)
     axes = [
         fig.add_subplot(gs_row1[0, 0]),
@@ -440,9 +481,11 @@ def figure_spike_pca(
         fig.add_subplot(gs_row2[0, 0]),
         fig.add_subplot(gs_row2[0, 1]),
         fig.add_subplot(gs_row2[0, 2]),
+        fig.add_subplot(gs_row2[0, 3]),
         fig.add_subplot(gs_row3[0, 0]),
         fig.add_subplot(gs_row3[0, 1]),
         fig.add_subplot(gs_row3[0, 2]),
+        fig.add_subplot(gs_row3[0, 3]),
         fig.add_subplot(gs_row4[0, 0]),
         fig.add_subplot(gs_row4[0, 1]),
         fig.add_subplot(gs_row4[0, 2]),
@@ -485,29 +528,39 @@ def figure_spike_pca(
     ax.set_title("PC1")
     ax.set_xlabel("PC1")
 
-    # Panel 6: membrane time constant violin by projection target
+    # Panel 6: PC1 pairwise stats
     ax = axes[5]
+    axes_dict["pca1_stats"] = ax
+    _plot_pairwise_stats_table(ax, pc1_groups, "PC1 pairwise stats")
+
+    # Panel 7: membrane time constant violin by projection target
+    ax = axes[6]
     axes_dict["tau_violin"] = ax
     _plot_violin_strip(ax, tau_groups)
     ax.set_title("Membrane time constant")
     ax.set_ylabel("Membrane time constant (ms)")
 
-    # Panel 7: membrane time constant histogram by projection target
-    ax = axes[6]
+    # Panel 8: membrane time constant histogram by projection target
+    ax = axes[7]
     axes_dict["tau_hist"] = ax
     _plot_group_hist(ax, tau_groups)
     ax.set_title("Membrane time constant")
     ax.set_xlabel("Membrane time constant (ms)")
 
-    # Panel 8: membrane time constant cumulative distribution by projection target
-    ax = axes[7]
+    # Panel 9: membrane time constant cumulative distribution by projection target
+    ax = axes[8]
     axes_dict["tau_cdf"] = ax
     _plot_group_cdf(ax, tau_groups)
     ax.set_title("Membrane time constant")
     ax.set_xlabel("Membrane time constant (ms)")
 
-    # Panel 9: PC1 in X/Y space with LC mesh
-    ax = axes[8]
+    # Panel 10: membrane time constant pairwise stats
+    ax = axes[9]
+    axes_dict["tau_stats"] = ax
+    _plot_pairwise_stats_table(ax, tau_groups, "Membrane time constant pairwise stats")
+
+    # Panel 11: PC1 in X/Y space with LC mesh
+    ax = axes[10]
     axes_dict["pca1_spatial"] = ax
     _plot_spatial_map(
         ax,
@@ -519,8 +572,8 @@ def figure_spike_pca(
     )
     ax.set_title("PC1 in CCF space")
 
-    # Panel 10: membrane time constant in X/Y space with LC mesh
-    ax = axes[9]
+    # Panel 12: membrane time constant in X/Y space with LC mesh
+    ax = axes[11]
     axes_dict["tau_spatial"] = ax
     _plot_spatial_map(
         ax,
@@ -532,8 +585,8 @@ def figure_spike_pca(
     )
     ax.set_title("Membrane time constant (ms) in CCF space")
 
-    # Panel 11: projection target in X/Y space with LC mesh
-    ax = axes[10]
+    # Panel 13: projection target in X/Y space with LC mesh
+    ax = axes[12]
     axes_dict["projection_spatial"] = ax
     _plot_spatial_map(ax, df_v_proj, "injection region", reserve_colorbar_space=True)
     ax.set_title("Projection target in CCF space")
