@@ -6,9 +6,14 @@ import matplotlib as mpl
 from matplotlib import font_manager
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-BUNDLED_FONT_PATH = REPO_ROOT / "assets" / "fonts" / "Helvetica.ttf"
-if BUNDLED_FONT_PATH.exists():
-    font_manager.fontManager.addfont(str(BUNDLED_FONT_PATH))
+FONT_CANDIDATES = [
+    Path("/data/fonts/Helvetica.ttf"),
+    REPO_ROOT / "assets" / "fonts" / "Helvetica.ttf",
+]
+for font_path in FONT_CANDIDATES:
+    if font_path.exists():
+        font_manager.fontManager.addfont(str(font_path))
+        break
 
 DEFAULT_FONT_FAMILY = "Helvetica"
 
