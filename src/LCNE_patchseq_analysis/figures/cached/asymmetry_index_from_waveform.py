@@ -40,9 +40,7 @@ def compute_spike_metrics(times_ms: np.ndarray, voltages: np.ndarray) -> dict:
     peak_deriv_idx = int(np.argmax(dv))
     post_peak_slice = dv[peak_deriv_idx + 1 :]
     trough_deriv_idx = (
-        int(peak_deriv_idx + 1 + np.argmin(post_peak_slice))
-        if post_peak_slice.size > 0
-        else None
+        int(peak_deriv_idx + 1 + np.argmin(post_peak_slice)) if post_peak_slice.size > 0 else None
     )
 
     fall_time_ms = (
@@ -54,9 +52,7 @@ def compute_spike_metrics(times_ms: np.ndarray, voltages: np.ndarray) -> dict:
     peak_idx = int(np.argmax(voltages))
     post_peak_voltage = voltages[peak_idx + 1 :]
     trough_idx = (
-        int(peak_idx + 1 + np.argmin(post_peak_voltage))
-        if post_peak_voltage.size > 0
-        else None
+        int(peak_idx + 1 + np.argmin(post_peak_voltage)) if post_peak_voltage.size > 0 else None
     )
 
     kick_idx = None
@@ -79,16 +75,10 @@ def compute_spike_metrics(times_ms: np.ndarray, voltages: np.ndarray) -> dict:
         else:
             kick_idx = int(local_maxima[-1])
 
-    rise_time_ms = (
-        times_ms[peak_deriv_idx] - times_ms[kick_idx]
-        if kick_idx is not None
-        else np.nan
-    )
+    rise_time_ms = times_ms[peak_deriv_idx] - times_ms[kick_idx] if kick_idx is not None else np.nan
 
     time_asymmetry = (
-        rise_time_ms / fall_time_ms
-        if np.isfinite(fall_time_ms) and fall_time_ms != 0
-        else np.nan
+        rise_time_ms / fall_time_ms if np.isfinite(fall_time_ms) and fall_time_ms != 0 else np.nan
     )
 
     return {
@@ -107,9 +97,7 @@ def compute_spike_metrics(times_ms: np.ndarray, voltages: np.ndarray) -> dict:
 def compute_metrics_for_table(df_spikes: pd.DataFrame, spike_type: str):
     """Compute timing metrics and keep waveform vectors for PCA."""
     df_spikes = df_spikes.copy()
-    df_spikes.index = df_spikes.index.set_levels(
-        df_spikes.index.levels[0].astype(str), level=0
-    )
+    df_spikes.index = df_spikes.index.set_levels(df_spikes.index.levels[0].astype(str), level=0)
     times_ms = df_spikes.columns.to_numpy(dtype=float)
     records = []
     waveforms = []
@@ -165,14 +153,10 @@ def add_pca_variants(df_metrics: pd.DataFrame, ephys_cols: list[str]) -> pd.Data
         idx = df_group.index
         waveforms = np.vstack(df_group["waveform_vector"].to_numpy())
         derivatives = np.vstack(df_group["dvdt_vector"].to_numpy())
-        derived = df_group[["rise_time_ms", "fall_time_ms", "time_asymmetry"]].to_numpy(
-            dtype=float
-        )
+        derived = df_group[["rise_time_ms", "fall_time_ms", "time_asymmetry"]].to_numpy(dtype=float)
         if ephys_cols:
             ephys_values = (
-                df_group[ephys_cols]
-                .apply(pd.to_numeric, errors="coerce")
-                .to_numpy(dtype=float)
+                df_group[ephys_cols].apply(pd.to_numeric, errors="coerce").to_numpy(dtype=float)
             )
         else:
             ephys_values = None
@@ -180,9 +164,7 @@ def add_pca_variants(df_metrics: pd.DataFrame, ephys_cols: list[str]) -> pd.Data
         df_metrics.loc[idx, "pc1_dvdt"] = compute_pc1(derivatives)
 
         derived_ephys = (
-            np.column_stack([derived, ephys_values])
-            if ephys_values is not None
-            else derived
+            np.column_stack([derived, ephys_values]) if ephys_values is not None else derived
         )
         df_metrics.loc[idx, "pc1_derived_ephys"] = compute_pc1(derived_ephys)
 
@@ -288,9 +270,7 @@ def sanitize_filename(text: str) -> str:
 def plot_summary_by_region(df_metrics: pd.DataFrame, output_dir: str) -> None:
     """Summarize time asymmetry and PC1 by injection region."""
     os.makedirs(output_dir, exist_ok=True)
-    for (spike_type, extract_from), df_group in df_metrics.groupby(
-        ["spike_type", "extract_from"]
-    ):
+    for (spike_type, extract_from), df_group in df_metrics.groupby(["spike_type", "extract_from"]):
         df_group = df_group.dropna(subset=["injection region"])
         if df_group.empty:
             continue
@@ -342,9 +322,7 @@ def format_waveform_feature_name(col_name: str) -> str:
 
 def plot_waveform_asymmetry_grid(df_metrics: pd.DataFrame, output_dir: str) -> None:
     """Generate a multi-panel scatter grid for waveform time asymmetry."""
-    df_base = df_metrics[["ephys_roi_id", "injection region", "y"]].drop_duplicates(
-        "ephys_roi_id"
-    )
+    df_base = df_metrics[["ephys_roi_id", "injection region", "y"]].drop_duplicates("ephys_roi_id")
     df_features = df_metrics[
         ["ephys_roi_id", "extract_from", "spike_type", "time_asymmetry"]
     ].copy()
@@ -465,9 +443,7 @@ def plot_pc_on_mesh(df_metrics: pd.DataFrame, output_dir: str) -> None:
 def run_anova_by_group(df_metrics: pd.DataFrame) -> pd.DataFrame:
     """Run ANCOVA for time asymmetry and PC1 across groups."""
     results = []
-    for (spike_type, extract_from), df_group in df_metrics.groupby(
-        ["spike_type", "extract_from"]
-    ):
+    for (spike_type, extract_from), df_group in df_metrics.groupby(["spike_type", "extract_from"]):
         features = ["time_asymmetry", "pc1_all"]
         df_anova = anova_features(
             df_group,
@@ -505,18 +481,14 @@ def main():
         metrics_all.append(df_metrics)
 
         # 2) Render a subset of diagnostic examples for manual inspection.
-        example_pool = df_metrics.dropna(
-            subset=["kick_idx", "peak_deriv_idx", "trough_deriv_idx"]
-        )
+        example_pool = df_metrics.dropna(subset=["kick_idx", "peak_deriv_idx", "trough_deriv_idx"])
         if example_pool.empty:
             example_rows = df_metrics.head(0)
         else:
             example_rows = example_pool.sample(
                 n=min(example_count, len(example_pool)), random_state=42
             )
-        output_dir = os.path.join(
-            RESULTS_DIRECTORY, "figures", "asymmetry_waveform_examples"
-        )
+        output_dir = os.path.join(RESULTS_DIRECTORY, "figures", "asymmetry_waveform_examples")
         for _, row in example_rows.iterrows():
             plot_example_spike(
                 df_spikes,
@@ -553,9 +525,7 @@ def main():
     # 6) Generate summary plots, mesh projections, and a large asymmetry grid.
     plot_summary_by_region(
         df_metrics_all,
-        output_dir=os.path.join(
-            RESULTS_DIRECTORY, "figures", "asymmetry_waveform_summary"
-        ),
+        output_dir=os.path.join(RESULTS_DIRECTORY, "figures", "asymmetry_waveform_summary"),
     )
     plot_pc_on_mesh(
         df_metrics_all,
@@ -563,20 +533,14 @@ def main():
     )
     plot_waveform_asymmetry_grid(
         df_metrics_all,
-        output_dir=os.path.join(
-            RESULTS_DIRECTORY, "figures", "asymmetry_waveform_summary"
-        ),
+        output_dir=os.path.join(RESULTS_DIRECTORY, "figures", "asymmetry_waveform_summary"),
     )
 
     # 7) Save metrics and ANCOVA results.
     output_dir = os.path.join(RESULTS_DIRECTORY, "analysis")
     os.makedirs(output_dir, exist_ok=True)
-    df_metrics_all.to_csv(
-        os.path.join(output_dir, "waveform_asymmetry_metrics.csv"), index=False
-    )
-    df_anova.to_csv(
-        os.path.join(output_dir, "waveform_asymmetry_anova.csv"), index=False
-    )
+    df_metrics_all.to_csv(os.path.join(output_dir, "waveform_asymmetry_metrics.csv"), index=False)
+    df_anova.to_csv(os.path.join(output_dir, "waveform_asymmetry_anova.csv"), index=False)
     logger.info("Saved metrics to %s", output_dir)
 
 

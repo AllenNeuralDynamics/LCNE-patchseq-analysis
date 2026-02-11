@@ -15,9 +15,7 @@ logger = logging.getLogger(__name__)
 
 s3 = s3fs.S3FileSystem(anon=True)  # All on public bucket
 
-S3_PUBLIC_URL_BASE = (
-    "https://aind-scratch-data.s3.us-west-2.amazonaws.com/aind-patchseq-data"
-)
+S3_PUBLIC_URL_BASE = "https://aind-scratch-data.s3.us-west-2.amazonaws.com/aind-patchseq-data"
 S3_PATH_BASE = "aind-scratch-data/aind-patchseq-data"
 
 
@@ -124,9 +122,7 @@ def get_public_representative_spikes(
     filename = spike_map.get(spike_type)
     if filename is None:
         valid_types = ", ".join(sorted(spike_map))
-        raise ValueError(
-            f"Unknown spike_type '{spike_type}'. Valid options: {valid_types}."
-        )
+        raise ValueError(f"Unknown spike_type '{spike_type}'. Valid options: {valid_types}.")
     s3_url = f"{S3_PUBLIC_URL_BASE}/efel/cell_stats/{filename}"
     if check_s3_public_url_exists(s3_url):
         return pd.read_pickle(s3_url)
@@ -163,9 +159,7 @@ def get_public_mapmycells(filename="mapmycells_20250618.csv"):
 
             # Add a new column "subclass_category" based on if "subclass_name" == "251 NTS Dbh Glut"
             df["subclass_category"] = df["subclass_name"].apply(
-                lambda x: "251 NTS Dbh Glut"
-                if x == "251 NTS Dbh Glut"
-                else "Non-Dbh cells"
+                lambda x: "251 NTS Dbh Glut" if x == "251 NTS Dbh Glut" else "Non-Dbh cells"
             )
             return df
     except Exception as e:

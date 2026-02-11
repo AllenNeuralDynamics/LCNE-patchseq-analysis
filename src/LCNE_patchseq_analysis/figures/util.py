@@ -137,9 +137,7 @@ def add_marginal_distributions(  # NoQA: C901
         return
 
     divider = make_axes_locatable(ax)
-    groups = (
-        hue_order if hue_order is not None else sorted(df[group_col].dropna().unique())
-    )
+    groups = hue_order if hue_order is not None else sorted(df[group_col].dropna().unique())
     if color_palette is None:
         palette_lut = dict(zip(groups, sns.color_palette(n_colors=len(groups))))
     else:
@@ -384,9 +382,7 @@ def generate_scatter_plot(
             ci_lower = intercept_ci[0] + slope_ci[0] * x_vals
             ci_upper = intercept_ci[1] + slope_ci[1] * x_vals
         else:
-            raise ValueError(
-                f"regression_type must be 'type1' or 'type2', got '{regression_type}'"
-            )
+            raise ValueError(f"regression_type must be 'type1' or 'type2', got '{regression_type}'")
 
         # Plot confidence band
         ax.fill_between(
@@ -417,9 +413,7 @@ def generate_scatter_plot(
             transform=ax.transAxes,
             ha="right",
             va="bottom",
-            bbox=dict(
-                boxstyle="round,pad=0.3", fc="white", ec="gray", lw=0.5, alpha=0.2
-            ),
+            bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", lw=0.5, alpha=0.2),
             fontsize=9,
         )
 
@@ -529,9 +523,7 @@ def generate_ccf_plot(  # NoQA: C901
     sorted_regions = sort_region(unique_regions)
 
     # Sort df_filtered by injection region according to sorted_regions
-    df_filtered = (
-        df_filtered.set_index("injection region").loc[sorted_regions].reset_index()
-    )
+    df_filtered = df_filtered.set_index("injection region").loc[sorted_regions].reset_index()
 
     legend_elements = []
     for region in sorted_regions:
@@ -574,9 +566,7 @@ def generate_ccf_plot(  # NoQA: C901
         y_plot_col = y_key  # always 'y'
         add_marginal_distributions(
             ax=ax,
-            df=df_filtered.rename(
-                columns={x_plot_col: "__x_plot__", y_plot_col: "__y_plot__"}
-            ),
+            df=df_filtered.rename(columns={x_plot_col: "__x_plot__", y_plot_col: "__y_plot__"}),
             x_col="__x_plot__",
             y_col="__y_plot__",
             group_col="injection region",
@@ -697,11 +687,7 @@ def generate_violin_plot(
                 if len(group_data) > 1
                 else 0.0
             )
-            group_color = (
-                color_palette_dict.get(group, "black")
-                if color_palette_dict
-                else "black"
-            )
+            group_color = color_palette_dict.get(group, "black") if color_palette_dict else "black"
             ax.plot(
                 i + 0.45,
                 mean_val,
@@ -732,9 +718,7 @@ def generate_violin_plot(
     ]
     logger.info(
         "Group counts (non-NA): "
-        + ", ".join(
-            [f"{group}: {group_counts.get(group, 0)}" for group in groups_order]
-        )
+        + ", ".join([f"{group}: {group_counts.get(group, 0)}" for group in groups_order])
     )
     ax.set_xticks(range(len(groups_order)))
     ax.set_xticklabels(group_labels_with_counts, rotation=30, ha="right")
@@ -768,9 +752,7 @@ def save_figure(
         if os.getenv("CO_CAPSULE_ID"):
             output_dir = "/results"
         else:
-            output_dir = (
-                os.path.dirname(os.path.abspath(__file__)) + "/../../../results/figures"
-            )
+            output_dir = os.path.dirname(os.path.abspath(__file__)) + "/../../../results/figures"
 
     os.makedirs(output_dir, exist_ok=True)
 

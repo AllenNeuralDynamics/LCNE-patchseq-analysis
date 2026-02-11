@@ -159,9 +159,7 @@ def extract_spike_waveforms(
         DataFrame containing spike waveforms
     """
     peak_times = (
-        features_dict["df_features_per_spike"]
-        .reset_index()
-        .set_index("sweep_number")["peak_time"]
+        features_dict["df_features_per_spike"].reset_index().set_index("sweep_number")["peak_time"]
     )
 
     # Time can be determined by the sampling rate
@@ -176,9 +174,9 @@ def extract_spike_waveforms(
         v = raw_trace["V"]
 
         for peak_time in peak_times_this_sweep:
-            idx = np.where(
-                (t >= peak_time + spike_window[0]) & (t < peak_time + spike_window[1])
-            )[0]
+            idx = np.where((t >= peak_time + spike_window[0]) & (t < peak_time + spike_window[1]))[
+                0
+            ]
             v_this = v[idx]
             vs.append(v_this)
 
@@ -312,9 +310,7 @@ def extract_features_using_efel(
     # Append stimulus to raw_traces (doing here because eFEL cannot handle it)
     for raw_trace in raw_traces:
         raw_trace["stimulus"] = raw.get_stimulus(raw_trace["sweep_number"][0])
-    df_peri_stimulus_raw_traces = extract_peri_stimulus_raw_traces(
-        raw_traces, features_dict
-    )
+    df_peri_stimulus_raw_traces = extract_peri_stimulus_raw_traces(raw_traces, features_dict)
 
     # -- Enrich df_sweeps --
     df_sweeps = raw.df_sweeps.copy()
@@ -323,9 +319,9 @@ def extract_features_using_efel(
         "spike_count": "efel_num_spikes",
         "first_spike_AP_width": "efel_first_spike_AP_width",
     }
-    _df_to_df_sweeps = features_dict["df_features_per_sweep"][
-        list(col_to_df_sweeps.keys())
-    ].rename(columns=col_to_df_sweeps)
+    _df_to_df_sweeps = features_dict["df_features_per_sweep"][list(col_to_df_sweeps.keys())].rename(
+        columns=col_to_df_sweeps
+    )
     df_sweeps = df_sweeps.merge(_df_to_df_sweeps, on="sweep_number", how="left")
 
     # Add metadata to features_dict
@@ -377,9 +373,7 @@ def extract_efel_one(
     except Exception as e:
         import traceback
 
-        error_message = (
-            f"Error processing {ephys_roi_id}: {str(e)}\n{traceback.format_exc()}"
-        )
+        error_message = f"Error processing {ephys_roi_id}: {str(e)}\n{traceback.format_exc()}"
         logger.error(error_message)
         return error_message
 

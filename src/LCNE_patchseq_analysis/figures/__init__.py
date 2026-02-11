@@ -27,8 +27,7 @@ GLOBAL_FILTER = (
 )
 
 GENE_FILTER = (
-    GLOBAL_FILTER
-    + " & mapmycells_subclass_name.str.contains('DBH', case=False, na=False)"
+    GLOBAL_FILTER + " & mapmycells_subclass_name.str.contains('DBH', case=False, na=False)"
 )
 
 # GLOBAL_FILTER += " & mapmycells_subclass_name.str.contains('DBH', case=False, na=False)"

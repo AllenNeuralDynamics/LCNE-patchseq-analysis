@@ -285,9 +285,7 @@ def plot_overlaid_spikes(
                     + df_spike_feature["peak_voltage"].loc[i]
                 ) / 2
 
-                AP_duration_half_width = df_spike_feature["AP_duration_half_width"].loc[
-                    i
-                ]
+                AP_duration_half_width = df_spike_feature["AP_duration_half_width"].loc[i]
                 ax_v.plot(half_rise_time, half_voltage, "mo", ms=10)
                 ax_v.plot(
                     [half_rise_time, half_rise_time + AP_duration_half_width],
@@ -307,9 +305,7 @@ def plot_overlaid_spikes(
             _t_after_begin = np.where(t >= t_begin)[0]
             if len(_t_after_begin) > 0:  # Sometimes t_begin is None
                 begin_ind = _t_after_begin[0]
-                ax_phase.plot(
-                    v[begin_ind], dvdt[begin_ind], "go", ms=10, label="AP_begin"
-                )
+                ax_phase.plot(v[begin_ind], dvdt[begin_ind], "go", ms=10, label="AP_begin")
                 ax_phase.axhline(
                     efel_settings["DerivativeThreshold"],
                     color="g",
@@ -325,9 +321,7 @@ def plot_overlaid_spikes(
                 ax_phase.plot(xx, yy, "g--", label="AP_phaseslope")
 
             # Phase plot: AP_peak_upstroke
-            ax_phase.axhline(
-                peak_upstroke, color="c", linestyle="--", label="AP_peak_upstroke"
-            )
+            ax_phase.axhline(peak_upstroke, color="c", linestyle="--", label="AP_peak_upstroke")
 
             # Phase plot: AP_peak_downstroke
             ax_phase.axhline(
@@ -348,9 +342,7 @@ def plot_overlaid_spikes(
     ax_phase.set_xlabel("Voltage (mV)")
     ax_phase.set_ylabel("dv/dt (mV/ms)")
     ax_phase.set_title("Phase Plots")
-    ax_phase.legend(
-        loc="best", fontsize=12, title="1st spike features", title_fontsize=13
-    )
+    ax_phase.legend(loc="best", fontsize=12, title="1st spike features", title_fontsize=13)
     ax_phase.grid(True)
 
     fig.tight_layout()
@@ -374,13 +366,9 @@ def plot_sweep_summary(features_dict: Dict[str, Any], save_dir: str) -> None:
         has_spikes = df_sweep_feature["spike_count"] > 0
 
         df_spike_feature = (
-            features_dict["df_features_per_spike"].loc[sweep_number]
-            if has_spikes
-            else None
+            features_dict["df_features_per_spike"].loc[sweep_number] if has_spikes else None
         )
-        df_sweep_meta = features_dict["df_sweeps"].query(
-            "sweep_number == @sweep_number"
-        )
+        df_sweep_meta = features_dict["df_sweeps"].query("sweep_number == @sweep_number")
         sweep_this = (
             features_dict["df_peri_stimulus_raw_traces"]
             .query("sweep_number == @sweep_number")
@@ -388,9 +376,7 @@ def plot_sweep_summary(features_dict: Dict[str, Any], save_dir: str) -> None:
         )
 
         # Plot raw sweep
-        fig_sweep = plot_sweep_raw(
-            sweep_this, df_sweep_meta, df_sweep_feature, df_spike_feature
-        )
+        fig_sweep = plot_sweep_raw(sweep_this, df_sweep_meta, df_sweep_feature, df_spike_feature)
         fig_sweep.savefig(
             f"{save_dir}/{ephys_roi_id}/{ephys_roi_id}_sweep_{sweep_number}.png",
             dpi=400,
@@ -399,9 +385,7 @@ def plot_sweep_summary(features_dict: Dict[str, Any], save_dir: str) -> None:
 
         # Plot spikes if present
         if has_spikes:
-            spike_this = features_dict["df_spike_waveforms"].query(
-                "sweep_number == @sweep_number"
-            )
+            spike_this = features_dict["df_spike_waveforms"].query("sweep_number == @sweep_number")
             fig_spikes = plot_overlaid_spikes(
                 spike_this,
                 sweep_this,
@@ -431,9 +415,7 @@ def generate_sweep_plots_one(ephys_roi_id: str):
     except Exception as e:
         import traceback
 
-        error_message = (
-            f"Error processing {ephys_roi_id}: {str(e)}\n{traceback.format_exc()}"
-        )
+        error_message = f"Error processing {ephys_roi_id}: {str(e)}\n{traceback.format_exc()}"
         logger.error(error_message)
         return error_message
 
@@ -505,12 +487,8 @@ def plot_cell_summary(  # noqa: C901
 
     # -- Spikes --
     color_used = []
-    df_second_spike_waveforms = features_dict.get(
-        "df_second_spike_waveforms", pd.DataFrame()
-    )
-    df_last_spike_waveforms = features_dict.get(
-        "df_last_spike_waveforms", pd.DataFrame()
-    )
+    df_second_spike_waveforms = features_dict.get("df_second_spike_waveforms", pd.DataFrame())
+    df_last_spike_waveforms = features_dict.get("df_last_spike_waveforms", pd.DataFrame())
 
     for label, settings in spikes_to_show.items():
         sweep_number = settings["sweep_number"]  # noqa: F841
@@ -538,9 +516,7 @@ def plot_cell_summary(  # noqa: C901
                 )
                 width_values = []
                 if "AP_duration_half_width" in df_spike_feature.columns:
-                    width_values.append(
-                        df_spike_feature["AP_duration_half_width"].values[0]
-                    )
+                    width_values.append(df_spike_feature["AP_duration_half_width"].values[0])
 
                 df_second_spike_feature = features_dict["df_features_per_spike"].query(
                     "sweep_number == @sweep_number and spike_idx == 1"
@@ -549,9 +525,7 @@ def plot_cell_summary(  # noqa: C901
                     not df_second_spike_feature.empty
                     and "AP_duration_half_width" in df_second_spike_feature.columns
                 ):
-                    width_values.append(
-                        df_second_spike_feature["AP_duration_half_width"].values[0]
-                    )
+                    width_values.append(df_second_spike_feature["AP_duration_half_width"].values[0])
 
                 df_last_spike_feature = pd.DataFrame()
                 if not df_last_spike_waveforms.empty:
@@ -559,21 +533,17 @@ def plot_cell_summary(  # noqa: C901
                         "sweep_number == @sweep_number"
                     )
                     if len(df_last_spikes_raw) > 0:
-                        last_spike_idx = df_last_spikes_raw.index.get_level_values(
-                            "spike_idx"
-                        )[0]
-                        df_last_spike_feature = features_dict[
-                            "df_features_per_spike"
-                        ].loc[(sweep_number, last_spike_idx)]
+                        last_spike_idx = df_last_spikes_raw.index.get_level_values("spike_idx")[0]
+                        df_last_spike_feature = features_dict["df_features_per_spike"].loc[
+                            (sweep_number, last_spike_idx)
+                        ]
                         if isinstance(df_last_spike_feature, pd.Series):
                             df_last_spike_feature = df_last_spike_feature.to_frame().T
                 if (
                     not df_last_spike_feature.empty
                     and "AP_duration_half_width" in df_last_spike_feature.columns
                 ):
-                    width_values.append(
-                        df_last_spike_feature["AP_duration_half_width"].values[0]
-                    )
+                    width_values.append(df_last_spike_feature["AP_duration_half_width"].values[0])
 
                 if width_values:
                     width_text = ", ".join([f"{value:.2f}" for value in width_values])
@@ -613,9 +583,7 @@ def plot_cell_summary(  # noqa: C901
                     )
 
             if not df_last_spike_waveforms.empty:
-                df_last_spikes_raw = df_last_spike_waveforms.query(
-                    "sweep_number == @sweep_number"
-                )
+                df_last_spikes_raw = df_last_spike_waveforms.query("sweep_number == @sweep_number")
                 if len(df_last_spikes_raw) > 0:
                     v_last_spike = df_last_spikes_raw.values[0]
                     t_last_spike = df_last_spikes_raw.columns.values
@@ -666,12 +634,8 @@ def plot_cell_summary(  # noqa: C901
     fig.tight_layout()
     fig.savefig("./tmp.png")
 
-    fig.savefig(
-        f"{RESULTS_DIRECTORY}/cell_stats/{ephys_roi_id}_cell_summary.svg", dpi=500
-    )
-    fig.savefig(
-        f"{RESULTS_DIRECTORY}/cell_stats/{ephys_roi_id}_cell_summary.png", dpi=500
-    )
+    fig.savefig(f"{RESULTS_DIRECTORY}/cell_stats/{ephys_roi_id}_cell_summary.svg", dpi=500)
+    fig.savefig(f"{RESULTS_DIRECTORY}/cell_stats/{ephys_roi_id}_cell_summary.png", dpi=500)
     plt.close(fig)
 
     return fig
