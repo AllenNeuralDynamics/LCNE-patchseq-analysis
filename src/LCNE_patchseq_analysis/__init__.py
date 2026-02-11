@@ -6,7 +6,7 @@ import os
 logger = logging.getLogger(__name__)
 
 
-__version__ = "0.32.4"
+__version__ = "0.32.5"
 
 # Get the path of this file
 PACKAGE_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
