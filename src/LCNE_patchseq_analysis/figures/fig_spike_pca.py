@@ -451,7 +451,7 @@ def figure_spike_pca(
     -------
     (fig, axes_dict, results)
     """
-    set_plot_style(base_size=12, font_family="Helvetica")
+    set_plot_style(base_size=12)
 
     results = spike_pca_analysis(
         df_meta=df_meta,
