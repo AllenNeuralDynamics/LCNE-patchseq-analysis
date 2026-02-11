@@ -142,7 +142,7 @@ def spike_pca_analysis(
 # ---------------------------------------------------------------------------
 
 
-def _plot_pca_scatter(ax, df_v_proj, marker_size=40):
+def _plot_pca_scatter(ax, df_v_proj, marker_size=50):
     """PC1 vs PC2 scatter coloured by projection target."""
     for region in df_v_proj["injection region"].unique():
         sub = df_v_proj.query("`injection region` == @region")
@@ -210,7 +210,7 @@ def _plot_box_strip(ax, groups, marker_size=15, alpha=0.5, seed=42):
     sns.despine(ax=ax, trim=True)
 
 
-def _plot_spatial_map(ax, df_v_proj, color_col, cmap, label, marker_size=40):
+def _plot_spatial_map(ax, df_v_proj, color_col, cmap, label, marker_size=50):
     """Scatter on LC mesh (sagittal view) coloured by a continuous variable."""
     mesh = load_mesh_from_s3()
     plot_mesh(ax, mesh, direction="sagittal", meshcol="lightgray")
