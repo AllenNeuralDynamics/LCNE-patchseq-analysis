@@ -2,4 +2,4 @@
 set -ex
 
 # This is the master script for the capsule. When you click "Reproducible Run", the code in this file will execute.
-echo "Sorry, we couldn't automatically determine the right command for this file type. Please replace this line with a command to run '.vscode/coder.json'."
+python -m LCNE_patchseq_analysis.figures.main_pca_tau
