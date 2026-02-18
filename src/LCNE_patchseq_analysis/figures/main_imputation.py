@@ -8,25 +8,16 @@ from LCNE_patchseq_analysis.figures.util import generate_scatter_plot, save_figu
 
 logger = logging.getLogger(__name__)
 
-# All imputation panels: (y_col, ylabel, title, kwargs)
+# All imputation panels grouped by row: (y_col, ylabel, title, kwargs)
+# Row 0: pseudocluster variants (old first, then new hyperparameters)
+# Row 1: MERFISH DV variants (old first, then new hyperparameters)
 _IMP_PANELS = [
+    # --- Row 0: pseudoclusters ---
     (
         "gene_imp_pseudoclusters (log_normed)",
         "Imputed pseudocluster\nfrom scRNA-seq",
         "Pseudoclusters (old)",
         {},
-    ),
-    (
-        "gene_imp_DV (log_normed)",
-        "Imputed DV from MERFISH (μm)",
-        "MERFISH DV (old)",
-        {"if_trim": False, "if_same_xy": True},
-    ),
-    (
-        "gene_imp_DV_gaussian_sigma0p1_k100 (log_normed)",
-        "Imputed DV from MERFISH (μm)",
-        "MERFISH DV (gaussian_sigma0p1_k100)",
-        {"if_trim": False, "if_same_xy": True},
     ),
     (
         "gene_imp_pseudoclusters_gaussian_sigma0p1_k100 (log_normed)",
@@ -52,7 +43,22 @@ _IMP_PANELS = [
         "Pseudoclusters (softmax_tau0p5_k100)",
         {},
     ),
+    # --- Row 1: MERFISH DV ---
+    (
+        "gene_imp_DV (log_normed)",
+        "Imputed DV from MERFISH (μm)",
+        "MERFISH DV (old)",
+        {"if_trim": False, "if_same_xy": True},
+    ),
+    (
+        "gene_imp_DV_gaussian_sigma0p1_k100 (log_normed)",
+        "Imputed DV from MERFISH (μm)",
+        "MERFISH DV (gaussian_sigma0p1_k100)",
+        {"if_trim": False, "if_same_xy": True},
+    ),
 ]
+
+_N_COLS = 5  # pseudocluster row has 5 panels → drives grid width
 
 
 def _scatter_imp(
@@ -119,29 +125,37 @@ def main_imputation(
     df_meta: pd.DataFrame,
     filter_query: str | None = None,
     if_save_figure: bool = True,
-    figsize: tuple = (20, 8),
+    subplot_size: float = 4.0,
 ):
-    """Generate all imputation scatters (old + new hyperparameters) in a 2×4 grid."""
+    """Generate all imputation scatters (old + new hyperparameters) in a 2×5 grid.
+
+    Row 0: pseudocluster variants (5 panels).
+    Row 1: MERFISH DV variants (2 panels, remaining cells hidden).
+    All subplots are square.
+    """
     if filter_query:
         df_meta = df_meta.query(filter_query).copy()
 
-    n_cols = 4
-    n_rows = 2
+    n_rows, n_cols = 2, _N_COLS
+    figsize = (n_cols * subplot_size, n_rows * subplot_size)
     fig, axes = plt.subplots(n_rows, n_cols, figsize=figsize)
-    axes_flat = axes.flatten()
 
     for i, (y_col, ylabel, title, kwargs) in enumerate(_IMP_PANELS):
-        ax = axes_flat[i]
+        row, col = divmod(i, n_cols)
+        ax = axes[row, col]
         if y_col not in df_meta.columns:
             ax.set_visible(False)
             continue
         _, ax = _scatter_imp(df_meta, y_col, ylabel, ax=ax, **kwargs)
         ax.set_title(title, fontsize=9)
+        ax.set_box_aspect(1)  # force square subplot
         if ax.get_legend() is not None:
             ax.get_legend().remove()
 
-    # Hide unused panel (8th cell)
-    axes_flat[-1].set_visible(False)
+    # Hide unused cells in row 1
+    n_used_row1 = len(_IMP_PANELS) - n_cols  # panels that spill into row 1
+    for col in range(n_used_row1, n_cols):
+        axes[1, col].set_visible(False)
 
     fig.tight_layout()
 
