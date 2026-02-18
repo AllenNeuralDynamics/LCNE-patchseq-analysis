@@ -145,13 +145,26 @@ def extract_cell_level_stats_in_parallel(skip_errors: bool = True, if_generate_p
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
+    from LCNE_patchseq_analysis import IN_CODEOCEAN, RAW_DIRECTORY, RESULTS_DIRECTORY
+
+    logger.info("=" * 60)
+    if IN_CODEOCEAN:
+        logger.info("Pipeline running in CODEOCEAN mode")
+        logger.info(f"  Input : {RAW_DIRECTORY}")
+        logger.info(f"  Output: {RESULTS_DIRECTORY}")
+    else:
+        logger.info("Pipeline running in S3/local mode")
+        logger.info(f"  Input : {RAW_DIRECTORY}")
+        logger.info(f"  Output: {RESULTS_DIRECTORY}")
+    logger.info("=" * 60)
+
     # logger.info("-" * 80)
     # logger.info("Extracting features in parallel...")
-    # extract_efel_features_in_parallel(skip_existing=True, skip_errors=True)
+    extract_efel_features_in_parallel(skip_existing=True, skip_errors=True)
 
     # logger.info("-" * 80)
     # logger.info("Generating sweep plots in parallel...")
-    # generate_sweep_plots_in_parallel(skip_existing=True, skip_errors=True)
+    generate_sweep_plots_in_parallel(skip_existing=True, skip_errors=True)
 
     logger.info("-" * 80)
     logger.info("Extracting cell-level statistics...")
