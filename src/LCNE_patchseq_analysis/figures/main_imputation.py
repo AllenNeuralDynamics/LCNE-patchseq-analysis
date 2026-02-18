@@ -69,12 +69,9 @@ def imputed_MERFISH(
     if filter_query:
         df_meta = df_meta.query(filter_query).copy()
 
-    df_meta["gene_imp_DV in um (log_normed)"] = (
-        df_meta["gene_imp_DV (log_normed)"] * 25
-    )  # TODO: confirm with Shuonan
     fig, ax = generate_scatter_plot(
         df=df_meta,
-        y_col="gene_imp_DV in um (log_normed)",
+        y_col="gene_imp_DV (log_normed)",
         x_col="y",
         color_col="injection region",
         color_palette=REGION_COLOR_MAPPER,
