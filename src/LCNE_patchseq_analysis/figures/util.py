@@ -541,7 +541,11 @@ def generate_ccf_plot(  # NoQA: C901
     for region in sorted_regions:
         color_key = region if region in REGION_COLOR_MAPPER else region.lower()
         color = REGION_COLOR_MAPPER.get(color_key, "gray")
-        label_text = f"{region} (n={sum(df_filtered['injection region'] == region)})"  # noqa: E225
+        region_mask = df_filtered["injection region"] == region
+        n_cells = sum(region_mask)
+        n_mice = df_filtered.loc[region_mask, "Donor"].nunique() if "Donor" in df_filtered.columns else None
+        mice_str = f", {n_mice} mice" if n_mice is not None else ""
+        label_text = f"{region} (n={n_cells}{mice_str})"  # noqa: E225
         legend_elements.append(
             Line2D(
                 [0],
@@ -638,6 +642,14 @@ def generate_violin_plot(
     # Count number of samples per group (valid data)
 
     group_counts = plot_df[color_col].value_counts().to_dict()
+
+    # Count unique mice per group
+    group_mice_counts = {}
+    if "Donor" in df_to_use.columns:
+        valid_mask = df_to_use[[y_col, color_col]].notna().all(axis=1)
+        for group in group_counts.keys():
+            group_mask = valid_mask & (df_to_use[color_col] == group)
+            group_mice_counts[group] = df_to_use.loc[group_mask, "Donor"].nunique()
     # Count missing data (NaN) per group from original dataframe
     group_nan_counts = {}
     for group in group_counts.keys():
@@ -732,7 +744,10 @@ def generate_violin_plot(
     # Set x-axis labels with sample counts
 
     group_labels_with_counts = [
-        f"{group}\n(n={group_counts.get(group, 0)})" for group in groups_order
+        f"{group}\n(n={group_counts.get(group, 0)}"
+        + (f", {group_mice_counts[group]} mice" if group_mice_counts.get(group) is not None else "")
+        + ")"
+        for group in groups_order
     ]
     logger.info(
         "Group counts (non-NA): "

@@ -121,6 +121,8 @@ def spike_pca_analysis(
         x_col, y_col = ("x", "y")
 
     merge_cols = ["ephys_roi_id", "injection region", x_col, y_col, tau_col]
+    if "Donor" in df_meta.columns:
+        merge_cols.append("Donor")
     df_v_proj = df_v_proj.merge(df_meta[merge_cols], on="ephys_roi_id", how="left")
 
     if x_col == "x":
@@ -151,13 +153,15 @@ def _plot_pca_scatter(ax, df_v_proj, marker_size=50):
     for region in df_v_proj["injection region"].unique():
         sub = df_v_proj.query("`injection region` == @region")
         color = REGION_COLOR_MAPPER.get(region, "gray")
+        n_mice = sub["Donor"].nunique() if "Donor" in sub.columns else None
+        mice_str = f", {n_mice} mice" if n_mice is not None else ""
         ax.scatter(
             sub["PCA1"],
             sub["PCA2"],
             c=color,
             s=marker_size,
             alpha=0.8,
-            label=f"{region} (n={len(sub)})",
+            label=f"{region} (n={len(sub)}{mice_str})",
             edgecolors="none",
         )
 
@@ -191,12 +195,14 @@ def _plot_waveform_overlay(ax, df_v_norm, df_v_proj):
             ax.plot(x, trace, color=color, alpha=0.2, linewidth=1)
 
         if len(y) > 0:
+            n_mice = df_v_proj.loc[mask, "Donor"].nunique() if "Donor" in df_v_proj.columns else None
+            mice_str = f", {n_mice} mice" if n_mice is not None else ""
             ax.plot(
                 x,
                 np.nanmean(y, axis=0),
                 color=color,
                 linewidth=3,
-                label=f"{label} (n={len(y)})",
+                label=f"{label} (n={len(y)}{mice_str})",
             )
 
     ax.set_xlabel("Time to peak (ms)")
@@ -213,7 +219,7 @@ def _plot_group_hist(ax, groups, bins=18, alpha=1.0):
     ----------
     groups : list of (label, data_array, color) tuples
     """
-    all_values = np.concatenate([data for _, data, _ in groups])
+    all_values = np.concatenate([data for _, data, *_ in groups])
     shared_bins = np.linspace(all_values.min(), all_values.max(), bins + 1)
     bin_width = shared_bins[1] - shared_bins[0]
     centers = (shared_bins[:-1] + shared_bins[1:]) / 2
@@ -222,7 +228,9 @@ def _plot_group_hist(ax, groups, bins=18, alpha=1.0):
     bar_width = bin_width * 0.3
     offsets = (np.arange(n_groups) - (n_groups - 1) / 2) * (bar_width * 1.15)
 
-    for i, (label, data, color) in enumerate(groups):
+    for i, (label, data, color, *rest) in enumerate(groups):
+        n_mice = rest[0] if rest else None
+        mice_str = f", {n_mice} mice" if n_mice is not None else ""
         counts, _ = np.histogram(data, bins=shared_bins)
         ax.bar(
             centers + offsets[i],
@@ -231,7 +239,7 @@ def _plot_group_hist(ax, groups, bins=18, alpha=1.0):
             alpha=alpha,
             color=color,
             edgecolor="none",
-            label=f"{label} (n={len(data)})",
+            label=f"{label} (n={len(data)}{mice_str})",
             align="center",
         )
 
@@ -242,7 +250,9 @@ def _plot_group_hist(ax, groups, bins=18, alpha=1.0):
 
 def _plot_group_cdf(ax, groups):
     """Separate cumulative distribution plot for each projection group."""
-    for label, data, color in groups:
+    for label, data, color, *rest in groups:
+        n_mice = rest[0] if rest else None
+        mice_str = f", {n_mice} mice" if n_mice is not None else ""
         sorted_data = np.sort(data)
         cdf = np.arange(1, len(sorted_data) + 1) / len(sorted_data)
         ax.step(
@@ -252,7 +262,7 @@ def _plot_group_cdf(ax, groups):
             color=color,
             linewidth=1.6,
             alpha=1.0,
-            label=f"{label} (n={len(data)})",
+            label=f"{label} (n={len(data)}{mice_str})",
         )
 
     ax.set_ylim(0, 1)
@@ -274,8 +284,8 @@ def _plot_pairwise_stats_table(ax, groups, title):
     rows = []
     for i in range(len(groups)):
         for j in range(i + 1, len(groups)):
-            label_i, data_i, _ = groups[i]
-            label_j, data_j, _ = groups[j]
+            label_i, data_i, *_ = groups[i]
+            label_j, data_j, *_ = groups[j]
 
             if len(data_i) < 2 or len(data_j) < 2:
                 mw_p = np.nan
@@ -304,7 +314,7 @@ def _plot_pairwise_stats_table(ax, groups, title):
 def _plot_violin_strip(ax, groups, marker_size=15, alpha=0.5, seed=42):
     """Violin with jittered points for each projection group."""
     rng = np.random.default_rng(seed)
-    for idx, (_, data, color) in enumerate(groups):
+    for idx, (_, data, color, *_rest) in enumerate(groups):
         vp = ax.violinplot(
             dataset=[data],
             positions=[idx],
@@ -334,7 +344,12 @@ def _plot_violin_strip(ax, groups, marker_size=15, alpha=0.5, seed=42):
         )
 
     ax.set_xticks(range(len(groups)))
-    ax.set_xticklabels([f"{lbl}\n(n={len(d)})" for lbl, d, _ in groups])
+    ax.set_xticklabels(
+        [
+            f"{lbl}\n(n={len(d)}{f', {rest[0]} mice' if rest and rest[0] is not None else ''})"
+            for lbl, d, _, *rest in groups
+        ]
+    )
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
     ax.set_xlim(-0.6, len(groups) - 0.4)
     sns.despine(ax=ax, trim=True)
@@ -363,6 +378,8 @@ def _plot_spatial_map(
         for region in regions:
             sub = df_v_proj[df_v_proj["injection region"] == region]
             color = REGION_COLOR_MAPPER.get(region, "gray")
+            n_mice = sub["Donor"].nunique() if "Donor" in sub.columns else None
+            mice_str = f", {n_mice} mice" if n_mice is not None else ""
             ax.scatter(
                 sub["X (A --> P)"],
                 sub["Y (D --> V)"],
@@ -371,7 +388,7 @@ def _plot_spatial_map(
                 edgecolors="black",
                 linewidths=1,
                 alpha=0.7,
-                label=f"{region} (n={len(sub)})",
+                label=f"{region} (n={len(sub)}{mice_str})",
             )
         ax.legend(fontsize=6, loc="best", framealpha=0.6)
         if reserve_colorbar_space:
@@ -604,7 +621,7 @@ def figure_spike_pca(
 
 
 def _build_projection_groups(df_v_proj, value_col):
-    """Build (label, values, color) groups for spinal cord, cortex, and CB."""
+    """Build (label, values, color, n_mice) groups for spinal cord, cortex, and CB."""
     groups = []
     for grp_label, region_set, color in [
         ("Spinal cord", SPINAL_REGIONS, REGION_COLOR_MAPPER["Spinal cord"]),
@@ -616,7 +633,8 @@ def _build_projection_groups(df_v_proj, value_col):
             pd.to_numeric(df_v_proj.loc[mask, value_col], errors="coerce")
         )
         vals = vals_series.dropna().to_numpy()
-        groups.append((grp_label, vals, color))
+        n_mice = df_v_proj.loc[mask, "Donor"].nunique() if "Donor" in df_v_proj.columns else None
+        groups.append((grp_label, vals, color, n_mice))
     return groups
 
 
