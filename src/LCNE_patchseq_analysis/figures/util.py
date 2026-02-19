@@ -611,7 +611,7 @@ def generate_ccf_plot(  # NoQA: C901
     return fig, ax
 
 
-def generate_violin_plot(
+def generate_violin_plot(  # noqa: C901
     df_to_use: pd.DataFrame,
     y_col: str,
     color_col: str,

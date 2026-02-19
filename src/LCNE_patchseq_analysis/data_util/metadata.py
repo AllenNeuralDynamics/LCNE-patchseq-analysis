@@ -87,7 +87,7 @@ def jsons_to_df(json_dicts):
     return df_merged
 
 
-def load_ephys_metadata(
+def load_ephys_metadata(  # noqa: C901
     if_from_s3=True, if_with_seq=True, if_with_morphology=True, combine_roi_ids=True
 ):
     """Load ephys metadata
