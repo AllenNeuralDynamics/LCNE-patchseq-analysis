@@ -7,181 +7,94 @@
 ![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen?logo=codecov)
 ![Python](https://img.shields.io/badge/python->=3.9-blue?logo=python)
 
-Library for LCNE-patchseq data analysis
+This repository is the **main entry point for reproducing the LCNE-patchseq analysis** associated with our paper. It contains the full pipeline for extracting electrophysiological features from patch-seq recordings in locus coeruleus norepinephrine (LC-NE) neurons, merging transcriptomic and morphological data, and generating the paper's main figures. A fully reproducible run — with identical data, software environment, and code — is available as a [Code Ocean capsule](https://codeocean.allenneuraldynamics.org/capsule/1699143/tree). An interactive [Panel app](https://hanhou-patchseq.hf.space/patchseq_panel_viz) is provided for exploring the dataset.
+
+## Resources
+
+| Resource | Description | Link |
+|---|---|---|
+| **Analysis code** (this repo) | Source code for the eFEL pipeline, figure scripts, and data utilities | [AllenNeuralDynamics/LCNE-patchseq-analysis](https://github.com/AllenNeuralDynamics/LCNE-patchseq-analysis) |
+| **Code Ocean capsule** | Fully reproducible computational capsule — data, environment, and code used for the paper | [Capsule #1699143](https://codeocean.allenneuraldynamics.org/capsule/1699143/tree) |
+| **Interactive visualization app** | Panel app for exploring single-cell ephys, transcriptomics, and morphology data | [hanhou-patchseq.hf.space/patchseq_panel_viz](https://hanhou-patchseq.hf.space/patchseq_panel_viz) |
+| **Visualization source code** | Source code for the Panel app, deployed on Hugging Face Spaces | [AllenNeuralDynamics/LCNE-patchseq-viz](https://github.com/AllenNeuralDynamics/LCNE-patchseq-viz) |
+| **ipfx** (upstream) | Allen Institute library for ephys feature extraction and QC, used by the snakemake-ipfx pipeline | [AllenInstitute/ipfx](https://github.com/AllenInstitute/ipfx) |
+| **snakemake-ipfx** (upstream) | Snakemake pipeline for running ipfx at scale; produces the NWB files ingested here ([Gouwens et al. 2021](https://elifesciences.org/articles/65482)) | [AllenInstitute/snakemake_ephys](https://github.com/AllenInstitute/snakemake_ephys) |
 
 ## Overview
-Here is the overall workflow of patchseq analysis for the LC-NE project
 
 <img width="1540" alt="image" src="https://github.com/user-attachments/assets/596f8c82-8bc7-45c5-b4c1-facc03265a7d" />
 
-This repository maintains all the green parts in the above diagram:
-1. [`src/LCNE_patchseq_analysis/pipeline_util`](https://github.com/AllenNeuralDynamics/LCNE-patchseq-analysis/tree/main/src/LCNE_patchseq_analysis/pipeline_util): upload data and metadata from various locations to cloud
-2. [`.../efel`](https://github.com/AllenNeuralDynamics/LCNE-patchseq-analysis/tree/main/src/LCNE_patchseq_analysis/efel): extract ephys features using the [eFEL library](https://efel.readthedocs.io/en/latest/eFeatures.html).
+The diagram above shows the full patchseq analysis workflow for the LC-NE project. **This repository covers only the green arrows.** The grey upstream steps — LIMS data management, the snakemake-ipfx ephys QC pipeline ([AllenInstitute/ipfx](https://github.com/AllenInstitute/ipfx), [AllenInstitute/snakemake_ephys](https://github.com/AllenInstitute/snakemake_ephys), [Gouwens et al. 2021](https://elifesciences.org/articles/65482)), and sequencing data processing — are outside the scope of this repository; this pipeline takes their outputs as inputs.
+
+- [`pipeline_util`](https://github.com/AllenNeuralDynamics/LCNE-patchseq-analysis/tree/main/src/LCNE_patchseq_analysis/pipeline_util) — ingests raw data and metadata from various sources and uploads them to cloud storage (S3; **replaced by the mounted dataset at `/data/` in Code Ocean mode**)
+- [`efel`](https://github.com/AllenNeuralDynamics/LCNE-patchseq-analysis/tree/main/src/LCNE_patchseq_analysis/efel) — extracts electrophysiological features from NWB files using the [eFEL library](https://efel.readthedocs.io/en/latest/eFeatures.html), then aggregates them into a cell-level summary table (written to S3 locally; **written to `/results/` in Code Ocean mode**)
+- [`figures`](https://github.com/AllenNeuralDynamics/LCNE-patchseq-analysis/tree/main/src/LCNE_patchseq_analysis/figures) — generates the paper's main figures by merging ephys features with transcriptomic and morphological data (reads summary table from S3; **reads from `/results/` in Code Ocean mode**)
 
 ## Detailed workflow
+
 <img width="1240" alt="image" src="https://github.com/user-attachments/assets/f771ced3-5ec5-4607-a2cb-be2b4993dd23" />
 
+The diagram above shows the step-by-step data flow through the pipeline: from raw NWB files and metadata spreadsheets, through eFEL feature extraction and multi-modal merging (transcriptomics via MapMyCells, morphology), to the final outputs consumed by the figure scripts and the Panel app. Any interaction with S3 shown in the diagram is **replaced by the local Code Ocean filesystem** (`/data/` for inputs, `/results/` for outputs) when running inside the Code Ocean capsule.
 
-## Reproducing the eFEL pipeline end-to-end in CodeOcean
 
-The eFEL pipeline can be run reproducibly inside a CodeOcean capsule. When the
-environment variable `CO_COMPUTATION_ID` is present (set automatically by
-CodeOcean at runtime), the package switches all paths to the CodeOcean layout:
+## Reproducing our work in Code Ocean
 
-| Path | Purpose |
-|------|---------|
-| `/data/LCNE-patchseq-ephys/raw/` | NWB files, JSON outputs, and Brian's metadata spreadsheet |
-| `/data/LCNE-patchseq-ephys/morphology/` | Morphology files |
-| `/results/` | All pipeline outputs (features, plots, cell_stats) |
+> **Tip:** Before diving in, we highly encourage you to explore the dataset interactively via the [Panel app](https://hanhou-patchseq.hf.space/patchseq_panel_viz) first.
 
-### Prerequisites
+All analyses can be reproduced from the [Code Ocean capsule](https://codeocean.allenneuraldynamics.org/capsule/1699143/tree). The capsule bundles the data, environment, and code — no setup required.
 
-1. **Attach the dataset** — the capsule must have the `LCNE-patchseq-ephys`
-   dataset (id `68ef27d7-9d95-40ce-9e40-7de93dccf5f8`) attached and mounted at
-   `LCNE-patchseq-ephys` (already configured in `.codeocean/datasets.json`).
+1. **Generate the main figures** (default) — click **Reproducible Run**. The capsule will load the pre-computed eFEL feature table from the attached dataset and run all figure scripts directly.
 
-2. **Dataset contents** — the dataset must include:
-   - `raw/Ephys_Roi_Result_<id>/` — per-cell NWB and JSON files
-   - `raw/df_metadata_merged.csv` — Brian's master spreadsheet
-   - `raw/df_metadata_merged_20250409.csv` — xyz coordinate supplement
+2. **Re-run the full pipeline** — to redo all green-arrow steps (eFEL feature extraction → cell-level statistics → figures) from scratch within the capsule, enable the `--rerun_efel_pipeline` flag in `code/run` before launching the run.
 
-3. **Install eFEL extras** — the `efel` and `tables` packages are optional
-   extras not included in the base install. Either update the `Dockerfile` pip
-   install line to use the `[efel]` extra:
-   ```dockerfile
-   RUN pip install -U --no-cache-dir \
-       "git+https://github.com/AllenNeuralDynamics/LCNE-patchseq-analysis.git@<commit>#egg=LCNE-patchseq-analysis[efel]"
+3. **Interactive debugging** — open the capsule in **VS Code** (via the Code Ocean IDE), then install the package in editable mode:
+   ```bash
+   pip install -e .
    ```
-   or add them explicitly:
-   ```dockerfile
-   RUN pip install -U --no-cache-dir efel tables tqdm
-   ```
+   You can then edit and re-run any part of the pipeline interactively.
 
-### Running the pipeline
+Alternatively, if you prefer to work outside of Code Ocean, see the standalone instructions below.
 
-Set `code/run` to invoke the pipeline entry point:
+## Reproducing standalone
 
-```bash
-#!/usr/bin/env bash
-set -ex
-python -m LCNE_patchseq_analysis.efel.pipeline
-```
+The figures can also be reproduced locally or in any notebook environment — all data are fetched directly from the public S3 bucket, so no local data download is required. Install the package and run:
 
-Click **Reproducible Run**. The pipeline will:
-
-1. **Extract eFEL features** — reads each cell's NWB file from
-   `/data/LCNE-patchseq-ephys/raw/`, writes per-cell `.h5` files to
-   `/results/features/`.
-2. **Generate sweep plots** — writes per-sweep PNG files to
-   `/results/plots/<roi_id>/`.
-3. **Compute cell-level statistics** — aggregates features across sweeps,
-   merges with Brian's spreadsheet, and writes:
-   - `/results/cell_stats/cell_level_stats.csv` — main summary table
-   - `/results/cell_stats/cell_level_*.pkl` — representative spike waveforms
-   - `/results/cell_stats/<roi_id>_cell_summary.png` — per-cell summary plots
-
-### Verifying the mode at runtime
-
-The logger will print a banner at startup confirming CodeOcean mode:
-
-```
-============================================================
-Running in CodeOcean mode
-  RAW data  : /data/LCNE-patchseq-ephys/raw
-  Results   : /results
-  Metadata  : loaded from results folder (not S3)
-============================================================
-```
-
-And again when the pipeline `__main__` block starts:
-
-```
-============================================================
-Pipeline running in CODEOCEAN mode
-  Input : /data/LCNE-patchseq-ephys/raw
-  Output: /results
-============================================================
-```
-
-### Local / S3 mode
-
-Without `CO_COMPUTATION_ID` set, all paths fall back to the developer-local
-defaults defined in `src/LCNE_patchseq_analysis/__init__.py` and
-`cell_level_stats.csv` is fetched from the public S3 bucket instead.
-
-
-## Loading the master metadata table (df_meta)
-
-All figure scripts share a single entry point for loading data:
 
 ```python
+#!pip install "git+https://github.com/AllenNeuralDynamics/LCNE-patchseq-analysis.git"
 from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
-
-df_meta = load_ephys_metadata(
-    if_from_s3=True,           # True: load eFEL stats; False: Brian's spreadsheet only
-    if_with_seq=True,          # merge gene expression + MapMyCells cell-type calls
-    if_with_morphology=True,   # merge morphology features
-    combine_roi_ids=True,      # unify LIMS and spreadsheet ROI IDs
-)
-```
-
-**What `if_from_s3=True` returns** — the full merged master table ("df_meta") with:
-
-| Column group | Source | Prefix |
-|---|---|---|
-| Ephys passive properties, QC | eFEL pipeline output | `ipfx_*` |
-| Spike-waveform eFEL features | eFEL pipeline output | `efel_*` |
-| Injection region, LC targeting, coordinates | Brian's spreadsheet | _(no prefix)_ |
-| Gene expression (log-normalised) | `seq_preselected.csv` on S3 | `gene_*` |
-| Cell-type classification | MapMyCells results on S3 | `mapmycells_*` |
-| Morphology metrics | `LC_patchseq_RawFeatureWide.csv` on S3 | `morphology_*` |
-
-In **CodeOcean mode** (`CO_COMPUTATION_ID` set), calling `load_ephys_metadata(if_from_s3=True)` first
-checks for `/results/cell_stats/cell_level_stats.csv` produced by the eFEL pipeline; if that file
-exists it is used directly, otherwise it falls back to S3. This means the figures script can run
-either after the eFEL pipeline (fully self-contained) or standalone against the public S3 data.
-
-**What `if_from_s3=False` returns** — Brian's master spreadsheet only
-(`raw/df_metadata_merged.csv`), filtered to cells present in the spreadsheet
-or LIMS. This is used internally by the eFEL pipeline itself to enumerate
-which cells to process.
-
-**Recommended filter** for main figures (excludes reporter-negative and
-thalamus-injected cells):
-
-```python
-from LCNE_patchseq_analysis.figures import GLOBAL_FILTER, GENE_FILTER
-
-df_filtered = df_meta.query(GLOBAL_FILTER)          # all projection targets
-df_dbh     = df_meta.query(GENE_FILTER)             # DBH+ cells only (for seq figures)
-```
-
-
-## Generating main figures
-
-All figure scripts live in
-[`src/LCNE_patchseq_analysis/figures/`](https://github.com/AllenNeuralDynamics/LCNE-patchseq-analysis/tree/main/src/LCNE_patchseq_analysis/figures)
-and can be run directly or imported as functions.
-
-### Individual figure scripts
-
-| Script | Entry point | Key output |
-|--------|-------------|-----------|
-| `figures/main_imputation.py` | `main_imputation(df_meta, GENE_FILTER)` | Imputed pseudocluster comparison |
-| `figures/main_pca_tau.py` | `figure_spike_pca(df_meta, df_spikes)` | Spike-waveform PCA + tau panels |
-
-All functions accept an optional `ax` argument for embedding panels in a larger
-figure, and `if_save_figure=True` (default) to write PNG + SVG to `RESULTS_DIRECTORY`.
-
-### Spike waveforms (needed for PCA figure)
-
-Average spike waveforms per cell are loaded separately from S3:
-
-```python
 from LCNE_patchseq_analysis.pipeline_util.s3 import get_public_representative_spikes
 
-df_spikes = get_public_representative_spikes("average")  # also: "first", "second", "last"
+from LCNE_patchseq_analysis.figures import GLOBAL_FILTER, GENE_FILTER
+from LCNE_patchseq_analysis.figures.main_pca_tau import figure_spike_pca
+from LCNE_patchseq_analysis.figures.main_imputation import main_imputation
+
+# -- Physiological properties --
+# Load merged metadata (eFEL features + key metadata + transcriptomics) from public S3
+df_meta = load_ephys_metadata(if_from_s3=True, if_with_seq=True)
+df_meta = df_meta.query(GLOBAL_FILTER)  # exclude reporter-negative and thalamus-injected cells
+
+# Load per-cell average spike waveforms and generate spike PCA figure
+df_spikes = get_public_representative_spikes("average")
+fig, axes_dict, results = figure_spike_pca(df_meta, df_spikes, filtered_df_meta=df_meta)
+
+# -- Gene imputations --
+main_imputation(df_meta, GENE_FILTER)
 ```
+
+
+## Two modes of running the pipeline
+
+The two reproduction paths above correspond to two runtime modes of the package, which differ in where data is read from and where results are written:
+
+| | **Code Ocean mode** | **Local / developer mode** |
+|---|---|---|
+| **Trigger** | `CO_COMPUTATION_ID` env var is set automatically by Code Ocean at runtime | Running locally without `CO_COMPUTATION_ID` |
+| **Input data** | Mounted dataset at `/data/LCNE-patchseq-ephys/` within the capsule | Raw data pulled from S3 |
+| **Results** | Written to `/results/` within the capsule | Written locally; key outputs (e.g. `cell_level_stats.csv`, spike waveforms) pushed to the public S3 bucket |
+| **Panel app** | Not connected — capsule results are self-contained | S3 outputs are what the [Panel app](https://hanhou-patchseq.hf.space/patchseq_panel_viz) reads from |
+
+In short: **Code Ocean mode** is for reproducibility (everything stays inside the capsule), while **local mode** is for active development and feeds results into the live visualization app via S3.
 
 
 ## The Panel app
