@@ -1,4 +1,17 @@
 #!/usr/bin/env bash
 set -ex
 
-python code/generate_main_figures.py
+# Parse --rerun_efel_pipeline argument (default: 0)
+RERUN_EFEL_PIPELINE=0
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --rerun_efel_pipeline) RERUN_EFEL_PIPELINE="$2"; shift 2 ;;
+        *) shift ;;
+    esac
+done
+
+if [[ "$RERUN_EFEL_PIPELINE" == "1" ]]; then
+    python -m LCNE_patchseq_analysis.efel.pipeline
+fi
+
+python generate_main_figures.py
