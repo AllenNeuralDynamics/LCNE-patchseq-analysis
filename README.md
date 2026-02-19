@@ -45,7 +45,7 @@ All analyses can be reproduced from the [Code Ocean capsule](https://codeocean.a
 
 1. **Generate the main figures** (default) — click **Reproducible Run**. The capsule will load the pre-computed eFEL feature table from the attached dataset and run all figure scripts directly.
 
-2. **Re-run the full pipeline** — to redo all green-arrow steps (eFEL feature extraction → cell-level statistics → figures) from scratch within the capsule, enable the `--rerun_efel_pipeline` flag in `code/run` before launching the run. ⚠️ *This will take several hours.*
+2. **Re-run the full pipeline** — to redo all green-arrow steps (eFEL feature extraction → cell-level statistics → figures) from scratch within the capsule, trigger a Reproducible Run with the app argument `rerun_efel_pipeline=1`. ⚠️ *This will take several hours.*
 
 3. **Interactive debugging** — open the capsule in **VS Code** (via the Code Ocean IDE), then install the package in editable mode:
    ```bash
