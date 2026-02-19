@@ -57,11 +57,11 @@ Alternatively, if you prefer to work outside of Code Ocean, see the standalone i
 
 ## Reproducing standalone
 
-The figures can also be reproduced locally or in any notebook environment — all data are fetched directly from the public S3 bucket, so no local data download is required. Install the package and run:
+The figures can also be reproduced locally or in any notebook environment — all data are fetched directly from the public S3 bucket, so no local data download is required. Install the package via PyPI (`pip install LCNE-patchseq-analysis`) and run:
 
 
 ```python
-#!pip install "git+https://github.com/AllenNeuralDynamics/LCNE-patchseq-analysis.git"
+#!pip install LCNE-patchseq-analysis
 from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
 from LCNE_patchseq_analysis.pipeline_util.s3 import get_public_representative_spikes
 
