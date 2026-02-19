@@ -107,11 +107,17 @@ def load_ephys_metadata(
     # -- Load the cell level stats from eFEL output --
     if if_from_s3:
         if IN_CODEOCEAN:
-            # In CodeOcean mode: read cell-level stats from the results folder
-            # produced by this pipeline run rather than fetching from S3.
+            # In CodeOcean mode: prefer the local results folder produced by
+            # this pipeline run; fall back to S3 if the file doesn't exist yet.
             csv_path = os.path.join(RESULTS_DIRECTORY, "cell_stats", "cell_level_stats.csv")
-            logger.info(f"[CodeOcean mode] Loading cell level stats from {csv_path}")
-            df = pd.read_csv(csv_path)
+            if os.path.exists(csv_path):
+                logger.info(f"[CodeOcean mode] Loading cell level stats from {csv_path}")
+                df = pd.read_csv(csv_path)
+            else:
+                logger.info(
+                    f"[CodeOcean mode] {csv_path} not found, falling back to S3."
+                )
+                df = get_public_efel_cell_level_stats()
         else:
             df = get_public_efel_cell_level_stats()
 

@@ -136,9 +136,10 @@ df_meta = load_ephys_metadata(
 | Cell-type classification | MapMyCells results on S3 | `mapmycells_*` |
 | Morphology metrics | `LC_patchseq_RawFeatureWide.csv` on S3 | `morphology_*` |
 
-In **CodeOcean mode** (`CO_COMPUTATION_ID` set), calling `load_ephys_metadata(if_from_s3=True)` reads
-`/results/cell_stats/cell_level_stats.csv` produced by the eFEL pipeline rather than fetching from S3,
-making the analysis fully self-contained.
+In **CodeOcean mode** (`CO_COMPUTATION_ID` set), calling `load_ephys_metadata(if_from_s3=True)` first
+checks for `/results/cell_stats/cell_level_stats.csv` produced by the eFEL pipeline; if that file
+exists it is used directly, otherwise it falls back to S3. This means the figures script can run
+either after the eFEL pipeline (fully self-contained) or standalone against the public S3 data.
 
 **What `if_from_s3=False` returns** — Brian's master spreadsheet only
 (`raw/df_metadata_merged.csv`), filtered to cells present in the spreadsheet

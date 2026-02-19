@@ -34,7 +34,7 @@ if IN_CODEOCEAN:
     logger.info("Running in CodeOcean mode")
     logger.info(f"  RAW data  : {RAW_DIRECTORY}")
     logger.info(f"  Results   : {RESULTS_DIRECTORY}")
-    logger.info("  Metadata  : loaded from results folder (not S3)")
+    logger.info("  Metadata  : results folder if available, else S3")
     logger.info("=" * 60)
 else:
     logger.info("Running in S3/local mode")
