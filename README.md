@@ -90,7 +90,7 @@ The two reproduction paths above correspond to two runtime modes of the package,
 | | **Code Ocean mode** | **Local / developer mode** |
 |---|---|---|
 | **Trigger** | `CO_COMPUTATION_ID` env var is set automatically by Code Ocean at runtime | Running locally without `CO_COMPUTATION_ID` |
-| **Input data** | Mounted dataset at `/data/LCNE-patchseq-ephys/` within the capsule | Raw data pulled from S3 |
+| **Input data** | Dataset `68ef27d7-9d95-40ce-9e40-7de93dccf5f8` mounted at `/data/LCNE-patchseq-ephys/` | `s3://aind-scratch-data/aind-patchseq-data/` |
 | **Results** | Written to `/results/` within the capsule | Written locally; key outputs (e.g. `cell_level_stats.csv`, spike waveforms) pushed to the public S3 bucket |
 | **Panel app** | Not connected — capsule results are self-contained | S3 outputs are what the [Panel app](https://hanhou-patchseq.hf.space/patchseq_panel_viz) reads from |
 
