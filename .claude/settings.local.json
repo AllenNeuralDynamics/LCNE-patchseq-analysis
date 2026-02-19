@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(python:*)",
+      "Bash(pip show:*)",
+      "Bash(pip install:*)",
+      "Bash(git -C /root/capsule diff --stat)",
+      "Bash(git -C /root/capsule status)",
+      "Bash(git -C /root/capsule diff code/run)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git -C /root/capsule add README.md)",
+      "Bash(git -C:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(isort:*)",
+      "Bash(flake8:*)"
+    ]
+  }
+}

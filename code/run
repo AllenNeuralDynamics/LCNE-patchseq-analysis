@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -ex
+
+# Parse --rerun_efel_pipeline argument (default: 0)
+RERUN_EFEL_PIPELINE=0
+# Check if argument provided
+if [[ $# -ge 1 ]]; then
+    if [[ "$1" == "0" || "$1" == "1" ]]; then
+        RERUN_EFEL_PIPELINE="$1"
+    else
+        echo "Error: argument must be 0 or 1"
+        exit 1
+    fi
+fi
+
+if [[ "$RERUN_EFEL_PIPELINE" == "1" ]]; then
+    python -m LCNE_patchseq_analysis.efel.pipeline
+fi
+
+python generate_main_figures.py

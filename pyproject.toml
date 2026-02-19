@@ -1,0 +1,100 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "LCNE-patchseq-analysis"
+description = "Generated from aind-library-template"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+authors = [
+    {name = "Han Hou", email = "han.hou@alleninstitute.org"},
+    {name = "Allen Institute for Neural Dynamics"}
+]
+classifiers = [
+    "Programming Language :: Python :: 3"
+]
+readme = "README.md"
+dynamic = ["version"]
+
+dependencies = [
+    'numpy',
+    'pandas',
+    'matplotlib',
+    'seaborn',
+    'h5py',
+    's3fs',
+    'requests',
+    'trimesh',
+    'statsmodels',
+    'matplotlib_venn',
+    'scipy',
+    'scikit-learn',
+    'tqdm',
+]
+
+[project.optional-dependencies]
+dev = [
+    'black',
+    'coverage',
+    'flake8',
+    'interrogate',
+    'isort',
+    'Sphinx',
+    'furo'
+]
+
+efel = [
+    'efel',
+    'tables',
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.dynamic]
+version = {attr = "LCNE_patchseq_analysis.__version__"}
+
+[tool.black]
+line-length = 100
+exclude = '''
+
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | build
+    | dist
+    | code
+  )/
+  | .gitignore
+)
+'''
+
+[tool.coverage.run]
+omit = ["*__init__*"]
+source = ["LCNE_patchseq_analysis", "tests"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "if __name__ == .__main__.:",
+    "^from .* import .*",
+    "^import .*",
+    "pragma: no cover"
+]
+fail_under = 80
+
+[tool.isort]
+skip = ["build", "docs", "code"]
+line_length = 100
+profile = "black"
+
+[tool.interrogate]
+exclude = ["setup.py", "docs", "build", "code"]
+fail-under = 80
+
