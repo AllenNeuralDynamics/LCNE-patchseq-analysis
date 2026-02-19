@@ -30,6 +30,7 @@ dependencies = [
     'matplotlib_venn',
     'scipy',
     'scikit-learn',
+    'tqdm',
 ]
 
 [project.optional-dependencies]
@@ -46,47 +47,6 @@ dev = [
 efel = [
     'efel',
     'tables',
-]
-
-panel = [
-    'panel',
-    'watchfiles',
-    's3fs',
-    'bokeh',
-    'umap-learn',
-    'tabulate',
-]
-
-pipeline = [
-    'black',
-    'coverage',
-    'flake8',
-    'interrogate',
-    'isort',
-    'Sphinx',
-    'furo',
-    'openpyxl',
-    'pg8000',
-]
-
-all = [
-    'black',
-    'coverage',
-    'flake8',
-    'interrogate',
-    'isort',
-    'Sphinx',
-    'furo',
-    'panel',
-    'watchfiles',
-    'openpyxl',
-    'pg8000',
-    'efel',
-    'bokeh',
-    'h5py',
-    'tqdm',
-    'tables',
-    's3fs',
 ]
 
 [tool.setuptools.packages.find]
@@ -137,3 +97,4 @@ profile = "black"
 [tool.interrogate]
 exclude = ["setup.py", "docs", "build", "code"]
 fail-under = 80
+

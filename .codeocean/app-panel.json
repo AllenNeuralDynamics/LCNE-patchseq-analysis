@@ -1,0 +1,15 @@
+{
+	"version": 1,
+	"parameters": [
+		{
+			"id": "vddFlCB7mHfOZOIN",
+			"name": "Rerun efel pipeline",
+			"description": "Rerun the full efel pipeline. This may take a few hours.",
+			"type": "text",
+			"value_type": "integer",
+			"default_value": "0",
+			"minimum": 0,
+			"maximum": 1
+		}
+	]
+}

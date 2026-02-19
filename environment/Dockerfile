@@ -16,7 +16,7 @@ ARG GIT_ACCESS_TOKEN
 COPY git-askpass /
 
 RUN pip install -U --no-cache-dir \
-    "git+https://github.com/AllenNeuralDynamics/LCNE-patchseq-analysis.git@b8c709294e970e35beda633757255b00d579f832#egg=LCNE-patchseq-analysis"
+    "git+https://github.com/AllenNeuralDynamics/LCNE-patchseq-analysis.git@327df7ca6a8ea20ca5245b059221e3eeb5cd2169#egg=LCNE-patchseq-analysis[efel]"
 
 COPY postInstall /
 RUN /postInstall

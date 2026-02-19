@@ -543,7 +543,7 @@ def generate_ccf_plot(  # NoQA: C901
         color = REGION_COLOR_MAPPER.get(color_key, "gray")
         region_mask = df_filtered["injection region"] == region
         n_cells = sum(region_mask)
-        n_mice = df_filtered.loc[region_mask, "Donor"].nunique() if "Donor" in df_filtered.columns else None
+        n_mice = df_filtered.loc[region_mask, "Donor"].nunique() if "Donor" in df_filtered.columns else None  # noqa: E501
         mice_str = f", {n_mice} mice" if n_mice is not None else ""
         label_text = f"{region} (n={n_cells}{mice_str})"  # noqa: E225
         legend_elements.append(
@@ -611,7 +611,7 @@ def generate_ccf_plot(  # NoQA: C901
     return fig, ax
 
 
-def generate_violin_plot(
+def generate_violin_plot(  # noqa: C901
     df_to_use: pd.DataFrame,
     y_col: str,
     color_col: str,

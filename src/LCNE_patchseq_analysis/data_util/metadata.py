@@ -3,10 +3,11 @@
 import glob
 import json
 import logging
+import os
 
 import pandas as pd
 
-from LCNE_patchseq_analysis import RAW_DIRECTORY
+from LCNE_patchseq_analysis import IN_CODEOCEAN, RAW_DIRECTORY, RESULTS_DIRECTORY
 from LCNE_patchseq_analysis.pipeline_util.s3 import (
     get_public_efel_cell_level_stats,
     get_public_mapmycells,
@@ -86,7 +87,7 @@ def jsons_to_df(json_dicts):
     return df_merged
 
 
-def load_ephys_metadata(
+def load_ephys_metadata(  # noqa: C901
     if_from_s3=True, if_with_seq=True, if_with_morphology=True, combine_roi_ids=True
 ):
     """Load ephys metadata
@@ -105,7 +106,20 @@ def load_ephys_metadata(
     """
     # -- Load the cell level stats from eFEL output --
     if if_from_s3:
-        df = get_public_efel_cell_level_stats()
+        if IN_CODEOCEAN:
+            # In CodeOcean mode: prefer the local results folder produced by
+            # this pipeline run; fall back to S3 if the file doesn't exist yet.
+            csv_path = os.path.join(RESULTS_DIRECTORY, "cell_stats", "cell_level_stats.csv")
+            if os.path.exists(csv_path):
+                logger.info(f"[CodeOcean mode] Loading cell level stats from {csv_path}")
+                df = pd.read_csv(csv_path)
+            else:
+                logger.info(
+                    f"[CodeOcean mode] {csv_path} not found, falling back to S3."
+                )
+                df = get_public_efel_cell_level_stats()
+        else:
+            df = get_public_efel_cell_level_stats()
 
         # -- Convert ephys_roi_id to str(int()) --
         df["ephys_roi_id"] = df["ephys_roi_id"].apply(

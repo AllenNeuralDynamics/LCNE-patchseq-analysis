@@ -7,145 +7,100 @@
 ![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen?logo=codecov)
 ![Python](https://img.shields.io/badge/python->=3.9-blue?logo=python)
 
-Library for LCNE-patchseq data analysis
+This repository is the **main entry point for reproducing the LCNE-patchseq analysis** associated with our paper. It contains the full pipeline for extracting electrophysiological features from patch-seq recordings in locus coeruleus norepinephrine (LC-NE) neurons, merging transcriptomic and morphological data, and generating the paper's main figures. A fully reproducible run — with identical data, software environment, and code — is available as a [Code Ocean capsule](https://codeocean.allenneuraldynamics.org/capsule/1699143/tree). An interactive [Panel app](https://hanhou-patchseq.hf.space/patchseq_panel_viz) is provided for exploring the dataset.
+
+## Resources
+
+| Resource | Description | Link |
+|---|---|---|
+| **Analysis code** (this repo) | Source code for the eFEL pipeline, figure scripts, and data utilities | [AllenNeuralDynamics/LCNE-patchseq-analysis](https://github.com/AllenNeuralDynamics/LCNE-patchseq-analysis) |
+| **Code Ocean capsule** | Fully reproducible computational capsule — data, environment, and code used for the paper | [Capsule #1699143](https://codeocean.allenneuraldynamics.org/capsule/1699143/tree) |
+| **Interactive visualization app** | Panel app for exploring single-cell ephys, transcriptomics, and morphology data | [hanhou-patchseq.hf.space/patchseq_panel_viz](https://hanhou-patchseq.hf.space/patchseq_panel_viz) |
+| **Visualization source code** | Source code for the Panel app, deployed on Hugging Face Spaces | [AllenNeuralDynamics/LCNE-patchseq-viz](https://github.com/AllenNeuralDynamics/LCNE-patchseq-viz) |
+| **ipfx** (upstream) | Allen Institute library for ephys feature extraction and QC, used by the snakemake-ipfx pipeline | [AllenInstitute/ipfx](https://github.com/AllenInstitute/ipfx) |
+| **snakemake-ipfx** (upstream) | Snakemake pipeline for running ipfx at scale; produces the NWB files ingested here ([Gouwens et al. 2021](https://elifesciences.org/articles/65482)) | [AllenInstitute/snakemake_ephys](https://github.com/AllenInstitute/snakemake_ephys) |
 
 ## Overview
-Here is the overall workflow of patchseq analysis for the LC-NE project
 
 <img width="1540" alt="image" src="https://github.com/user-attachments/assets/596f8c82-8bc7-45c5-b4c1-facc03265a7d" />
 
-This repository maintains all the green parts in the above diagram:
-1. [`src/LCNE_patchseq_analysis/pipeline_util`](https://github.com/AllenNeuralDynamics/LCNE-patchseq-analysis/tree/main/src/LCNE_patchseq_analysis/pipeline_util): upload data and metadata from various locations to cloud
-2. [`.../efel`](https://github.com/AllenNeuralDynamics/LCNE-patchseq-analysis/tree/main/src/LCNE_patchseq_analysis/efel): extract ephys features using the [eFEL library](https://efel.readthedocs.io/en/latest/eFeatures.html).
+The diagram above shows the full patchseq analysis workflow for the LC-NE project. **This repository covers only the green arrows.** The grey upstream steps — LIMS data management, the snakemake-ipfx ephys QC pipeline ([AllenInstitute/ipfx](https://github.com/AllenInstitute/ipfx), [AllenInstitute/snakemake_ephys](https://github.com/AllenInstitute/snakemake_ephys), [Gouwens et al. 2021](https://elifesciences.org/articles/65482)), and sequencing data processing — are outside the scope of this repository; this pipeline takes their outputs as inputs.
+
+- [`pipeline_util`](https://github.com/AllenNeuralDynamics/LCNE-patchseq-analysis/tree/main/src/LCNE_patchseq_analysis/pipeline_util) — ingests raw data and metadata from various sources and uploads them to cloud storage (S3; **replaced by the mounted dataset at `/data/` in Code Ocean mode**)
+- [`efel`](https://github.com/AllenNeuralDynamics/LCNE-patchseq-analysis/tree/main/src/LCNE_patchseq_analysis/efel) — extracts electrophysiological features from NWB files using the [eFEL library](https://efel.readthedocs.io/en/latest/eFeatures.html), then aggregates them into a cell-level summary table (written to S3 locally; **written to `/results/` in Code Ocean mode**)
+- [`figures`](https://github.com/AllenNeuralDynamics/LCNE-patchseq-analysis/tree/main/src/LCNE_patchseq_analysis/figures) — generates the paper's main figures by merging ephys features with transcriptomic and morphological data (reads summary table from S3; **reads from `/results/` in Code Ocean mode**)
 
 ## Detailed workflow
+
 <img width="1240" alt="image" src="https://github.com/user-attachments/assets/f771ced3-5ec5-4607-a2cb-be2b4993dd23" />
+
+The diagram above shows the step-by-step data flow through the pipeline: from raw NWB files and metadata spreadsheets, through eFEL feature extraction and multi-modal merging (transcriptomics via MapMyCells, morphology), to the final outputs consumed by the figure scripts and the Panel app. Any interaction with S3 shown in the diagram is **replaced by the local Code Ocean filesystem** (`/data/` for inputs, `/results/` for outputs) when running inside the Code Ocean capsule.
+
+
+## Reproducing our work in Code Ocean
+
+> **Tip:** Before diving in, we highly encourage you to explore the dataset interactively via the [Panel app](https://hanhou-patchseq.hf.space/patchseq_panel_viz) first.
+
+All analyses can be reproduced from the [Code Ocean capsule](https://codeocean.allenneuraldynamics.org/capsule/1699143/tree). The capsule bundles the data, environment, and code — no setup required.
+
+1. **Generate the main figures** (default) — click **Reproducible Run**. The capsule will load the pre-computed eFEL feature table from the attached dataset and run all figure scripts directly.
+
+2. **Re-run the full pipeline** — to redo all green-arrow steps (eFEL feature extraction → cell-level statistics → figures) from scratch within the capsule, trigger a Reproducible Run with the app argument `rerun_efel_pipeline=1`. ⚠️ *This will take several hours.*
+
+3. **Interactive debugging** — open the capsule in **VS Code** (via the Code Ocean IDE), then install the package in editable mode:
+   ```bash
+   pip install -e .
+   ```
+   You can then edit and re-run any part of the pipeline interactively.
+
+Alternatively, if you prefer to work outside of Code Ocean, see the standalone instructions below.
+
+## Reproducing standalone
+
+The figures can also be reproduced locally or in any notebook environment — all data are fetched directly from the public S3 bucket, so no local data download is required. Install the package via PyPI (`pip install LCNE-patchseq-analysis`) and run:
+
+
+```python
+#!pip install LCNE-patchseq-analysis
+from LCNE_patchseq_analysis.data_util.metadata import load_ephys_metadata
+from LCNE_patchseq_analysis.pipeline_util.s3 import get_public_representative_spikes
+
+from LCNE_patchseq_analysis.figures import GLOBAL_FILTER, GENE_FILTER
+from LCNE_patchseq_analysis.figures.main_pca_tau import figure_spike_pca
+from LCNE_patchseq_analysis.figures.main_imputation import main_imputation
+
+# -- Physiological properties --
+# Load merged metadata (eFEL features + key metadata + transcriptomics) from public S3
+df_meta = load_ephys_metadata(if_from_s3=True, if_with_seq=True)
+df_meta = df_meta.query(GLOBAL_FILTER)  # exclude reporter-negative and thalamus-injected cells
+
+# Load per-cell average spike waveforms and generate spike PCA figure
+df_spikes = get_public_representative_spikes("average")
+fig, axes_dict, results = figure_spike_pca(df_meta, df_spikes, filtered_df_meta=df_meta)
+
+# -- Gene imputations --
+main_imputation(df_meta, GENE_FILTER)
+```
+
+
+## Two modes of running the pipeline
+
+The two reproduction paths above correspond to two runtime modes of the package, which differ in where data is read from and where results are written:
+
+| | **Code Ocean mode** | **Local / developer mode** |
+|---|---|---|
+| **Trigger** | `CO_COMPUTATION_ID` env var is set automatically by Code Ocean at runtime | Running locally without `CO_COMPUTATION_ID` |
+| **Input data** | Mounted dataset at `/data/LCNE-patchseq-ephys/` within the capsule | Raw data pulled from S3 |
+| **Results** | Written to `/results/` within the capsule | Written locally; key outputs (e.g. `cell_level_stats.csv`, spike waveforms) pushed to the public S3 bucket |
+| **Panel app** | Not connected — capsule results are self-contained | S3 outputs are what the [Panel app](https://hanhou-patchseq.hf.space/patchseq_panel_viz) reads from |
+
+In short: **Code Ocean mode** is for reproducibility (everything stays inside the capsule), while **local mode** is for active development and feeds results into the live visualization app via S3.
 
 
 ## The Panel app
 The Panel app has been migrated to [LCNE-patchseq-viz](https://github.com/AllenNeuralDynamics/LCNE-patchseq-viz.git).
 
+- **Live app**: [https://hanhou-patchseq.hf.space/patchseq_panel_viz](https://hanhou-patchseq.hf.space/patchseq_panel_viz)
+- **Source**: [https://github.com/AllenNeuralDynamics/LCNE-patchseq-viz](https://github.com/AllenNeuralDynamics/LCNE-patchseq-viz)
 
-## Installation
-To use the software, in the root directory, run
-```bash
-pip install -e .
-```
 
-To develop the code, run
-```bash
-pip install -e .[dev]
-```
-
-## Contributing
-
-### Linters and testing
-
-There are several libraries used to run linters, check documentation, and run tests.
-
-- Please test your changes using the **coverage** library, which will run the tests and log a coverage report:
-
-```bash
-coverage run -m unittest discover && coverage report
-```
-
-- Use **interrogate** to check that modules, methods, etc. have been documented thoroughly:
-
-```bash
-interrogate .
-```
-
-- Use **flake8** to check that code is up to standards (no unused imports, etc.):
-```bash
-flake8 .
-```
-
-- Use **black** to automatically format the code into PEP standards:
-```bash
-black .
-```
-
-- Use **isort** to automatically sort import statements:
-```bash
-isort .
-```
-
-### Pull requests
-
-For internal members, please create a branch. For external members, please fork the repository and open a pull request from the fork. We'll primarily use [Angular](https://github.com/angular/angular/blob/main/CONTRIBUTING.md#commit) style for commit messages. Roughly, they should follow the pattern:
-```text
-<type>(<scope>): <short summary>
-```
-
-where scope (optional) describes the packages affected by the code changes and type (mandatory) is one of:
-
-- **build**: Changes that affect build tools or external dependencies (example scopes: pyproject.toml, setup.py)
-- **ci**: Changes to our CI configuration files and scripts (examples: .github/workflows/ci.yml)
-- **docs**: Documentation only changes
-- **feat**: A new feature
-- **fix**: A bugfix
-- **perf**: A code change that improves performance
-- **refactor**: A code change that neither fixes a bug nor adds a feature
-- **test**: Adding missing tests or correcting existing tests
-
-### Semantic Release
-
-The table below, from [semantic release](https://github.com/semantic-release/semantic-release), shows which commit message gets you which release type when `semantic-release` runs (using the default configuration):
-
-| Commit message                                                                                                                                                                                   | Release type                                                                                                    |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| `fix(pencil): stop graphite breaking when too much pressure applied`                                                                                                                             | ~~Patch~~ Fix Release, Default release                                                                          |
-| `feat(pencil): add 'graphiteWidth' option`                                                                                                                                                       | ~~Minor~~ Feature Release                                                                                       |
-| `perf(pencil): remove graphiteWidth option`<br><br>`BREAKING CHANGE: The graphiteWidth option has been removed.`<br>`The default graphite width of 10mm is always used for performance reasons.` | ~~Major~~ Breaking Release <br /> (Note that the `BREAKING CHANGE: ` token must be in the footer of the commit) |
-
-### Documentation
-To generate the rst files source files for documentation, run
-```bash
-sphinx-apidoc -o docs/source/ src
-```
-Then to create the documentation HTML files, run
-```bash
-sphinx-build -b html docs/source/ docs/build/html
-```
-More info on sphinx installation can be found [here](https://www.sphinx-doc.org/en/master/usage/installation.html).
-
-### Read the Docs Deployment
-Note: Private repositories require **Read the Docs for Business** account. The following instructions are for a public repo.
-
-The following are required to import and build documentations on *Read the Docs*:
-- A *Read the Docs* user account connected to Github. See [here](https://docs.readthedocs.com/platform/stable/guides/connecting-git-account.html) for more details.
-- *Read the Docs* needs elevated permissions to perform certain operations that ensure that the workflow is as smooth as possible, like installing webhooks. If you are not the owner of the repo, you may have to request elevated permissions from the owner/admin. 
-- A **.readthedocs.yaml** file in the root directory of the repo. Here is a basic template:
-```yaml
-# Read the Docs configuration file
-# See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
-
-# Required
-version: 2
-
-# Set the OS, Python version, and other tools you might need
-build:
-  os: ubuntu-24.04
-  tools:
-    python: "3.13"
-
-# Path to a Sphinx configuration file.
-sphinx:
-  configuration: docs/source/conf.py
-
-# Declare the Python requirements required to build your documentation
-python:
-  install:
-    - method: pip
-      path: .
-      extra_requirements:
-        - dev
-```
-
-Here are the steps for building docs in *Read the Docs*. See [here](https://docs.readthedocs.com/platform/stable/intro/add-project.html) for detailed instructions:
-- From *Read the Docs* dashboard, click on **Add project**.
-- For automatic configuration, select **Configure automatically** and type the name of the repo. A repo with public visibility should appear as you type. 
-- Follow the subsequent steps.
-- For manual configuration, select **Configure manually** and follow the subsequent steps
-
-Once a project is created successfully, you will be able to configure/modify the project's settings; such as **Default version**, **Default branch** etc.

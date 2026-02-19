@@ -22,6 +22,15 @@ SEQ_COLUMNS = [
     "imp_DV",
     "imp_AP",
     "imp_pseudoclusters",
+    # --- Updated imputation from 02122026 (hyperparameter: gaussian_sigma0p1_k100) ---
+    "imp_ML_gaussian_sigma0p1_k100",
+    "imp_DV_gaussian_sigma0p1_k100",
+    "imp_AP_gaussian_sigma0p1_k100",
+    # --- Pseudocluster columns from 02122026 ---
+    "imp_pseudoclusters_gaussian_sigma0p1_k100",
+    "imp_pseudoclusters_gaussian_sigma1_k100",
+    "imp_pseudoclusters_softmax_tau0p1_k100",
+    "imp_pseudoclusters_softmax_tau0p5_k100",
     # --- Noradrenergic markers ---
     "Dbh",  # Dopamine beta-hydroxylase
     "Th",  # Tyrosine hydroxylase
@@ -114,6 +123,7 @@ def extract_preselected_columns():
     dst_dir = dst_dir.resolve()
 
     src_file = src_dir / "log_normed_df_more_0620.csv"
+    new_imp_file = src_dir / "length_normed_df_more_02122026.csv"  # Updated imputation data
     id_mapping_file = src_dir / "exp_component_ids_for_han_0620.csv"  # Aux file for mapping ids
     dst_file = dst_dir / "seq_preselected.csv"
 
@@ -145,6 +155,59 @@ def extract_preselected_columns():
 
     # Extract the available preselected columns
     df_extracted = df[available_columns].copy()
+
+    # Scale imp_ML/DV/AP from MERFISH voxel units to µm (factor = 25)
+    for col in ["imp_ML", "imp_DV", "imp_AP"]:
+        if col in df_extracted.columns:
+            df_extracted[col] = df_extracted[col] * 25
+
+    # --- Merge new imputation columns from 02122026 ---
+    if new_imp_file.exists():
+        logger.info(f"Reading updated imputation data from {new_imp_file}")
+        df_new = pd.read_csv(new_imp_file, index_col=0)
+        df_new = df_new.reset_index().rename(columns={"index": "exp_component_name"})
+        df_new = df_new.merge(
+            df_ids, left_on="exp_component_name", right_on="exp_component_name.x", how="left"
+        )
+        # Rename columns to include the hyperparameter
+        df_new = df_new.rename(
+            columns={
+                "imp_ML": "imp_ML_gaussian_sigma0p1_k100",
+                "imp_DV": "imp_DV_gaussian_sigma0p1_k100",
+                "imp_AP": "imp_AP_gaussian_sigma0p1_k100",
+                "pc_gauss_sigma0p1": "imp_pseudoclusters_gaussian_sigma0p1_k100",
+                "pc_gauss_sigma1": "imp_pseudoclusters_gaussian_sigma1_k100",
+                "pc_softmax_tau0p1": "imp_pseudoclusters_softmax_tau0p1_k100",
+                "pc_softmax_tau0p5": "imp_pseudoclusters_softmax_tau0p5_k100",
+            }
+        )
+        new_cols = [
+            "imp_ML_gaussian_sigma0p1_k100",
+            "imp_DV_gaussian_sigma0p1_k100",
+            "imp_AP_gaussian_sigma0p1_k100",
+            "imp_pseudoclusters_gaussian_sigma0p1_k100",
+            "imp_pseudoclusters_gaussian_sigma1_k100",
+            "imp_pseudoclusters_softmax_tau0p1_k100",
+            "imp_pseudoclusters_softmax_tau0p5_k100",
+        ]
+        available_new_cols = [c for c in new_cols if c in df_new.columns]
+        missing_new_cols = [c for c in new_cols if c not in df_new.columns]
+        if missing_new_cols:
+            logger.warning(f"New imputation columns not found: {missing_new_cols}")
+        df_new_sub = df_new[["cell_specimen_id"] + available_new_cols].copy()
+        # Scale new imp_ML/DV/AP from MERFISH voxel units to µm (factor = 25)
+        imp_cols = [
+            "imp_ML_gaussian_sigma0p1_k100",
+            "imp_DV_gaussian_sigma0p1_k100",
+            "imp_AP_gaussian_sigma0p1_k100",
+        ]
+        for col in imp_cols:
+            if col in df_new_sub.columns:
+                df_new_sub[col] = df_new_sub[col] * 25
+        df_extracted = df_extracted.merge(df_new_sub, on="cell_specimen_id", how="left")
+        logger.info(f"Merged {len(available_new_cols)} new imputation columns from {new_imp_file.name}")  # noqa: E501
+    else:
+        logger.warning(f"New imputation file not found, skipping: {new_imp_file}")
 
     # Create the destination directory if it doesn't exist
     os.makedirs(dst_dir, exist_ok=True)

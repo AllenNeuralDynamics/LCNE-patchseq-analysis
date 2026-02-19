@@ -195,7 +195,7 @@ def _plot_waveform_overlay(ax, df_v_norm, df_v_proj):
             ax.plot(x, trace, color=color, alpha=0.2, linewidth=1)
 
         if len(y) > 0:
-            n_mice = df_v_proj.loc[mask, "Donor"].nunique() if "Donor" in df_v_proj.columns else None
+            n_mice = df_v_proj.loc[mask, "Donor"].nunique() if "Donor" in df_v_proj.columns else None  # noqa: E501
             mice_str = f", {n_mice} mice" if n_mice is not None else ""
             ax.plot(
                 x,
