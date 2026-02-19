@@ -145,7 +145,7 @@ def extract_cell_level_stats_in_parallel(skip_errors: bool = True, if_generate_p
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
-    from LCNE_patchseq_analysis import IN_CODEOCEAN, RAW_DIRECTORY, RESULTS_DIRECTORY
+    from LCNE_patchseq_analysis import IN_CODEOCEAN, RAW_DIRECTORY
 
     logger.info("=" * 60)
     if IN_CODEOCEAN:

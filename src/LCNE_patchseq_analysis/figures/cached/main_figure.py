@@ -5,11 +5,11 @@ from LCNE_patchseq_analysis.figures.cached.fig_3a import (
     figure_3a_ccf_sagittal,
     sup_figure_3a_ccf_coronal,
 )
+from LCNE_patchseq_analysis.figures.cached.fig_3c import figure_3c_tau_comparison
 from LCNE_patchseq_analysis.figures.main_imputation import (
     imputed_MERFISH,
     imputed_scRNAseq,
 )
-from LCNE_patchseq_analysis.figures.cached.fig_3c import figure_3c_tau_comparison
 from LCNE_patchseq_analysis.figures.util import save_figure
 
 set_plot_style(base_size=12, font_family="Helvetica")

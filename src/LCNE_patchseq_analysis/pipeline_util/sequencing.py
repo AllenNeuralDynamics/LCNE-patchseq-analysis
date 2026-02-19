@@ -196,11 +196,16 @@ def extract_preselected_columns():
             logger.warning(f"New imputation columns not found: {missing_new_cols}")
         df_new_sub = df_new[["cell_specimen_id"] + available_new_cols].copy()
         # Scale new imp_ML/DV/AP from MERFISH voxel units to µm (factor = 25)
-        for col in ["imp_ML_gaussian_sigma0p1_k100", "imp_DV_gaussian_sigma0p1_k100", "imp_AP_gaussian_sigma0p1_k100"]:
+        imp_cols = [
+            "imp_ML_gaussian_sigma0p1_k100",
+            "imp_DV_gaussian_sigma0p1_k100",
+            "imp_AP_gaussian_sigma0p1_k100",
+        ]
+        for col in imp_cols:
             if col in df_new_sub.columns:
                 df_new_sub[col] = df_new_sub[col] * 25
         df_extracted = df_extracted.merge(df_new_sub, on="cell_specimen_id", how="left")
-        logger.info(f"Merged {len(available_new_cols)} new imputation columns from {new_imp_file.name}")
+        logger.info(f"Merged {len(available_new_cols)} new imputation columns from {new_imp_file.name}")  # noqa: E501
     else:
         logger.warning(f"New imputation file not found, skipping: {new_imp_file}")
 

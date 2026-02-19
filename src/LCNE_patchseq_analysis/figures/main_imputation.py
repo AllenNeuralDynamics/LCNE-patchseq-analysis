@@ -100,7 +100,9 @@ def imputed_scRNAseq(
     y_col, ylabel, _, kwargs = _IMP_PANELS[0]
     fig, ax = _scatter_imp(df_meta, y_col, ylabel, plot_linear_regression, ax, **kwargs)
     if if_save_figure:
-        save_figure(fig, filename="fig_3b_scatter_imp_pseudoclusters_vs_y", dpi=300, formats=("png", "svg"))
+        save_figure(
+            fig, filename="fig_3b_scatter_imp_pseudoclusters_vs_y", dpi=300, formats=("png", "svg")
+        )
     return fig, ax
 
 
@@ -117,7 +119,9 @@ def imputed_MERFISH(
     y_col, ylabel, _, kwargs = _IMP_PANELS[1]
     fig, ax = _scatter_imp(df_meta, y_col, ylabel, plot_linear_regression, ax, **kwargs)
     if if_save_figure:
-        save_figure(fig, filename="fig_3b_scatter_imp_MERFISH_vs_y", dpi=300, formats=("png", "svg"))
+        save_figure(
+            fig, filename="fig_3b_scatter_imp_MERFISH_vs_y", dpi=300, formats=("png", "svg")
+        )
     return fig, ax
 
 
@@ -160,7 +164,9 @@ def main_imputation(
     fig.tight_layout()
 
     if if_save_figure:
-        save_figure(fig, filename="main_imputation", dpi=300, formats=("png", "svg"), bbox_inches="tight")
+        save_figure(
+            fig, filename="main_imputation", dpi=300, formats=("png", "svg"), bbox_inches="tight"
+        )
 
     return fig, axes
 
