@@ -17,4 +17,4 @@ if [[ "$RERUN_EFEL_PIPELINE" == "1" ]]; then
     python -m LCNE_patchseq_analysis.efel.pipeline
 fi
 
-python generate_main_figures.py
+python generate_S14jk.py
