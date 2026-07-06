@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/license-MIT-brightgreen)](LICENSE)
 ![Code Style](https://img.shields.io/badge/code%20style-black-black)
 [![semantic-release: angular](https://img.shields.io/badge/semantic--release-angular-e10079?logo=semantic-release)](https://github.com/semantic-release/semantic-release)
-![Interrogate](https://img.shields.io/badge/interrogate-86.0%25-yellow)
+![Interrogate](https://img.shields.io/badge/interrogate-86.3%25-yellow)
 ![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen?logo=codecov)
 ![Python](https://img.shields.io/badge/python->=3.9-blue?logo=python)
 
@@ -22,7 +22,7 @@ This repository is the **main entry point for reproducing the LCNE-patchseq anal
 
 ## Overview
 
-<img width="1540" alt="image" src="https://github.com/user-attachments/assets/596f8c82-8bc7-45c5-b4c1-facc03265a7d" />
+<img width="1462" height="520" alt="image" src="https://github.com/user-attachments/assets/da1474d7-fa3c-447d-ab7e-7090858b65fd" />
 
 The diagram above shows the full patchseq analysis workflow for the LC-NE project. **This repository covers only the green arrows.** The grey upstream steps — LIMS data management, the snakemake-ipfx ephys QC pipeline ([AllenInstitute/ipfx](https://github.com/AllenInstitute/ipfx), [AllenInstitute/snakemake_ephys](https://github.com/AllenInstitute/snakemake_ephys), [Gouwens et al. 2021](https://elifesciences.org/articles/65482)), and sequencing data processing — are outside the scope of this repository; this pipeline takes their outputs as inputs.
 
