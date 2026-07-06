@@ -39,6 +39,14 @@ DEFAULT_AREA_ORDER = [
     "cerebellum",
 ]
 
+# Shared colors for the three projection targets, used consistently across the
+# example-trace panel (S14j) and the cumulative-distribution panel (S14k).
+PROJECTION_COLORS = {
+    "Cortex": "#5b2a86",  # purple
+    "Cerebellum": "#e2703a",  # orange
+    "Spinal cord": "#f2b705",  # gold
+}
+
 # Default ephys feature mapping
 DEFAULT_EPHYS_FEATURES = [
     # Manually selected ephys features to include in ANOVA analysis, multiple comparison correction,

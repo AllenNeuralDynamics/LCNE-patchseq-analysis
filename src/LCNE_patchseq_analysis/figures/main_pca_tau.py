@@ -19,7 +19,11 @@ from sklearn.decomposition import PCA
 
 from LCNE_patchseq_analysis import REGION_COLOR_MAPPER
 from LCNE_patchseq_analysis.data_util.mesh import plot_mesh
-from LCNE_patchseq_analysis.figures import set_plot_style, sort_region
+from LCNE_patchseq_analysis.figures import PROJECTION_COLORS, set_plot_style, sort_region
+from LCNE_patchseq_analysis.figures.example_traces import (
+    EXAMPLE_CELLS,
+    plot_example_traces,
+)
 from LCNE_patchseq_analysis.figures.util import save_figure
 from LCNE_patchseq_analysis.pipeline_util.s3 import (
     get_public_representative_spikes,
@@ -809,13 +813,145 @@ def figure_s14_cumulative(
     return fig, axes_dict, results, csv_data
 
 
+def _plot_s14k_cdfs(cdf_axes, df_v_proj, tau_col):
+    """Draw the two S14k cumulative-distribution panels (PC1, membrane tau).
+
+    Returns (pc1_groups, tau_groups) for downstream CSV export.
+    """
+    pc1_groups = _build_projection_groups(df_v_proj, "PCA1")
+    tau_groups = _build_projection_groups(df_v_proj, tau_col)
+
+    ax = cdf_axes[0]
+    _plot_group_cdf(ax, pc1_groups)
+    ax.set_title("PC1")
+    ax.set_xlabel("PC1")
+
+    ax = cdf_axes[1]
+    _plot_group_cdf(ax, tau_groups)
+    ax.set_title("Membrane time constant")
+    ax.set_xlabel("Membrane time constant (ms)")
+
+    return pc1_groups, tau_groups
+
+
+def figure_s14_jk(
+    df_meta: pd.DataFrame,
+    df_spikes: pd.DataFrame | None = None,
+    spike_type: str = DEFAULT_SPIKE_TYPE,
+    extract_from: str = DEFAULT_EXTRACT_FROM,
+    spike_range: tuple = DEFAULT_SPIKE_RANGE,
+    normalize_window_v: tuple = DEFAULT_NORMALIZE_WINDOW_V,
+    normalize_window_dvdt: tuple = DEFAULT_NORMALIZE_WINDOW_DVDT,
+    filtered_df_meta: pd.DataFrame | None = None,
+    if_save_figure: bool = True,
+    if_save_csv: bool = True,
+    filename: str = "S14jk",
+    figsize: tuple = (20, 4.5),
+):
+    """Generate supplementary figure S14 panels j and k side-by-side.
+
+    Panel j (left): raw example voltage traces for one example cell per
+    projection target (spiking sweep offset above a near-rheobase sweep overlaid
+    with the most-hyperpolarized subthreshold sweep). Panel k (right): PC1 and
+    membrane time constant cumulative distributions split by projection target.
+    Colors are shared between j and k via PROJECTION_COLORS.
+
+    Parameters
+    ----------
+    df_meta, df_spikes, spike_type, extract_from, spike_range,
+    normalize_window_v, normalize_window_dvdt, filtered_df_meta :
+        Analysis parameters for panel k (see spike_pca_analysis).
+    if_save_figure, if_save_csv, filename, figsize :
+        Output controls.
+
+    Returns
+    -------
+    (fig, axes_dict, results, csv_data)
+    """
+    set_plot_style(base_size=12)
+
+    results = spike_pca_analysis(
+        df_meta=df_meta,
+        df_spikes=df_spikes,
+        spike_type=spike_type,
+        extract_from=extract_from,
+        spike_range=spike_range,
+        normalize_window_v=normalize_window_v,
+        normalize_window_dvdt=normalize_window_dvdt,
+        filtered_df_meta=filtered_df_meta,
+    )
+    df_v_proj = results["df_v_proj"]
+    tau_col = results["tau_col"]
+
+    # Layout: panel j (3 trace columns) | panel k (2 CDF columns).
+    fig = plt.figure(figsize=figsize)
+    gs = fig.add_gridspec(1, 2, width_ratios=[3, 2], wspace=0.18)
+    gs_j = gs[0].subgridspec(1, len(EXAMPLE_CELLS), wspace=0.05)
+    gs_k = gs[1].subgridspec(1, 2, wspace=0.4)
+    trace_axes = [fig.add_subplot(gs_j[0, i]) for i in range(len(EXAMPLE_CELLS))]
+    cdf_axes = [fig.add_subplot(gs_k[0, i]) for i in range(2)]
+
+    axes_dict = {}
+
+    # Panel j: raw example traces.
+    plot_example_traces(trace_axes)
+    for i, ax in enumerate(trace_axes):
+        axes_dict[f"trace_{EXAMPLE_CELLS[i]['label']}"] = ax
+    # Center the header over the trace panels (panel j) only.
+    j_center = 0.5 * (
+        trace_axes[0].get_position().x0 + trace_axes[-1].get_position().x1
+    )
+    fig.text(
+        j_center, 1.0, "LC-NE projections to:", ha="center", va="top",
+        fontsize=13, style="italic",
+    )
+
+    # Panel k: cumulative distributions.
+    pc1_groups, tau_groups = _plot_s14k_cdfs(cdf_axes, df_v_proj, tau_col)
+    axes_dict["pca1_cdf"] = cdf_axes[0]
+    axes_dict["tau_cdf"] = cdf_axes[1]
+
+    # Panel letters.
+    trace_axes[0].annotate(
+        "j", xy=(0, 1.05), xycoords="axes fraction",
+        fontsize=18, fontweight="bold", ha="right", va="bottom",
+    )
+    cdf_axes[0].annotate(
+        "k", xy=(-0.25, 1.05), xycoords="axes fraction",
+        fontsize=18, fontweight="bold", ha="right", va="bottom",
+    )
+
+    csv_data = {
+        f"{filename}_PC1_raw": _raw_underlying_data(df_v_proj, "PCA1", "PC1"),
+        f"{filename}_PC1_cumulative": _cdf_underlying_data(pc1_groups, "PC1"),
+        f"{filename}_membrane_time_constant_raw": _raw_underlying_data(
+            df_v_proj, tau_col, "membrane_time_constant_ms"
+        ),
+        f"{filename}_membrane_time_constant_cumulative": _cdf_underlying_data(
+            tau_groups, "membrane_time_constant_ms"
+        ),
+    }
+
+    if if_save_figure:
+        save_figure(fig, filename=filename, formats=("png", "svg"), bbox_inches="tight")
+
+    if if_save_csv:
+        output_dir = _resolve_output_dir()
+        for name, data in csv_data.items():
+            out_path = os.path.join(output_dir, f"{name}.csv")
+            data.to_csv(out_path, index=False)
+            logger.info(f"Underlying data saved as: {out_path}")
+
+    return fig, axes_dict, results, csv_data
+
+
 def _build_projection_groups(df_v_proj, value_col):
     """Build (label, values, color, n_mice) groups for spinal cord, cortex, and CB."""
     groups = []
     for grp_label, region_set, color in [
-        ("Spinal cord", SPINAL_REGIONS, REGION_COLOR_MAPPER["Spinal cord"]),
-        ("Cortex", CORTEX_REGIONS, REGION_COLOR_MAPPER["Cortex"]),
-        ("Cerebellum", CB_REGIONS, REGION_COLOR_MAPPER["Cerebellum"]),
+        ("Spinal cord", SPINAL_REGIONS, PROJECTION_COLORS["Spinal cord"]),
+        ("Cortex", CORTEX_REGIONS, PROJECTION_COLORS["Cortex"]),
+        ("Cerebellum", CB_REGIONS, PROJECTION_COLORS["Cerebellum"]),
     ]:
         mask = df_v_proj["injection region"].isin(region_set)
         vals_series = pd.Series(

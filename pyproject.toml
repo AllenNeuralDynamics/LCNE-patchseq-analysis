@@ -23,6 +23,7 @@ dependencies = [
     'matplotlib',
     'seaborn',
     'h5py',
+    'tables',
     's3fs',
     'requests',
     'trimesh',
@@ -46,7 +47,6 @@ dev = [
 
 efel = [
     'efel',
-    'tables',
 ]
 
 [tool.setuptools.packages.find]
