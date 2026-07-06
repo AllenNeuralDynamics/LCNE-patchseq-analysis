@@ -8,6 +8,7 @@ https://hanhou-patchseq.hf.space/patchseq_panel_viz?tab=1
 """
 
 import logging
+import os
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -618,6 +619,194 @@ def figure_spike_pca(
         )
 
     return fig, axes_dict, results
+
+
+def _cdf_underlying_data(groups, value_name):
+    """Build a tidy DataFrame of the underlying data behind a CDF panel.
+
+    For each projection group the per-cell values are sorted (matching the
+    step plot) and the cumulative fraction at each point is recorded.
+
+    Parameters
+    ----------
+    groups : list of (label, values, color, n_mice) tuples
+    value_name : str
+        Column name to use for the plotted quantity (e.g. "PC1").
+
+    Returns
+    -------
+    pd.DataFrame with columns: projection_target, value_name, cumulative_fraction.
+    """
+    frames = []
+    for label, data, *_ in groups:
+        sorted_data = np.sort(np.asarray(data, dtype=float))
+        n = len(sorted_data)
+        cdf = np.arange(1, n + 1) / n if n else np.array([])
+        frames.append(
+            pd.DataFrame(
+                {
+                    "projection_target": label,
+                    value_name: sorted_data,
+                    "cumulative_fraction": cdf,
+                }
+            )
+        )
+    return pd.concat(frames, ignore_index=True)
+
+
+def _raw_underlying_data(df_v_proj, value_col, value_name):
+    """Build a tidy per-cell DataFrame of the raw values behind a CDF panel.
+
+    One row per cell (unsorted), restricted to the three projection groups and
+    to cells with a non-NaN value, keyed by cell identifiers.
+
+    Parameters
+    ----------
+    df_v_proj : pd.DataFrame
+        Per-cell projection/metadata table from spike_pca_analysis.
+    value_col : str
+        Column holding the plotted quantity (e.g. "PCA1").
+    value_name : str
+        Output column name for the plotted quantity (e.g. "PC1").
+
+    Returns
+    -------
+    pd.DataFrame with id columns, projection_target, and value_name.
+    """
+    id_cols = [
+        c
+        for c in ["ephys_roi_id", "Donor", "injection region"]
+        if c in df_v_proj.columns
+    ]
+    frames = []
+    for label, region_set, _color in [
+        ("Spinal cord", SPINAL_REGIONS, None),
+        ("Cortex", CORTEX_REGIONS, None),
+        ("Cerebellum", CB_REGIONS, None),
+    ]:
+        mask = df_v_proj["injection region"].isin(region_set)
+        sub = df_v_proj.loc[mask, id_cols].copy()
+        sub.insert(len(id_cols), "projection_target", label)
+        sub[value_name] = pd.to_numeric(
+            df_v_proj.loc[mask, value_col], errors="coerce"
+        ).to_numpy()
+        frames.append(sub.dropna(subset=[value_name]))
+    return pd.concat(frames, ignore_index=True)
+
+
+def _resolve_output_dir(output_dir: str | None = None) -> str:
+    """Resolve the default results directory (mirrors save_figure)."""
+    if output_dir is None:
+        if os.getenv("CO_CAPSULE_ID"):
+            output_dir = "/results"
+        else:
+            output_dir = (
+                os.path.dirname(os.path.abspath(__file__)) + "/../../../results/figures"
+            )
+    os.makedirs(output_dir, exist_ok=True)
+    return output_dir
+
+
+def figure_s14_cumulative(
+    df_meta: pd.DataFrame,
+    df_spikes: pd.DataFrame | None = None,
+    spike_type: str = DEFAULT_SPIKE_TYPE,
+    extract_from: str = DEFAULT_EXTRACT_FROM,
+    spike_range: tuple = DEFAULT_SPIKE_RANGE,
+    normalize_window_v: tuple = DEFAULT_NORMALIZE_WINDOW_V,
+    normalize_window_dvdt: tuple = DEFAULT_NORMALIZE_WINDOW_DVDT,
+    filtered_df_meta: pd.DataFrame | None = None,
+    if_save_figure: bool = True,
+    if_save_csv: bool = True,
+    filename: str = "S14",
+    figsize: tuple = (10, 4.5),
+):
+    """Generate supplementary figure S14: PC1 and membrane time constant CDFs.
+
+    Two cumulative distribution panels side-by-side (left: PC1, right: membrane
+    time constant), each split by projection target (spinal cord, cortex,
+    cerebellum). Underlying data are exported as CSVs alongside the figure.
+
+    Parameters
+    ----------
+    df_meta, df_spikes, spike_type, extract_from, spike_range,
+    normalize_window_v, normalize_window_dvdt, filtered_df_meta :
+        Analysis parameters (see spike_pca_analysis).
+    if_save_figure : bool
+        Whether to save the figure to the results directory.
+    if_save_csv : bool
+        Whether to export the underlying-data CSVs.
+    filename : str
+        Base filename for figure and CSV outputs.
+    figsize : tuple
+        Figure size in inches.
+
+    Returns
+    -------
+    (fig, axes_dict, results, csv_data) where csv_data is a dict mapping the
+    CSV base name to its DataFrame.
+    """
+    set_plot_style(base_size=12)
+
+    results = spike_pca_analysis(
+        df_meta=df_meta,
+        df_spikes=df_spikes,
+        spike_type=spike_type,
+        extract_from=extract_from,
+        spike_range=spike_range,
+        normalize_window_v=normalize_window_v,
+        normalize_window_dvdt=normalize_window_dvdt,
+        filtered_df_meta=filtered_df_meta,
+    )
+    df_v_proj = results["df_v_proj"]
+    tau_col = results["tau_col"]
+
+    pc1_groups = _build_projection_groups(df_v_proj, "PCA1")
+    tau_groups = _build_projection_groups(df_v_proj, tau_col)
+
+    fig, axes = plt.subplots(1, 2, figsize=figsize)
+    axes_dict = {}
+
+    # Left: PC1 cumulative distribution
+    ax = axes[0]
+    axes_dict["pca1_cdf"] = ax
+    _plot_group_cdf(ax, pc1_groups)
+    ax.set_title("PC1")
+    ax.set_xlabel("PC1")
+
+    # Right: membrane time constant cumulative distribution
+    ax = axes[1]
+    axes_dict["tau_cdf"] = ax
+    _plot_group_cdf(ax, tau_groups)
+    ax.set_title("Membrane time constant")
+    ax.set_xlabel("Membrane time constant (ms)")
+
+    fig.tight_layout()
+
+    # Underlying data for each CDF panel: raw per-cell values and the
+    # sorted values with cumulative fraction.
+    csv_data = {
+        f"{filename}_PC1_raw": _raw_underlying_data(df_v_proj, "PCA1", "PC1"),
+        f"{filename}_PC1_cumulative": _cdf_underlying_data(pc1_groups, "PC1"),
+        f"{filename}_membrane_time_constant_raw": _raw_underlying_data(
+            df_v_proj, tau_col, "membrane_time_constant_ms"
+        ),
+        f"{filename}_membrane_time_constant_cumulative": _cdf_underlying_data(
+            tau_groups, "membrane_time_constant_ms"
+        ),
+    }
+
+    if if_save_figure:
+        save_figure(fig, filename=filename, formats=("png", "svg"), bbox_inches="tight")
+
+    if if_save_csv:
+        output_dir = _resolve_output_dir()
+        for name, data in csv_data.items():
+            out_path = os.path.join(output_dir, f"{name}.csv")
+            data.to_csv(out_path, index=False)
+            logger.info(f"Underlying data saved as: {out_path}")
+
+    return fig, axes_dict, results, csv_data
 
 
 def _build_projection_groups(df_v_proj, value_col):
