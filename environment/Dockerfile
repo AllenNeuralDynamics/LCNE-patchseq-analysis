@@ -16,7 +16,7 @@ ARG GIT_ACCESS_TOKEN
 COPY git-ask-pass /
 
 RUN pip install -U --no-cache-dir \
-    LCNE-patchseq-analysis==0.34.6
+    LCNE-patchseq-analysis==0.34.8
 
 COPY postInstall /
 RUN /postInstall
