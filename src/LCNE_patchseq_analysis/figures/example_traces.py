@@ -12,14 +12,17 @@ import os
 import numpy as np
 import pandas as pd
 
-from LCNE_patchseq_analysis import RESULTS_DIRECTORY, TIME_STEP
+from LCNE_patchseq_analysis import RAW_DIRECTORY, TIME_STEP
 from LCNE_patchseq_analysis.figures import PROJECTION_COLORS
 
 logger = logging.getLogger(__name__)
 
+# Absolute path to the per-cell eFEL feature .h5 files, derived from the same
+# data root as RAW_DIRECTORY so it stays correct across environments (e.g. in
+# Code Ocean this resolves to /data/LCNE-patchseq-ephys/efel/features). Avoid a
+# relative path, which breaks when the process is launched from a different CWD.
 FEATURES_DIR = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "../../../data/LCNE-patchseq-ephys/efel/features",
+    os.path.dirname(RAW_DIRECTORY), "efel", "features"
 )
 
 # Example cell per projection target, in display order. `region` keys into
@@ -134,6 +137,18 @@ def plot_example_traces(axes, cells=EXAMPLE_CELLS, add_scalebar: bool = True):
         Whether to draw an L-shaped scale bar on the first axis.
     """
     axes = np.atleast_1d(axes)
+
+    # Raw traces live in FEATURES_DIR; if it's not mounted/available, skip the
+    # raw-trace generation rather than crashing, leaving the axes blank.
+    if not os.path.isdir(FEATURES_DIR):
+        logger.warning(
+            f"Features directory not found ({FEATURES_DIR}); "
+            "skipping raw example-trace generation."
+        )
+        for ax in axes:
+            ax.axis("off")
+        return
+
     for ax, cell in zip(axes, cells):
         logger.info(f"Plotting {cell['label']} ({cell['ephys_roi_id']})...")
         features = load_features(cell["ephys_roi_id"])
