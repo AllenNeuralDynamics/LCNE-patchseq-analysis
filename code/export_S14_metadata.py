@@ -17,8 +17,6 @@ Columns needed to reproduce S14:
   * Donor                   - mouse identifier (for n-mice counts)
   * projection_target       - grouped target (Spinal cord / Cortex / Cerebellum)
   * slicing plane           - slicing plane
-  * hemisphere              - hemisphere
-  * ccf_x / ccf_y / ccf_z   - 3D CCF soma coordinates
   * spike_waveform_PC1      - first PC of the normalized spike waveform (panel k, left)
   * membrane_time_constant_ms - ipfx_tau in ms (panel k, right)
   * example_trace_panel_j   - True for the panel-j example cells
@@ -85,17 +83,12 @@ def main() -> None:
     df_used["ephys_roi_id"] = df_used["ephys_roi_id"].astype(str)
     df_used["example_trace_panel_j"] = df_used["ephys_roi_id"].isin(example_ids)
 
-    # Merge in additional metadata columns from df_meta, keyed by ephys_roi_id:
-    # sample metadata and the 3D CCF soma coordinates (x / y / z).
+    # Merge in additional metadata columns from df_meta, keyed by ephys_roi_id.
     extra_cols = [
         "Date",
         "jem-id_cell_specimen",
         "cell_specimen_id",
         "slicing plane",
-        "hemisphere",
-        "x",
-        "y",
-        "z",
     ]
     extra_cols = [c for c in extra_cols if c in df_meta.columns]
     extra = df_meta[["ephys_roi_id"] + extra_cols].copy()
@@ -112,10 +105,6 @@ def main() -> None:
         "Donor",
         "projection_target",
         "slicing plane",
-        "hemisphere",
-        "x",
-        "y",
-        "z",
         "PCA1",
         tau_col,
         "example_trace_panel_j",
@@ -124,9 +113,6 @@ def main() -> None:
     df_out = df_used[output_cols].rename(
         columns={
             "PCA1": "spike_waveform_PC1",
-            "x": "ccf_x",
-            "y": "ccf_y",
-            "z": "ccf_z",
         }
     )
 
