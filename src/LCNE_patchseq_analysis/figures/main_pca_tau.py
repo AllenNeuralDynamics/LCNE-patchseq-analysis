@@ -679,7 +679,7 @@ def _raw_underlying_data(df_v_proj, value_col, value_name):
     """
     id_cols = [
         c
-        for c in ["ephys_roi_id", "Donor", "injection region"]
+        for c in ["ephys_roi_id", "Donor"]
         if c in df_v_proj.columns
     ]
     frames = []
@@ -835,7 +835,7 @@ def _plot_s14k_cdfs(cdf_axes, df_v_proj, tau_col):
 
 
 def figure_s14_jk(
-    df_meta: pd.DataFrame,
+    df_meta: pd.DataFrame | None = None,
     df_spikes: pd.DataFrame | None = None,
     spike_type: str = DEFAULT_SPIKE_TYPE,
     extract_from: str = DEFAULT_EXTRACT_FROM,
@@ -847,6 +847,7 @@ def figure_s14_jk(
     if_save_csv: bool = True,
     filename: str = "S14jk",
     figsize: tuple = (20, 4.5),
+    df_v_proj: pd.DataFrame | None = None,
 ):
     """Generate supplementary figure S14 panels j and k side-by-side.
 
@@ -863,6 +864,14 @@ def figure_s14_jk(
         Analysis parameters for panel k (see spike_pca_analysis).
     if_save_figure, if_save_csv, filename, figsize :
         Output controls.
+    df_v_proj : pd.DataFrame, optional
+        Precomputed per-cell projection table for panel k. When provided, the
+        spike-waveform PCA (``spike_pca_analysis``) is skipped and panel k is
+        built directly from this table, which must contain the columns ``PCA1``,
+        ``membrane_time_constant_ms``, ``injection region``, and ``Donor``. This
+        reproduces panel k with zero S3 / data-asset dependency from an exported
+        metadata CSV. Panel j (example traces) is unaffected and still read from
+        its own data source.
 
     Returns
     -------
@@ -870,18 +879,22 @@ def figure_s14_jk(
     """
     set_plot_style(base_size=12)
 
-    results = spike_pca_analysis(
-        df_meta=df_meta,
-        df_spikes=df_spikes,
-        spike_type=spike_type,
-        extract_from=extract_from,
-        spike_range=spike_range,
-        normalize_window_v=normalize_window_v,
-        normalize_window_dvdt=normalize_window_dvdt,
-        filtered_df_meta=filtered_df_meta,
-    )
-    df_v_proj = results["df_v_proj"]
-    tau_col = results["tau_col"]
+    if df_v_proj is None:
+        results = spike_pca_analysis(
+            df_meta=df_meta,
+            df_spikes=df_spikes,
+            spike_type=spike_type,
+            extract_from=extract_from,
+            spike_range=spike_range,
+            normalize_window_v=normalize_window_v,
+            normalize_window_dvdt=normalize_window_dvdt,
+            filtered_df_meta=filtered_df_meta,
+        )
+        df_v_proj = results["df_v_proj"]
+        tau_col = results["tau_col"]
+    else:
+        tau_col = "membrane_time_constant_ms"
+        results = {"df_v_proj": df_v_proj, "tau_col": tau_col}
 
     # Layout: panel j (3 trace columns) | panel k (2 CDF columns).
     fig = plt.figure(figsize=figsize)
